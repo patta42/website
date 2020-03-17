@@ -41,6 +41,11 @@ SAFETYINSTRUCTION_NAMES = {
     HAZARDOUS_MATERIAL: _l('safety instruction for handling hazardous material')
 }
 
+
+SAFETYINSTRCUTION_CHOICES = (
+    (k,v) for k,v in SAFETYINSTRUCTION_NAMES.items()
+)
+
 def get_required_instructions (obj):
     ins = {}
     for asi in AVALABLE_SAFETY_INSTRUCTIONS:
