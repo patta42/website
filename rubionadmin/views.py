@@ -1,4 +1,5 @@
 from .forms import  InstrumentBookingForm, MethodBookingForm, RejectionForm
+from .statistics import StatisticsOverview, CommunicationStats
 
 import datetime 
 
@@ -414,6 +415,12 @@ def user_keys_accept( request, user_id ):
         r_user.save_revision_and_publish( user = request.user )
     
         messages.success(request, _('{} now was assigned the key with number {}.').format( r_user.full_name(), r_user.key_number ))
+        mail = EMailText.objects.get( identifier = 'users.key.accept' )
+        context = {
+            'user' : r_user
+        }
+        mail.send( r_user.email, context, lang = r_user.preferred_language )
+        
         return JsonResponse({'redirect' : reverse('wagtailadmin_home')})
     else:
         return JsonResponse({'wrong' : 'Did not receive a keyId'})
@@ -784,3 +791,13 @@ def user_cro_knows_data( request, user_id ):
     
 
     
+def statistics( request ):
+    if not request.user.has_perm('rubionadmin.stats_menu'):
+        return HttpResponseNotAllowed
+
+    return StatisticsOverview.as_view()(request)
+
+def communication( request ):
+    if not request.user.has_perm('rubionadmin.stats_menu'):
+        return HttpResponseNotAllowed
+    return CommunicationStats.as_view()(request)
