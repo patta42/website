@@ -144,3 +144,18 @@ def get_groups_by_research_area():
     for key, stat in stats.items():
         stats[key]['count'] = len(set(stat['groups']))
     return stats
+
+
+class CommunicationStats( TemplateView ):
+    page_title = 'Statistics:Communication'
+    template_name = 'rubionadmin/statistics/communication.html'
+
+    def get_context_data( self, **kwargs ):
+        context = super().get_context_data(**kwargs)
+        projects = Project.objects.live().filter(expire_at__gte = datetime.date.today())
+        print(projects)
+        eprojects = Project.objects.filter(expire_at__lt = datetime.date.today())
+        context['projects'] = projects
+        context['eprojects'] = eprojects
+
+        return context
