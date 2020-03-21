@@ -6,7 +6,7 @@ from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.urls import resolve, reverse
 
-import re
+
 
 
 class ListView(FilterSettingsView):
@@ -31,9 +31,6 @@ class ListView(FilterSettingsView):
         return redirect(request.path_info)
 
     
-    
-
-
     
     def get_group_menu(self):
         actions = []
@@ -85,7 +82,4 @@ class ListView(FilterSettingsView):
         })
         return context
 
-    def get_queryset(self):
-        model = self.raiadmin.model
-        return model._default_manager.get_queryset()
 
