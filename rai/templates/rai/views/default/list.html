@@ -1,0 +1,30 @@
+l{% extends 'rai/views/default/common.html' %}
+{% load rai_tags i18n %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+  <div class="d-inline-flex align-items-center w-75">
+    <h1 class="h2 d-inline-block mr-3">{{ title }}</h1>
+    {% include 'rai/views/default/list/search-field.html' %}
+  </div>
+  {{ group_menu }}
+</div>
+<ul class="list-group" id="mainlist" data-rubion-original-object-count="{{original_object_count}}">
+  {% for object in objects %}
+      {% render_object_in_list object item_template visible_fields %}
+  {% endfor %}
+</ul>
+
+{% endblock %}
+{% block modals %}
+{% include 'rai/generic/modal_header.html' with size="lg" backdrop="static" id="filterModal" title="Filter settings" %}
+<form id="filterForm" action=".">
+  {% csrf_token %}
+  {{ filter_form }}
+</form>
+{% include 'rai/generic/modal_footer.html' with id="filterModal" %}
+
+{% include 'rai/generic/modal_header.html' with backdrop="static" id="listSettingsModal" title="Cancel" %}
+Some content here
+{% include 'rai/generic/modal_footer.html' with id="listSettingsModal" %}
+{% endblock %}
