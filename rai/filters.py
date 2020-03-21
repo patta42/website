@@ -1,3 +1,6 @@
+import datetime
+
+from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _l
 
 class RAIFilter:
@@ -23,3 +26,26 @@ class RAIFilterOption:
         self.value = value
         self.help_text = help_text
         self.default = default
+
+class RAIStatusFilter(RAIFilter):
+    """ 
+    A filter for page based models that checks the active inactive state of the model.
+    Active means: expire_at is null or in the future
+    Inactive means: expire_at is in the past.
+
+    Should implement options with values 'active', 'inactive' and 'all'
+    """
+    is_mutual_exclusive = True
+
+    def get_queryset(self):
+        td = datetime.datetime.today()
+        # value is a list
+        self.value = self.value[0]
+        if self.value == 'all':
+            return self.qs
+        if self.value == 'active':
+            return self.qs.filter(Q(expire_at__isnull = True) | Q(expire_at__gte = td))
+        if self.value == 'inactive':
+            return self.qs.filter(expire_at__lt = td)
+
+        return self.qs
