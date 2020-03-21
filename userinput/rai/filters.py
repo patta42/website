@@ -1,3 +1,6 @@
+import datetime
+
+from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _l
 from django.utils.text import format_lazy
 
@@ -20,12 +23,14 @@ class RUBIONUserStatusFilter(RAIFilter):
 
     def get_queryset(self):
         td = datetime.datetime.today()
+        # value is a list
+        self.value = self.value[0]
         if self.value == 'all':
             return self.qs
         if self.value == 'active':
-            return self.qs.filter(Q(exclude_at__isnull = True) | Q(exclude_at__gte = td))
+            return self.qs.filter(Q(expire_at__isnull = True) | Q(expire_at__gte = td))
         if self.value == 'inactive':
-            return self.qs.filter(exclude_at__lt = td)
+            return self.qs.filter(expire_at__lt = td)
 
         return self.qs
 
