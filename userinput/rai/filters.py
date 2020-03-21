@@ -1,4 +1,7 @@
+from django.utils.translation import ugettext_lazy as _l
+
 from rai.filters import RAIFilter, RAIFilterOption
+
 
 class RUBIONUserStatusFilter(RAIFilter):
     label = _l('User status')
