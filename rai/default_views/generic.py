@@ -1,4 +1,13 @@
+from django.urls import resolve, reverse
+from django.http import QueryDict, HttpResponseForbidden
+from django.template.loader import render_to_string
 from django.views.generic import TemplateView
+
+from rai.models import ListFilterSettings
+
+import re
+
+from wagtail.core import hooks
 
 class RAIView(TemplateView):
     """ 
@@ -130,7 +139,7 @@ class FilterSettingsView(RAIAdminView):
     # additional methods
     #
     
-    def get_filter_spec(self, request):
+    def get_filter_spec(self, qd):
         """
         Gets the filter specifications for this request.
           
@@ -140,8 +149,8 @@ class FilterSettingsView(RAIAdminView):
         returns the result of self.parse_querydict_for_filters
         """
         
-        filters = self.parse_querydict_for_filters(request.GET)
-        if not filters and get_from_db:
+        filters = self.parse_querydict_for_filters(qd)
+        if not filters:
             dbres = ListFilterSettings.objects.filter(user = self.user, view_name = self.view_name)
             if dbres:
                 filters = self.parse_querydict_for_filters(QueryDict(dbres.get().filter_spec))
@@ -160,13 +169,13 @@ class FilterSettingsView(RAIAdminView):
         """
         
         filters = {}
-        for k in query.keys():
+        for k in qd.keys():
             if k.startswith('filter'):
                 result = re.match(r'^filter(?P<num>\d+)__(?P<name>\w+)$', k)
                 if result is not None:
                     filters[result.group('name')] = {
                         'num' : int(result.group('num')),
-                        'value' : query.getlist(k)
+                        'value' : qd.getlist(k)
                     }
         return filters
 
