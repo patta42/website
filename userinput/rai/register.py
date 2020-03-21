@@ -14,11 +14,6 @@ from rai.base import RAIModelAdmin, RAIAdminGroup
 
 from userinput.models import RUBIONUser, WorkGroup, Project
 
-
-class RAIUserDataListAction(ListAction):
-    list_item_template = 'userinput/rubionuser/rai/list/item-in-list.html'
-    list_filters = [ RUBIONUserStatusFilter, RUBIONUserInstrumentFilter ]
-
     
 class RAIUserData(RAIModelAdmin):
     model = RUBIONUser
