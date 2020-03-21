@@ -109,8 +109,9 @@ class FilterSettingsView(RAIAdminView):
     def get(self, request):
         """
         sets the self.filter_spec
+        sets the queryset
         """
-        
+        self.queryset = self.raiadmin.model._default_manager.get_queryset()
         self.filter_spec = self.get_filter_spec(request.GET)
         return super().get(request)
     
@@ -129,11 +130,18 @@ class FilterSettingsView(RAIAdminView):
     def get_context_data(self, **kwargs):
         """
         adds a rendered filter form to the Context
+        adds count of the unfiltered queryset to the Context
         """
         context = super().get_context_data(**kwargs)
         context['filter_form'] = self.get_filter_form()
-
+        context['original_object_count'] = self.queryset.count()
         return context
+
+    def get_queryset(self):
+        """
+        Applies the filters
+        """
+        return self.apply_filters(self.queryset)
     
     #
     # additional methods
@@ -189,7 +197,7 @@ class FilterSettingsView(RAIAdminView):
         try:
             filter_settings = ListFilterSettings.objects.filter(
                 user = request.user,
-                view_name = view_name
+                view_name = self.view_name
             ).get()
             
         except ListFilterSettings.DoesNotExist:
@@ -240,3 +248,28 @@ class FilterSettingsView(RAIAdminView):
             
                 
         return render_to_string(self.filter_form_template, {'filters': filters})
+
+    def get_filters_sorted(self):
+        """
+        sorts the filters in their order of application and returns them
+        """
+        filters = [None] * len(self.filter_spec)
+        for Filter in self.active_action.list_filters:
+            try:
+                filters[self.filter_spec[Filter.filter_id]['num']] = Filter
+            except KeyError:
+                pass
+
+        return filters
+
+    def apply_filters (self, qs):
+        """
+        applies the filters on qs
+        """
+        filters = self.get_filters_sorted()
+        
+        for Fl in filters:
+            val = self.filter_spec[Fl.filter_id]['value']
+            fl = Fl(qs, value = val)
+            qs = fl.get_queryset()
+        return qs
