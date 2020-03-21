@@ -1,6 +1,10 @@
 from django.utils.translation import ugettext_lazy as _l
+from django.utils.text import format_lazy
+
+from instruments.models import InstrumentPage
 
 from rai.filters import RAIFilter, RAIFilterOption
+
 
 
 class RUBIONUserStatusFilter(RAIFilter):
@@ -26,16 +30,21 @@ class RUBIONUserStatusFilter(RAIFilter):
         return self.qs
 
 
+class RUBIONUserInstrumentFilterMeta(type):
+    def __new__(cls, name, bases, dct):
+        Kls = super().__new__(cls, name, bases, dct)
+        
+        options =  [ RAIFilterOption(
+            instrument.title_trans,
+            instrument.pk,
+            help_text = _l('Include user using {instrument}'.format(instrument = instrument.title_trans))
+        ) for instrument in InstrumentPage.objects.all()]
+            
+        Kls.options = options
+        return Kls
 
-
-class RUBIONUserInstrumentFilter(RAIFilter):
+class RUBIONUserInstrumentFilter(RAIFilter, metaclass = RUBIONUserInstrumentFilterMeta):
     label = _l('Used instruments')
     filter_id = 'user_instrument'
     is_mutual_exclusive = False
     help_text = _l('Filter users by their usage of instruments')
-    options = [
-        RAIFilterOption(_l('i1'), 'i1', help_text=_l('Show users using i1')),
-        RAIFilterOption(_l('i2'), 'i2', help_text=_l('Show users using i2')),
-        RAIFilterOption(_l('i3'), 'i3', help_text=_l('Show users using i3')),
-        RAIFilterOption(_l('i4'), 'i4', help_text=_l('Show users using i4'))
-    ]
