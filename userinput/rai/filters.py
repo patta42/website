@@ -36,6 +36,12 @@ class RUBIONUserStatusFilter(RAIFilter):
 
 
 class RUBIONUserInstrumentFilterMeta(type):
+    """ 
+    Meta class for RUBIONUserInstrumentFilter
+
+    Defines the options from the DB
+    """
+    
     def __new__(cls, name, bases, dct):
         Kls = super().__new__(cls, name, bases, dct)
         
@@ -53,3 +59,40 @@ class RUBIONUserInstrumentFilter(RAIFilter, metaclass = RUBIONUserInstrumentFilt
     filter_id = 'user_instrument'
     is_mutual_exclusive = False
     help_text = _l('Filter users by their usage of instruments')
+
+    def get_queryset(self):
+        """
+        Filters the users by their instrument usage
+        """
+
+        # I don't know how to do this on a pure DB level
+        #
+        # Hopefully this does not take too long
+        #
+        # Maybe one way would be to
+        #
+        # get the selected instrument
+        # get the corresponding methods
+        # get the workgroup
+        # get the users
+        # compare the two qs
+        #
+        # Best would be to create a relation 
+        # workgroup <-> user on the DB level
+        exclude = []
+
+        pks = [int(v) for v in self.value]
+        
+        for user in self.qs.all():
+            do_exclude = True
+            for instrument in user.get_instruments():
+                
+                if instrument.pk in pks:
+                    print('Instrument found')
+                    do_exclude = False
+                    break
+
+            if do_exclude:
+                exclude.append(user.pk)
+            
+        return self.qs.exclude(pk__in = exclude)
