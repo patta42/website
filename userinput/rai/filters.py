@@ -6,33 +6,19 @@ from django.utils.text import format_lazy
 
 from instruments.models import InstrumentPage
 
-from rai.filters import RAIFilter, RAIFilterOption
+from rai.filters import RAIFilter, RAIFilterOption, RAIStatusFilter
 
 
 
-class RUBIONUserStatusFilter(RAIFilter):
+class RUBIONUserStatusFilter(RAIStatusFilter):
     label = _l('User status')
     filter_id = 'user_status'
-    is_mutual_exclusive = True
     help_text = _l('Filters users by their active/inactive status.')
     options = [
         RAIFilterOption(_l('all'), 'all', help_text=_l('Show all users (independent from their status).')),
         RAIFilterOption(_l('active'), 'active', help_text=_l('Show only active users.'), default = True),
         RAIFilterOption(_l('inactive'), 'inactive', help_text=_l('Show inactive users only.'))
     ]
-
-    def get_queryset(self):
-        td = datetime.datetime.today()
-        # value is a list
-        self.value = self.value[0]
-        if self.value == 'all':
-            return self.qs
-        if self.value == 'active':
-            return self.qs.filter(Q(expire_at__isnull = True) | Q(expire_at__gte = td))
-        if self.value == 'inactive':
-            return self.qs.filter(expire_at__lt = td)
-
-        return self.qs
 
 
 class RUBIONUserInstrumentFilterMeta(type):
