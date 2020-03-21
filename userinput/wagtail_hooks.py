@@ -564,3 +564,9 @@ class UserInputResultsMAG( ModelAdminGroup ):
     items = (PublicationsMA, FundingMA, ThesisMA)
 
 modeladmin_register( UserInputResultsMAG )
+
+## RAI ##
+
+from rai.base import rai_register
+from userinput.rai.register import RAIUserInputGroup
+rai_register(RAIUserInputGroup)
