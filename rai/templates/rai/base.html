@@ -1,0 +1,38 @@
+{% load static %}
+<html>
+  <head>
+    <link rel="stylesheet" href="{% static 'css/admin/fontspec.css' %}">
+    <link rel="stylesheet" href="{% static 'third-party/bootstrap-4.4.1-dist/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin/RUB-bootstrap-theme.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin/RUBIONtail.css' %}">
+    <script src="{% static 'js/admin/third-party/jq-3.4.1/jquery-3.4.1.min.js' %}"></script>
+    <script src="{% static 'third-party/bootstrap-4.4.1-dist/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'icons/fontawesome/js/all.js' %}" defer></script>
+    <script src="{% static 'js/admin/RUBIONtail.js' %}"></script>
+    {% block additional_css %}{% endblock %}
+  </head>
+  <body>
+    <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
+      <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">{% include 'rai/sidebar/rubionlogo.html' %}</a>
+      <div class="w-100">
+	{% block messages %}{% endblock %}
+      </div>
+      <ul class="navbar-nav px-3">
+	<li class="nav-item text-nowrap">
+	  <a class="nav-link" href="#">Sign out</a>
+	</li>
+      </ul>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+	{{ main_admin_menu }}
+	<main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+	  {% block content %}{% endblock %}
+	</main>
+      </div>
+    </div>
+    {% block modals %}{% endblock %} 
+    {% block additional_js %}{% endblock %}
+  </body>
+</html>
