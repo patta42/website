@@ -1,6 +1,3 @@
-import datetime
-
-from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _l
 
 class RAIFilter:
