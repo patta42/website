@@ -138,4 +138,8 @@ class RUBIONModelAdminGroup( ModelAdminGroup ):
 
 modeladmin_register(RUBIONModelAdminGroup)
 
+## RAI ##
 
+from rai.base import rai_register
+from userdata.rai.register import RAIStaffGroup
+rai_register(RAIStaffGroup)
