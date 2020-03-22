@@ -1,4 +1,5 @@
 from .admin_edit_forms import RUBIONUserAdminEditForm
+from  .query import ActiveInactivePageManager
 import datetime 
 
 from dateutil.relativedelta import relativedelta
@@ -72,6 +73,8 @@ class WorkGroup ( UserGeneratedPage2 ):
     child_template = 'userinput/workgroup_child.html'
     view_template =  'userinput/workgroup_view.html'
 
+    objects = ActiveInactivePageManager()
+    
     class Meta:
         verbose_name = _('workgroup')
         verbose_name_plural = _('workgroups')
@@ -382,7 +385,7 @@ class RUBIONUser ( UserGeneratedPage2 ):
     front_end_verbose_name = _('workgroup member')
     front_end_verbose_name_plural = _('workgroup members')
 
-    
+    objects = ActiveInactivePageManager()    
     
     class Meta:
         verbose_name = _('RUBION User')
@@ -772,6 +775,15 @@ class RUBIONUser ( UserGeneratedPage2 ):
                     instruments.append(instrument)
         return instruments
 
+
+    def get_instruments(self):
+        """
+        public access to the _get_instruments
+        
+        TODO: Remove usage of _get_instruments
+        """
+        return self._get_instruments()
+    
     # --- Permissions
 
     # These methods are called from the parent class to see whether a 
@@ -1100,6 +1112,7 @@ class Project ( UserGeneratedPage2 ):
     # --- Templates
     view_template = 'userinput/project_view.html'
 
+    objects = ActiveInactivePageManager()
     
     # --- Fields
     summary_en = models.TextField(
