@@ -35,7 +35,6 @@ class RAIStatusFilter(RAIFilter):
     is_mutual_exclusive = True
 
     def get_queryset(self):
-        td = datetime.datetime.today()
         # value is a list
         self.value = self.value[0]
         if self.value == 'all':
