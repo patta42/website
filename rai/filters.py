@@ -44,8 +44,8 @@ class RAIStatusFilter(RAIFilter):
         if self.value == 'all':
             return self.qs
         if self.value == 'active':
-            return self.qs.filter(Q(expire_at__isnull = True) | Q(expire_at__gte = td))
+            return self.qs.active()
         if self.value == 'inactive':
-            return self.qs.filter(expire_at__lt = td)
+            return self.qs.inactive()
 
         return self.qs
