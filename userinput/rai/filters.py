@@ -82,3 +82,23 @@ class RUBIONUserInstrumentFilter(RAIFilter, metaclass = RUBIONUserInstrumentFilt
                 exclude.append(user.pk)
             
         return self.qs.exclude(pk__in = exclude)
+
+class ProjectStatusFilter(RAIStatusFilter):
+    label = _l('Project status')
+    filter_id = 'project_status'
+    help_text = _l('Filters projects by their active/inactive status.')
+    options = [
+        RAIFilterOption(_l('all'), 'all', help_text=_l('Show all projects (independent from their status).')),
+        RAIFilterOption(_l('active'), 'active', help_text=_l('Show only active projects.'), default = True),
+        RAIFilterOption(_l('inactive'), 'inactive', help_text=_l('Show only inactive projects.'))
+    ]
+
+class WorkgroupStatusFilter(RAIStatusFilter):
+    label = _l('Workgroupt status')
+    filter_id = 'workgroup_status'
+    help_text = _l('Filters work groups by their active/inactive status.')
+    options = [
+        RAIFilterOption(_l('all'), 'all', help_text=_l('Show all work groups (independent from their status).')),
+        RAIFilterOption(_l('active'), 'active', help_text=_l('Show only active work groups.'), default = True),
+        RAIFilterOption(_l('inactive'), 'inactive', help_text=_l('Show only inactive work groups.'))
+    ]
