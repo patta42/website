@@ -205,7 +205,7 @@ class FilterSettingsView(RAIAdminView):
                 return HttpResponseForbidden()
             filter_settings = ListFilterSettings(
                 user = request.user,
-                view_name = view_name
+                view_name = self.view_name
             )
 
         # remove all entries in POST that are not filter specs
