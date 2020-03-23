@@ -1,5 +1,7 @@
-from rai.actions import ListAction
 
+from rai.actions import ListAction, EditAction
+import rai.edit_handlers as eh
+from rai.widgets import RAITextInput
 import userinput.rai.filters as filters
     #RUBIONUserStatusFilter, RUBIONUserInstrumentFilter
 
@@ -17,6 +19,19 @@ class RAIProjectListAction(ListAction):
     ]
 
 class RAIWorkgroupListAction(ListAction):
+    list_item_template = 'userinput/workgroup/rai/list/item-in-list.html'
     list_filters = [
         filters.WorkgroupStatusFilter
     ]
+
+
+class RAIWorkgroupEditAction(EditAction):
+    edit_handler = eh.RAIObjectList(
+        [
+            eh.RAIFieldRowPanel([
+                eh.RAIFieldPanel('department_de'),
+                eh.RAIFieldPanel('department_en'),
+            ]),
+#            eh.RAIFieldPanel('title'),
+        ]
+    )
