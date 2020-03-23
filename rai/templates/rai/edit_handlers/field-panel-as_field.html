@@ -1,0 +1,9 @@
+<div class="col">
+<label for="{{field.id_for_label}}">{{field.label}}</label>
+  {% include "wagtailadmin/shared/field.html" with show_label=False show_help_text=False %}
+  {% if field.help_text %}
+    <small id="{{field.id_for_label}}HelpText" class="text-muted form-text">
+      {{ field.help_text }}
+    </small>
+  {% endif %}
+</div>
