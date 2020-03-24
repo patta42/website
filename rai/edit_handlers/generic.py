@@ -42,7 +42,23 @@ class RAIEditHandler:
             'classname': self.classname,
             'help_text': self.help_text,
         }
-    
+
+    def disable(self, disabled_class = 'disabled'):
+        """
+        add 'disabled' to the classname
+        """
+        new = self.clone()
+        css_classes = new.classname.split(' ')
+        if disabled_class not in css_classes:
+            css_classes.append(disabled_class)
+        new.classname = ' '.join(css_classes)
+
+        new.on_disable(disabled_class)
+        return new
+
+    def on_disable(self, disabled_class):
+        pass
+        
     # return list of widget overrides that this EditHandler wants to be in place
     # on the form it receives
     def widget_overrides(self):
@@ -253,6 +269,9 @@ class RAIBaseCompositeEditHandler(RAIEditHandler):
             children.append(child.bind_to(form=self.form))
         self.children = children    
 
+    def on_disable(self, disabled_class):
+        self.children = [child.disable(disabled_class)
+                         for child in self.children]
     def render(self):
         return mark_safe(render_to_string(self.template, {
             'self': self
@@ -419,5 +438,3 @@ class RAIFieldPanel(RAIEditHandler):
             self.model, self.instance, self.request, self.form.__class__.__name__)
     
     
-def convert_from_wagtail(eh):
-    return eh
