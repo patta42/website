@@ -1,30 +1,14 @@
 
-from .generic import RAIAdminView, SingleObjectMixin
-from rai.edit_handlers import convert_from_wagtail
-from rai.forms import RAIAdminModelForm, rai_modelform_factory
+from .generic import SingleObjectMixin
+from .create import CreateView
 
-from django.forms.models import modelform_factory
 
-class EditView(RAIAdminView, SingleObjectMixin):
+class EditView(CreateView, SingleObjectMixin):
     template_name = 'rai/views/default/edit.html'
     formclass = None
 
-    media = {
-        'css' : [ 'css/admin/edit_handlers.css']
-    }
-
     def dispatch(self, request, **kwargs):
         self.obj = self.get_object()
-        if hasattr(self.active_action, 'edit_handler'):
-            edit_handler = self.active_action.edit_handler
-        elif hasattr(self.raiadmin.model, 'edit_handler'):
-            edit_handler = convert_from_wagtail(self.raiadmin.model.edit_handler)
-        else:
-            # TODO provide edit handler for models without specification
-            pass
-        self.edit_handler = edit_handler.bind_to(model=self.raiadmin.model)
-        self.formclass = self.edit_handler.get_form_class()
-        self.request = request
         return super().dispatch(request, **kwargs)
     
 
