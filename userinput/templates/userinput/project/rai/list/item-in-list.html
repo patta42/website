@@ -1,0 +1,26 @@
+{% extends 'rai/views/default/default-list-item.html' %}
+{% load i18n userinput_rai_tags %}
+
+{% block title %}
+{{object.title_trans}}
+{% endblock %}
+{% block sortfields %}{%trans "Project"%}{% endblock %}
+{% block title_sortname %}{% trans "Project" %}{% endblock %}
+{% block additional_content %}
+  <p class="mb-1 text-primary" data-rubion-searchable="true">
+    {{object.get_workgroup}}
+  </p>
+<p class="mb-1">
+  {% trans "Start" %}: {{object.first_published_at}},  
+  {% trans "Expire" %}: {{object.expire_at}} 
+</p>
+
+  {% if last_revision %}
+  <small class="text-muted">
+    {% trans "Last update:" %}
+    {{last_revision.created_at}}
+    {% trans "by" %}
+    {{ last_revision.user.last_name }}, {{ last_revision.user.first_name }}
+  </small>
+  {% endif %}
+{% endblock %}
