@@ -18,10 +18,6 @@ class EditView(CreateView, SingleObjectMixin):
         edit_handler = self.edit_handler.bind_to(
             instance = self.obj, form = form, request = self.request
         )
-
-        context['object'] = self.obj
-        context['icon'] = self.raiadmin.menu_icon
-        context['icon_font'] = self.raiadmin.menu_icon_font
         context['form'] = form
         context['edit_handler'] = edit_handler
         return context
