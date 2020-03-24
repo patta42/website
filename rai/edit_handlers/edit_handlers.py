@@ -1,4 +1,4 @@
-from .generic import RAIBaseFormEditHandler, RAIBaseCompositeEditHandler
+from .generic import RAIBaseFormEditHandler, RAIBaseCompositeEditHandler, RAIFieldPanel
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -81,10 +81,54 @@ class RAIPillsPanel(RAIBaseFormEditHandler):
                 random.choice(string.ascii_uppercase + string.ascii_lowercase) for _ in range(10)
             )
         )
+        self.nav_label = kwargs.pop('nav_label', None)
         super().__init__(*args, **kwargs)
     def clone_kwargs(self):
         kwargs = super().clone_kwargs()
         kwargs.update({
-            'unique_id' : self.unique_id
+            'unique_id' : self.unique_id,
+            'nav_label' : self.nav_label
         })
         return kwargs
+
+class RAITranslatedContentPanel(RAIPillsPanel):
+    """
+    A Panel which automatically builds a RAIPillsPanel for translated content.
+
+    It simply uses RAIFieldPanels for the fields. For more complex layout, built a 
+    RAIPillsPanel manually.
+    """
+
+    # It would be easier if I'd know a way to read the field_en and field_de properties
+    # of website.models.TranslatedField. However, I don't know how to access them.
+    #
+    # Thus, I use a (reasonable) guess:
+    #
+    # If field is title, field_en = title and field_de = title_de
+    # ion any other case, field_en = <foo>_en and field_de = <foo>_de
+
+    def __init__(self, languages, fieldnames, *args, **kwargs):
+        """
+        languages should be a dict like {'de':'german', 'en':'english'}, that is, 
+        suffix -> name
+
+        fieldnames is a list of fieldnames without suffix.
+        """
+        nav_label = kwargs.pop('nav_label', 'Select language')
+        kwargs.update({'nav_label':nav_label})
+
+        
+        children = []
+        for suffix, lang in languages.items():
+            grandchildren = []
+            for field in fieldnames:
+                if not(suffix == 'en' and field == 'title'):
+                    field_name = "{field}_{suffix}".format(field = field, suffix = suffix)
+                else:
+                    field_name = field                    
+                grandchildren.append(RAIFieldPanel(field_name))
+            children.append(RAICollectionPanel(grandchildren, heading = lang))
+        super().__init__(children, *args, **kwargs)        
+
+    def clone(self):
+        return RAIPillsPanel(**self.clone_kwargs())
