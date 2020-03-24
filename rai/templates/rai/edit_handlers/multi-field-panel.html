@@ -1,0 +1,10 @@
+
+<fieldset class="multi-field-panel">
+  <legend class="text-primary">{{ self.heading }}</legend>
+  <div class="{{self.classes|join:" "}}">
+    {% for child in self.children %}
+    <div class="{{ child.classes|join:" " }}">{{ child.render_as_field }}</div>
+    {% endfor %}
+  </div>
+</fieldset>
+
