@@ -32,16 +32,10 @@ class RAIWorkgroupListAction(ListAction):
 class RAIWorkgroupEditAction(EditAction):
     edit_handler = eh.RAIObjectList([
         eh.RAIUserDataPanel([
-            eh.RAIPillsPanel([
-                eh.RAICollectionPanel([
-                    eh.RAIFieldPanel('department_de'),
-                    eh.RAIFieldPanel('institute_de'),
-                ], heading = 'deutsch'),
-                eh.RAICollectionPanel([
-                    eh.RAIFieldPanel('department_en'),
-                    eh.RAIFieldPanel('institute_en'),
-                ], heading = 'english'),
-            ], nav_label = 'Select language'),
+            eh.RAITranslatedContentPanel(
+                {'de':'german', 'en':'english'},
+                ['department', 'institute']
+            ),
             eh.RAIFieldPanel('homepage')
         ], heading = 'User data', is_expanded = False),
         eh.RAICollapsablePanel([
