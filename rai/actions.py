@@ -77,14 +77,17 @@ class ListAction(ModelAction):
         urls = super().get_url_for_registration()
         return urls + self.settings_action.get_url_for_registration()
     
-class CreateAction(RAIAction):
+class CreateAction(ModelAction):
     label = _l('Add')
     icon = 'plus'
     icon_font = 'fas'
     action_identifier = 'create'
 
     def get_view(self):
-        return self.raiadmin.createview.as_view()
+        return self.raiadmin.createview.as_view(
+            raiadmin = self.raiadmin,
+            active_action = self
+        )
 
 class DetailAction(SpecificAction):
     label = 'Details'
@@ -93,7 +96,10 @@ class DetailAction(SpecificAction):
     action_identifier = 'detail'
 
     def get_view(self):
-        return self.raiadmin.detailview.as_view()
+        return self.raiadmin.detailview.as_view(
+            raiadmin = self.raiadmin,
+            active_action = self
+        )
 
 
 class EditAction(SpecificAction):
@@ -103,7 +109,11 @@ class EditAction(SpecificAction):
     action_identifier = 'edit'
 
     def get_view(self):
-        return self.raiadmin.editview.as_view()
+        return self.raiadmin.editview.as_view(
+            raiadmin = self.raiadmin,
+            active_action = self
+        )
+        
     
     
 class InactivateAction(SpecificAction):
