@@ -5,11 +5,17 @@ from .generic import (
     RAIFieldPanel
 )
 
+from django import forms
 from django.core.exceptions import ImproperlyConfigured
+from django.forms.formsets import DELETION_FIELD_NAME, ORDERING_FIELD_NAME
 from django.forms.models import fields_for_model
 from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
 
-from rai.forms import formfield_for_dbfield
+import functools
+
+#from .utils import extract_panel_definitions_from_model_class
+
 import random
 import string
 import uuid
@@ -17,28 +23,6 @@ import uuid
 
 
 
-def extract_panel_definitions_from_model_class(model, exclude=None):
-    if hasattr(model, 'panels'):
-        return model.panels
-
-    panels = []
-
-    _exclude = []
-    if exclude:
-        _exclude.extend(exclude)
-
-    fields = fields_for_model(model, exclude=_exclude, formfield_callback=formfield_for_dbfield)
-
-    for field_name, field in fields.items():
-        try:
-            panel_class = field.widget.get_panel()
-        except AttributeError:
-            panel_class = RAIFieldPanel
-
-        panel = panel_class(field_name)
-        panels.append(panel)
-
-    return panels
 
 class RAITabbedInterface(RAIBaseFormEditHandler):
     template = "wagtailadmin/edit_handlers/tabbed_interface.html"
@@ -176,6 +160,7 @@ class RAIMultiFieldPanel(RAIBaseCompositeEditHandler):
         return classes
 
 class RAIInlinePanel(RAIEditHandler):
+    is_collapsable = True
     def __init__(self, relation_name, panels=None, heading='', label='',
                  min_num=None, max_num=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -202,7 +187,7 @@ class RAIInlinePanel(RAIEditHandler):
         if self.panels is not None:
             return self.panels
         # Failing that, get it from the model
-        return extract_panel_definitions_from_model_class(
+        return rai.edit_handlers.utils.extract_panel_definitions_from_model_class(
             self.db_field.related_model,
             exclude=[self.db_field.field.name]
         )
@@ -273,7 +258,7 @@ class RAIInlinePanel(RAIEditHandler):
         self.empty_child = self.empty_child.bind_to(
             instance=empty_form.instance, request=self.request, form=empty_form)
 
-    template = "wagtailadmin/edit_handlers/inline_panel.html"
+    template = "rai/edit_handlers/inline-panel.html"
 
     def render(self):
         formset = render_to_string(self.template, {
@@ -281,7 +266,7 @@ class RAIInlinePanel(RAIEditHandler):
             'can_order': self.formset.can_order,
         })
         js = self.render_js_init()
-        return widget_with_script(formset, js)
+        return formset#widget_with_script(formset, js)
 
     js_template = "wagtailadmin/edit_handlers/inline_panel.js"
 
