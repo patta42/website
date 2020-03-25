@@ -24,10 +24,11 @@ class RAIEditHandler:
     - adds information about the PanelType, for debugging purposes mostly
     - picks up RAIWidgets if possible
     """
-    def __init__(self, heading='', classname='', help_text=''):
+    def __init__(self, heading='', classname='', help_text='', disabled = False):
         self.heading = heading
         self.classname = classname
         self.help_text = help_text
+        self.disabled = disabled
         self.model = None
         self.instance = None
         self.request = None
@@ -41,6 +42,7 @@ class RAIEditHandler:
             'heading': self.heading,
             'classname': self.classname,
             'help_text': self.help_text,
+            'disabled' : self.disabled
         }
 
     def disable(self, disabled_class = 'disabled'):
@@ -48,6 +50,7 @@ class RAIEditHandler:
         add 'disabled' to the classname
         """
         new = self.clone()
+        new.disabled = True
         css_classes = new.classname.split(' ')
         if disabled_class not in css_classes:
             css_classes.append(disabled_class)
@@ -245,8 +248,11 @@ class RAIBaseCompositeEditHandler(RAIEditHandler):
         return mark_safe(''.join([c.html_declarations() for c in self.children]))
 
     def on_model_bound(self):
-        self.children = [child.bind_to(model=self.model)
-                         for child in self.children]
+        try:
+            self.children = [child.bind_to(model=self.model)
+                             for child in self.children]
+        except AttributeError:
+            self.children = []
 
     def on_instance_bound(self):
         self.children = [child.bind_to(instance=self.instance)
