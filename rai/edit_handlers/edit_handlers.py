@@ -17,6 +17,7 @@ import functools
 #from .utils import extract_panel_definitions_from_model_class
 
 import random
+
 import string
 import uuid
 
@@ -223,6 +224,9 @@ class RAIInlinePanel(RAIEditHandler):
 
         return [functools.partial(compare.ChildRelationComparison, self.db_field, field_comparisons)]
 
+
+        
+        
     def on_model_bound(self):
         manager = getattr(self.model, self.relation_name)
         self.db_field = manager.rel
@@ -258,6 +262,8 @@ class RAIInlinePanel(RAIEditHandler):
         self.empty_child = self.empty_child.bind_to(
             instance=empty_form.instance, request=self.request, form=empty_form)
 
+
+        
     template = "rai/edit_handlers/inline-panel.html"
 
     def render(self):
@@ -276,7 +282,139 @@ class RAIInlinePanel(RAIEditHandler):
             'can_order': self.formset.can_order,
         }))
 
+class RAIQueryInlinePanel(RAIBaseFormEditHandler):
+    """
+    An InlinePanel-like panel that allows showing the result of a different query.
+    Thus, the model used for this Panel does not need to be attached to the model
+    of the parent's edit_handler
+    """
+    is_collapsable = True
+    template = 'rai/edit_handlers/query-inline-panel.html'
 
+    def __init__(self, name, model, query_callback, panels, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = name
+        self.query_callback = query_callback
+        self.panels = panels
+        self.model = model
+        self.on_model_bound()
+
+    def clone(self):
+        return self.__class__(
+            self.name, self.model, self.query_callback, self.panels,
+            ** self.clone_kwargs()
+        )
+    
+    def get_child_edit_handler(self):
+        panels = self.get_panel_definitions()
+        child_edit_handler = RAICollectionPanel(panels, heading=self.heading)
+        return child_edit_handler.bind_to(model=self.model)
+
+    def required_formsets(self):
+        child_edit_handler = self.get_child_edit_handler()
+        formsets = {
+            self.name: {
+                'fields': child_edit_handler.required_fields(),
+                'widgets': child_edit_handler.widget_overrides(),
+            }
+        }
+        return formsets
+
+    def html_declarations(self):
+        return self.get_child_edit_handler().html_declarations()
+
+    def on_instance_bound(self):
+        children = []
+        for sub_instance in self.query_callback(self.instance):
+            children.append(
+                self.get_child_edit_handler().bind_to(instance=sub_instance, model=self.model)
+            )
+        
+        self.children = children
+            
+    def on_model_bound(self):
+        self.children = [
+            child.bind_to(model=self.model) for child in self.children
+        ]
+
+        
+    def on_form_bound(self):
+        if self.name not in self.form.formsets.keys() and self.instance is not None:
+            Kls = forms.modelformset_factory(
+                self.model, fields=self.required_fields(), extra=0)
+            self.formset = Kls(queryset = self.query_callback(self.instance) )
+            self.form.formsets.update({
+                self.name: self.formset
+            })
+            print('Self.formset:')
+            print(self.form.formsets[self.name].__dict__)
+            print(self.formset.__dict__)
+
+        if hasattr(self, 'formset'):
+            children = []
+            for subform in self.formset.forms:
+#                subform.fields[DELETION_FIELD_NAME].widget = forms.HiddenInput()
+
+                # ditto for the ORDER field, if present
+#                if self.formset.can_order:
+#                    subform.fields[ORDERING_FIELD_NAME].widget = forms.HiddenInput()
+                child_edit_handler = self.get_child_edit_handler()
+                children.append(
+                    child_edit_handler.bind_to(
+                        instance=subform.instance,
+                        request=self.request,
+                        form=subform
+                    )
+                )
+            self.children = children
+
+    def bind_to(self, model=None, form=None, instance=None, request=None):
+
+        # print('Binding to <model: {model}>, <form: {form}>, <instance: {instance}>, <request: {request}>'.format(
+        #     instance = instance,
+        #     form = form,
+        #     request = request,
+        #     model = model
+        # ))
+
+        new = self.clone()
+
+
+        
+        # don't use the parent's model or form
+        new.model = self.model or None
+
+        new.form = self.form if form is None else form
+        
+        new.instance = self.instance if instance is None else instance
+        new.request = self.request if request is None else request
+
+        if new.model is not None:
+            new.on_model_bound()
+
+        if new.instance is not None:
+            new.on_instance_bound()
+
+        if new.request is not None:
+            new.on_request_bound()
+
+        if new.form is not None:
+            new.on_form_bound()
+
+        return new
+    
+    def get_panel_definitions(self):
+        # Look for a panels definition in the InlinePanel declaration
+        if self.panels is not None:
+            return self.panels
+        # Failing that, get it from the model
+        return rai.edit_handlers.utils.extract_panel_definitions_from_model_class(
+            self.model,
+            exclude=[self.name]
+        )
+
+    
+    
 class RAIMissingPanel(RAIEditHandler):
     """
     A panel indicating a missing Panel.
