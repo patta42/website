@@ -1,0 +1,13 @@
+{% extends 'rai/views/default/common.html' %}
+{% load rai_tags i18n %}
+{% block title_action %}{% trans "Edit" %}
+{% endblock %}
+{% block content %}
+{% block formcontent %}
+<form action="." method="POST">
+  {% csrf_token %}
+  {{ edit_handler.render_form_content }}
+
+</form>
+{% endblock %}
+{% endblock %}
