@@ -5,6 +5,7 @@ from .generic import (
     RAIFieldPanel
 )
 
+
 from django import forms
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.formsets import DELETION_FIELD_NAME, ORDERING_FIELD_NAME
@@ -275,16 +276,19 @@ class RAIInlinePanel(RAIEditHandler):
         })
         return formset
 
+
 class RAIQueryInlinePanel(RAIBaseFormEditHandler):
     """
     An InlinePanel-like panel that allows showing the result of a different query.
     Thus, the model used for this Panel does not need to be attached to the model
     of the parent's edit_handler
     """
+
     is_collapsable = True
     template = 'rai/edit_handlers/query-inline-panel.html'
     child_template = 'rai/edit_handlers/inline-panel-child.html'
     
+
     def __init__(self, name, model, query_callback, panels, *args, **kwargs):
         self.name = name
         self.query_callback = query_callback
@@ -298,9 +302,127 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
         self.min_num = kwargs.pop('min_num',None)
         self.validate_min = kwargs.pop('validate_min', self.min_num is not None)
         super().__init__(*args, **kwargs)
+
+        # Note that here a model is bound!
+        
         self.model = model        
         self.on_model_bound()
 
+        
+
+    # this function return the kwargs used for the call to a formset class,
+    # including the ones that are not used for cloning (see get_formset_kwargs below)
+
+    def get_full_formset_kwargs(self):
+        formset_kwargs = self.get_formset_kwargs()
+        
+        #update with fields and widgets
+        formset_kwargs.update({
+            'fields' : self.get_child_edit_handler().required_fields(),
+            'widgets' : self.widget_overrides(),
+        })
+        return formset_kwargs
+
+    
+
+    # the binding stuff is hard to understand.
+    #
+    # if bind_to(model=...) is called, it will be from a parent edit_handler.
+    # This one has its own model, so just self.model. A model should be sufficient to
+    # build the formset. Do this in on_model_bound()
+
+    def on_model_bound(self):
+        # set self.Formset_Class. It is not yet required to initiate a class,
+        # we might not have a form yet
+        self.Formset_Class = forms.modelformset_factory(
+            self.model,
+            formfield_callback = formfield_for_dbfield,
+            **self.get_full_formset_kwargs()
+        )
+
+        # bind the children to the model
+                
+        self.children = [
+            child.bind_to(model = self.model) for child in self.children
+        ]
+
+
+
+    # if the edit_handler is bound to a form, the formset for the will not be included 
+    # since it has been kicked out by (wagtail's adaption of) modelform_factory. Just include it
+    
+    def on_form_bound(self):
+        
+        self.formset = self.Formset_Class(queryset = self.model.objects.none())
+        self.form.formsets.update({
+            self.name : self.formset
+        })
+        
+        # bind children to formset_forms:
+        self.bind_formset_forms()
+
+
+
+    # shorthand to bind the children to the forms of  the formset
+
+    def bind_formset_forms(self):
+        
+        children = []
+        for subform in self.formset.forms:
+            children.append(
+                self.get_child_edit_handler().bind_to(
+                    model = self.model, form = subform, instance = subform.instance
+                )
+            )
+        self.children = children
+
+
+
+        
+    # If an instance is bound, we assume we have a form already. Otherwise, we would have to
+    # check if a form is available and an instance and... to complicated for now
+    #
+    # Rebuild the formset, this time with a query, attach it to the form, and that's it
+    
+    def on_instance_bound(self):
+        qs = self.query_callback(self.instance)
+        print(qs.count())
+        self.formset = self.Formset_Class(queryset = qs )
+        print(len(self.formset.forms))
+        self.bind_formset_forms()
+
+
+
+        
+    def bind_to(self, model=None, form=None, instance=None, request=None):
+
+        new = self.clone()
+        
+        # don't use the parent's model 
+        new.model = self.model 
+
+        new.form = self.form if form is None else form
+        
+        new.instance = self.instance if instance is None else instance
+        new.request = self.request if request is None else request
+
+        if new.model is not None:
+            new.on_model_bound()
+
+        if new.form is not None:
+            new.on_form_bound()
+            
+        if new.instance is not None:
+            new.on_instance_bound()
+
+        if new.request is not None:
+            new.on_request_bound()
+
+
+        return new
+
+
+    
     def clone(self):
         return self.__class__(
             self.name, self.model, self.query_callback, self.panels,
@@ -326,7 +448,12 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
             'min_num' : self.min_num,
             'validate_min' : self.validate_min
         }
+
+    def required_fields(self):
+        # We don't need any fields in the parent form
+        return []
         
+    
     def get_child_edit_handler(self):
         panels = self.get_panel_definitions()
         child_edit_handler = RAICollectionPanel(panels, heading=self.heading)
@@ -344,83 +471,6 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
 
     def html_declarations(self):
         return self.get_child_edit_handler().html_declarations()
-
-    def on_instance_bound(self):
-        children = []
-        for sub_instance in self.query_callback(self.instance):
-            children.append(
-                self.get_child_edit_handler().bind_to(instance=sub_instance, model=self.model)
-            )
-        
-        self.children = children
-            
-    def on_model_bound(self):
-        self.children = [
-            child.bind_to(model=self.model) for child in self.children
-        ]
-
-        
-    def on_form_bound(self):
-        if self.name not in self.form.formsets.keys() and self.instance is not None:
-            formset_kwargs = self.get_formset_kwargs()
-            formset_kwargs.update({
-                'fields' : self.required_fields(),
-                'widgets' : self.widget_overrides(),
-            })
-            Kls = forms.modelformset_factory(
-                self.model,
-                formfield_callback = formfield_for_dbfield,
-                **formset_kwargs
-            )
-                
-            self.formset = Kls( queryset = self.query_callback(self.instance) )
-            self.form.formsets.update({
-                self.name: self.formset
-            })
-
-        if hasattr(self, 'formset'):
-            children = []
-            for subform in self.formset.forms:
-#                subform.fields[DELETION_FIELD_NAME].widget = forms.HiddenInput()
-
-                # ditto for the ORDER field, if present
-#                if self.formset.can_order:
-#                    subform.fields[ORDERING_FIELD_NAME].widget = forms.HiddenInput()
-                child_edit_handler = self.get_child_edit_handler()
-                children.append(
-                    child_edit_handler.bind_to(
-                        instance=subform.instance,
-                        request=self.request,
-                        form=subform
-                    )
-                )
-            self.children = children
-
-    def bind_to(self, model=None, form=None, instance=None, request=None):
-
-        new = self.clone()
-        
-        # don't use the parent's model 
-        new.model = self.model or None
-
-        new.form = self.form if form is None else form
-        
-        new.instance = self.instance if instance is None else instance
-        new.request = self.request if request is None else request
-
-        if new.model is not None:
-            new.on_model_bound()
-
-        if new.instance is not None:
-            new.on_instance_bound()
-
-        if new.request is not None:
-            new.on_request_bound()
-
-        if new.form is not None:
-            new.on_form_bound()
-
-        return new
     
     def get_panel_definitions(self):
         # Look for a panels definition in the InlinePanel declaration
@@ -445,7 +495,7 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
             self.__class__.__name__, self.name,
             self.model, self.instance, self.request, self.form.__class__.__name__, self.formset.__class__.__name__)
 
-    
+
     
 class RAIMissingPanel(RAIEditHandler):
     """
