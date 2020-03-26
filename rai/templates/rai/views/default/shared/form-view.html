@@ -4,7 +4,7 @@
 {% endblock %}
 {% block content %}
 {% block formcontent %}
-<form action="." method="POST" id="main_form">
+<form action="." method="POST" id="{{ main_form_id|default"main_form" }}">
   {% csrf_token %}
   {{ edit_handler.render_form_content }}
 
