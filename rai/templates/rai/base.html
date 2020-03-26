@@ -28,7 +28,31 @@
       <div class="row">
 	{{ main_admin_menu }}
 	<main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
-	  {% block content %}{% endblock %}
+	  <div class="page-header">
+	    {% block page_header %}
+	    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+	      <div class="d-inline-flex align-items-center w-75">
+		{% block page_header_inner %}
+		<h1 class="h4 d-inline-block mr-3 ">
+		  <span class="d-block">
+		    <span class="text-muted font-weight-lighter mb-1" style="font-size:12pt">
+		      <i class="{{icon_font}} fa-{{icon}}"></i> {% block title_action %}{% endblock %}
+		    </span>
+		  </span>
+		  <span class="d-block heading-content-surrounder text-primary">
+		    {% block heading %}{{ object.title_trans }}{% endblock %}
+		  </span>
+		</h1>
+		{% endblock %}
+	      </div>
+	      {{ group_menu }}
+	    </div>
+
+	    {% endblock %}
+	  </div>
+	  <div class="page-content">
+	    {% block content %}{% endblock %}
+	  </div>
 	</main>
       </div>
     </div>
