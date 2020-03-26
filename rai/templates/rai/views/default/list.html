@@ -1,14 +1,21 @@
 {% extends 'rai/views/default/common.html' %}
 {% load rai_tags i18n %}
 
-{% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-  <div class="d-inline-flex align-items-center w-75">
-    <h1 class="h2 d-inline-block mr-3">{{ title }}</h1>
+
+
+{% block page_header_inner %}
+<h1 class="h4 d-inline-block mr-3">
+  <span class="d-block">
+    <span class="text-muted font-weight-lighter mb-1" style="font-size:12pt">
+      <i class="{{icon_font|default:"fas"}} fa-{{icon|default:"list-alt"}}"></i> {{ action_label|default:"Liste" }}
+    </span>
+  </span>
+  {{ title }}
+</h1>
     {% include 'rai/views/default/list/search-field.html' %}
-  </div>
-  {{ group_menu }}
-</div>
+{% endblock %}
+
+{% block content %}
 <ul class="list-group" id="mainlist" data-rubion-original-object-count="{{original_object_count}}">
   {% for object in objects %}
       {% render_object_in_list object item_template visible_fields %}
