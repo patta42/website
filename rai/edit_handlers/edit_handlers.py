@@ -386,9 +386,7 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
     
     def on_instance_bound(self):
         qs = self.query_callback(self.instance)
-        print(qs.count())
         self.formset = self.Formset_Class(queryset = qs )
-        print(len(self.formset.forms))
         self.bind_formset_forms()
 
 
