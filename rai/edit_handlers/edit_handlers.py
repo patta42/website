@@ -17,6 +17,7 @@ import functools
 #from .utils import extract_panel_definitions_from_model_class
 
 import random
+from rai.forms import formfield_for_dbfield
 
 import string
 import uuid
@@ -265,22 +266,14 @@ class RAIInlinePanel(RAIEditHandler):
 
         
     template = "rai/edit_handlers/inline-panel.html"
-
+    
+        
     def render(self):
         formset = render_to_string(self.template, {
             'self': self,
             'can_order': self.formset.can_order,
         })
-        js = self.render_js_init()
-        return formset#widget_with_script(formset, js)
-
-    js_template = "wagtailadmin/edit_handlers/inline_panel.js"
-
-    def render_js_init(self):
-        return mark_safe(render_to_string(self.js_template, {
-            'self': self,
-            'can_order': self.formset.can_order,
-        }))
+        return formset
 
 class RAIQueryInlinePanel(RAIBaseFormEditHandler):
     """
@@ -290,21 +283,50 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
     """
     is_collapsable = True
     template = 'rai/edit_handlers/query-inline-panel.html'
-
+    child_template = 'rai/edit_handlers/inline-panel-child.html'
+    
     def __init__(self, name, model, query_callback, panels, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.name = name
         self.query_callback = query_callback
         self.panels = panels
-        self.model = model
+        self.can_order = kwargs.pop('can_order', False)
+        self.allow_add = kwargs.pop('allow_add', None)
+        self.can_delete = kwargs.pop('can_delete', False)
+        self.extra = kwargs.pop('extra', 0)
+        self.max_num = kwargs.pop('max_num', None)
+        self.validate_max = kwargs.pop('validate_max', self.max_num is not None)
+        self.min_num = kwargs.pop('min_num',None)
+        self.validate_min = kwargs.pop('validate_min', self.min_num is not None)
+        super().__init__(*args, **kwargs)
+        self.model = model        
         self.on_model_bound()
 
     def clone(self):
         return self.__class__(
             self.name, self.model, self.query_callback, self.panels,
-            ** self.clone_kwargs()
+            **self.clone_kwargs()
         )
-    
+    def clone_kwargs(self):
+        kwargs = super().clone_kwargs()
+        kwargs.update(self.get_formset_kwargs())
+        kwargs.update({'allow_add' : self.allow_add})
+        return kwargs
+
+    def get_formset_kwargs(self):
+        """
+        returns the kwargs accepted by the panel for the call to formset_factory
+        """
+        return {
+            'can_order':self.can_order,
+            'can_delete':self.can_delete,
+#            'can_add':self.can_add,
+            'extra':self.extra,
+            'max_num' : self.max_num,
+            'validate_max' : self.validate_max,
+            'min_num' : self.min_num,
+            'validate_min' : self.validate_min
+        }
+        
     def get_child_edit_handler(self):
         panels = self.get_panel_definitions()
         child_edit_handler = RAICollectionPanel(panels, heading=self.heading)
@@ -340,15 +362,21 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
         
     def on_form_bound(self):
         if self.name not in self.form.formsets.keys() and self.instance is not None:
+            formset_kwargs = self.get_formset_kwargs()
+            formset_kwargs.update({
+                'fields' : self.required_fields(),
+                'widgets' : self.widget_overrides(),
+            })
             Kls = forms.modelformset_factory(
-                self.model, fields=self.required_fields(), extra=0)
-            self.formset = Kls(queryset = self.query_callback(self.instance) )
+                self.model,
+                formfield_callback = formfield_for_dbfield,
+                **formset_kwargs
+            )
+                
+            self.formset = Kls( queryset = self.query_callback(self.instance) )
             self.form.formsets.update({
                 self.name: self.formset
             })
-            print('Self.formset:')
-            print(self.form.formsets[self.name].__dict__)
-            print(self.formset.__dict__)
 
         if hasattr(self, 'formset'):
             children = []
@@ -370,18 +398,9 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
 
     def bind_to(self, model=None, form=None, instance=None, request=None):
 
-        # print('Binding to <model: {model}>, <form: {form}>, <instance: {instance}>, <request: {request}>'.format(
-        #     instance = instance,
-        #     form = form,
-        #     request = request,
-        #     model = model
-        # ))
-
         new = self.clone()
-
-
         
-        # don't use the parent's model or form
+        # don't use the parent's model 
         new.model = self.model or None
 
         new.form = self.form if form is None else form
@@ -412,6 +431,19 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
             self.model,
             exclude=[self.name]
         )
+
+    
+    def render(self):
+        formset = render_to_string(self.template, {
+            'self': self,
+            'can_order': self.formset.can_order,
+        })
+        return formset
+
+    def __repr__(self):
+        return "<%s '%s' with model=%s instance=%s request=%s form=%s formset=%s>" % (
+            self.__class__.__name__, self.name,
+            self.model, self.instance, self.request, self.form.__class__.__name__, self.formset.__class__.__name__)
 
     
     
