@@ -1,0 +1,22 @@
+<nav class="col-md-2 d-none d-md-block bg-light sidebar">
+  <div class="sidebar-sticky">
+    <div class="header">
+      Let the content go here!
+    </div>
+    {% for item in items %}
+      <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1">
+	<span>{{item.label}}</span>
+      </h6>
+      <ul class="nav flex-column mb-2">
+	{% for component in item.components %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{component.url}}">
+	      <i class="{{ component.icon_font }} fa-{{ component.icon }} fa-fw"></i>
+	      {{ component.label }}
+            </a>
+          </li>
+	{% endfor %}
+      </ul>
+    {% endfor %}
+  </div>
+</nav>
