@@ -1,3 +1,4 @@
+from django.forms.models import modelformset_factory
 from django.template.loader import render_to_string
 from django.utils.encoding import force_text
 from django.utils.functional import cached_property
@@ -7,6 +8,7 @@ from django.utils.safestring import mark_safe
 from rai.forms import (
     RAIAdminModelForm, rai_modelform_factory, FORM_FIELD_OVERRIDES
 )
+from rai.utils import update_if_not_defined
 
 from taggit.managers import TaggableManager
 
@@ -15,7 +17,7 @@ from wagtail.core.utils import camelcase_to_underscore
 
 
 
-class RAIEditHandler:
+class RAIEditHandler: 
     """
     Base EditHandler for RAI
 
@@ -33,7 +35,8 @@ class RAIEditHandler:
         self.instance = None
         self.request = None
         self.form = None
-
+        self.formsets = None
+        
     def clone(self):
         return self.__class__(**self.clone_kwargs())
 
@@ -71,10 +74,10 @@ class RAIEditHandler:
         if hasattr(self, 'widget'):
             # user-defined widget, don't override
             return {self.field_name: self.widget}
-        else:
-            override = FORM_FIELD_OVERRIDES.get(self.db_field.__class__, None)
-            if override:
-                return { self.field_name: override['widget'] }    #
+#        else:
+#            rride = FORM_FIELD_OVERRIDES.get(self.db_field.__class__, None)
+#            if override:
+#                return { self.field_name: override['widget'] }    #
         return {}
 
 
@@ -88,13 +91,19 @@ class RAIEditHandler:
     def required_formsets(self):
         return {}
 
+    # return a dict of additional formsets that this edit handler requires to be
+    # present outside(!) the main model form. Add the corresponding model
+    # to the dict.
+    def required_additional_formsets(self):
+        return {}
+        
     # return any HTML that needs to be output on the edit page once per edit handler definition.
     # Typically this will be used to define snippets of HTML within <script type="text/x-template"></script> blocks
     # for Javascript code to work with.
     def html_declarations(self):
         return ''
 
-    def bind_to(self, model=None, instance=None, request=None, form=None):
+    def bind_to(self, model=None, instance=None, request=None, form=None, formsets=None):
         if model is None and instance is not None and self.model is None:
             model = instance._meta.model
 
@@ -103,9 +112,16 @@ class RAIEditHandler:
         new.instance = self.instance if instance is None else instance
         new.request = self.request if request is None else request
         new.form = self.form if form is None else form
+        new.formsets = self.formsets if formsets is None else formsets
 
         if new.model is not None:
             new.on_model_bound()
+
+        if new.form is not None:
+            new.on_form_bound()
+
+        if new.formsets is not None:
+            new.on_formsets_bound()
 
         if new.instance is not None:
             new.on_instance_bound()
@@ -113,8 +129,6 @@ class RAIEditHandler:
         if new.request is not None:
             new.on_request_bound()
 
-        if new.form is not None:
-            new.on_form_bound()
 
         return new
 
@@ -130,10 +144,13 @@ class RAIEditHandler:
     def on_form_bound(self):
         pass
 
+    def on_formsets_bound(self):
+        pass
+    
     def __repr__(self):
-        return '<%s with model=%s instance=%s request=%s form=%s>' % (
+        return '<%s with model=%s instance=%s request=%s form=%s formset=%s>' % (
             self.__class__.__name__,
-            self.model, self.instance, self.request, self.form.__class__.__name__)
+            self.model, self.instance, self.request, self.form.__class__.__name__, self.formset.__class__.__name__)
 
     def classes(self):
         """
@@ -208,6 +225,7 @@ class RAIEditHandler:
         """
         return self.__class__.__name__
 
+
 class RAIBaseCompositeEditHandler(RAIEditHandler):
     """
     Abstract class for EditHandlers that manage a set of sub-EditHandlers.
@@ -244,36 +262,50 @@ class RAIBaseCompositeEditHandler(RAIEditHandler):
             formsets.update(handler_class.required_formsets())
         return formsets
 
+    def required_additional_formsets(self):
+        formsets = {}
+        for handler_class in self.children:
+            formsets.update(handler_class.required_additional_formsets())
+        return formsets
+
+    
     def html_declarations(self):
         return mark_safe(''.join([c.html_declarations() for c in self.children]))
 
     def on_model_bound(self):
+
         try:
             self.children = [child.bind_to(model=self.model)
                              for child in self.children]
         except AttributeError:
             self.children = []
-
+            
     def on_instance_bound(self):
         self.children = [child.bind_to(instance=self.instance)
                          for child in self.children]
-
+        
     def on_request_bound(self):
         self.children = [child.bind_to(request=self.request)
                          for child in self.children]
 
-    def on_form_bound(self):
+    def _bind_children_to(self, attr):
         children = []
         for child in self.children:
             if isinstance(child, RAIFieldPanel):
-                if self.form._meta.exclude:
-                    if child.field_name in self.form._meta.exclude:
+                if getattr(self, attr)._meta.exclude:
+                    if child.field_name in getattr(self,attr)._meta.exclude:
                         continue
-                if self.form._meta.fields:
-                    if child.field_name not in self.form._meta.fields:
+                if getattr(self, attr)._meta.fields:
+                    if child.field_name not in getattr(self, attr)._meta.fields:
                         continue
-            children.append(child.bind_to(form=self.form))
-        self.children = children    
+            children.append(child.bind_to(**{attr:getattr(self, attr)}))
+        return children
+        
+    def on_form_bound(self):
+        self.children = self._bind_children_to('form')
+
+    def on_formset_bound(self):
+        self.children = self._bind_children_to('formset')
 
     def on_disable(self, disabled_class):
         self.children = [child.disable(disabled_class)
@@ -301,7 +333,7 @@ class RAIBaseFormEditHandler(RAIBaseCompositeEditHandler):
         
         """
         Construct a form class that has all the fields and formsets named in
-        the children of this edit handler.
+        the children of this edit handler. 
         """
         if not hasattr(self, 'model'):
             raise AttributeError(
@@ -314,18 +346,30 @@ class RAIBaseFormEditHandler(RAIBaseCompositeEditHandler):
                                    RAIAdminModelForm)
         base_form_class = self.base_form_class or model_form_class
 
-        # For reasons I don't understand, the form_class generated above does
-        # not automatically pick up the RAI widgets.
+        formsets = self.required_formsets()
 
         form_class = rai_modelform_factory(
             self.model,
             form_class=base_form_class,
             fields=self.required_fields(),
-            formsets=self.required_formsets(),
+            formsets=formsets,
             widgets=self.widget_overrides())
-
+        
         return form_class
 
+    def get_additional_formset_classes(self):
+        formsets = self.required_additional_formsets()
+        formset_classes = {}
+        for key, formset_spec in formsets.items():
+            model = formset_spec['model']
+            model_form_class = getattr(model, 'base_form_class', RAIAdminModelForm)
+            
+            formset_kwargs = formset_spec.get('formset_kwargs', {})
+            update_if_not_defined(formset_kwargs, 'form', model_form_class)
+            formset_class = modelformset_factory(formset_spec['model'], **formset_kwargs)
+            formset_classes.update( { key: formset_class } )
+        return formset_classes
+    
 class RAIFieldPanel(RAIEditHandler):
     TEMPLATE_VAR = 'field_panel'
 
@@ -437,7 +481,7 @@ class RAIFieldPanel(RAIEditHandler):
         self.bound_field = self.form[self.field_name]
         self.heading = self.bound_field.label
         self.help_text = self.bound_field.help_text
-
+        
     def __repr__(self):
         return "<%s '%s' with model=%s instance=%s request=%s form=%s>" % (
             self.__class__.__name__, self.field_name,
