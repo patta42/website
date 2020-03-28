@@ -1,11 +1,20 @@
-from django.forms import Widget
+from django.forms import Widget, Select
+
+from rai.utils import update_if_not_defined
+
 
 def add_css_class(css_string, css_class):
     css_classes = css_string.split(' ')
-    if not css_class in css_classes:
-        css_classes.append(css_class)
+    try:
+        for cls in css_class:
+            if not cls in css_classes:
+                css_classes.append(cls)
+    except TypeError:
+        if not css_class in css_classes:
+            css_classes.append(css_class)
 
     return ' '.join(css_classes)
+
 def remove_css_class(css_string, css_class):
     css_classes = css_string.split(' ')
     try:
@@ -14,23 +23,8 @@ def remove_css_class(css_string, css_class):
         pass
     return ' '.join(css_classes)
 
-class RAIWidget (Widget):
-    def __init__(self, attrs=None):
-        if attrs is None:
-            attrs = {'class' : 'form-control'}
-        else:
-            attrs = attrs.copy()
-            css_class_str = attrs.pop('class', '')
-            css_classes = css_class_str.split(' ')
-            if 'form-control' not in css_classes and 'form-control-plaintext' not in css_classes:
-                css_classes.append('form-control')
-            attrs.update({'class' : " ".join(css_classes)})
 
-        super().__init__(attrs)
-
-
-        
-        
+class RenderDisabledMixin:
     def render_disabled(self, *args, **kwargs):
         attrs = kwargs.pop('attrs', {})
         
@@ -46,7 +40,27 @@ class RAIWidget (Widget):
         self.attrs['class'] = css_string
         
         return self.render(*args, **kwargs)
-    
+
+
+class RAIWidget (Widget, RenderDisabledMixin):
+    additional_classes = ['form-control']
+    requires_label = False
+    def __init__(self, attrs=None):
+        
+        if attrs is None:
+            attrs = {'class' : 'form-control'}
+        else:
+            attrs = attrs.copy()
+            css_class_str = attrs.pop('class', '')
+            css_classes = css_class_str.split(' ')
+            if 'form-control' not in css_classes and 'form-control-plaintext' not in css_classes:
+                css_classes.append('form-control')
+            attrs.update({'class' : " ".join(css_classes)})
+
+        super().__init__(attrs)
+
+
+
 class RAIInputField(RAIWidget):
     template_name = 'rai/forms/widgets/input.html'
 
@@ -62,10 +76,8 @@ class RAIInputField(RAIWidget):
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         context['widget']['type'] = self.input_type
-        print (context)
 
         return context
-
 
 class RAITextInput(RAIInputField):
     input_type = 'text'
@@ -144,3 +156,98 @@ class RAITextarea(RAIWidget):
         if attrs:
             default_attrs.update(attrs)
         super().__init__(default_attrs)
+
+class RequiredClassesField(RAIInputField):
+    def __init__(self, attrs = None):
+        if attrs is None:
+            new_attrs = {
+                'class':  add_css_class('', self.required_css_classes)
+            }
+        else:
+            new_attrs = attrs.copy()
+            css_class_string = add_css_class(attrs.pop('class', ''), self.required_css_classes)
+            new_attrs.update('class', css_class_string)
+
+        super().__init__(attrs = new_attrs)
+    
+        
+class RAICheckboxInput(RequiredClassesField):
+    required_css_classes = ['custom-control-input']
+    input_type = 'checkbox'
+    template_name = 'rai/forms/widgets/checkbox.html'
+    requires_label = True
+
+
+    def get_context(self, name, value, label, attrs):
+        context = super().get_context(name, value, attrs)
+        context['widget'].update({ 'label' : label})
+        return context
+
+    def render(self, name, value, label = None, attrs=None, renderer=None):
+        """Render the widget as an HTML string."""
+        context = self.get_context(name, value, label, attrs)
+        return self._render(self.template_name, context, renderer)
+
+class RAIRadioInput(RAICheckboxInput):
+    input_type = 'radio'
+
+
+
+# input_type is not added by default to the ChoiceWidget context, but ChoiceWidget
+# cannot be imported. Fix this on every widget that derives from ChoiceWidget
+
+class RAISelect(Select, RenderDisabledMixin):
+    input_type = 'select'
+    template_name = 'rai/forms/widgets/select.html'
+    option_template_name = 'django/forms/widgets/select_option.html'
+    required_css_classes = ['custom-select']
+    required_attributes = {}
+    default_attributes = {}
+    add_id_index = False
+    checked_attribute = {'selected': True}
+    option_inherits_attrs = False
+
+    def __init__(self, attrs = None):
+        if attrs is None:
+            new_attrs = {
+                'class':  add_css_class('', self.required_css_classes)
+            }
+        else:
+            new_attrs = attrs.copy()
+            css_class_string = add_css_class(attrs.pop('class', ''), self.required_css_classes)
+            new_attrs.update('class', css_class_string)
+            
+        for attribute, value in self.required_attributes.items():
+            new_attrs.update({ attribute: value })
+        for attribute, default in self.default_attributes.items():
+            new_attrs = update_if_not_defined(new_attrs, attribute, default)
+            
+        super().__init__(attrs = new_attrs)
+        
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context['widget']['type'] = self.input_type
+        return context
+
+    # copied from django
+
+
+        
+class RAISelectMultiple(RAISelect):
+    allow_multiple_selected = True
+    required_attributes = { 'multiple' : True }
+
+
+
+# This is the default context set by django's Widget
+    
+    # context = {}
+    #     context['widget'] = {
+    #         'name': name,
+    #         'is_hidden': self.is_hidden,
+    #         'required': self.is_required,
+    #         'value': self.format_value(value),
+    #         'attrs': self.build_attrs(self.attrs, attrs),
+    #         'template_name': self.template_name,
+    #     }
+    #     return context
