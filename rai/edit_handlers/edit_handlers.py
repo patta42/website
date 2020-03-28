@@ -332,35 +332,47 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
     # build the formset. Do this in on_model_bound()
 
     def on_model_bound(self):
-        # set self.Formset_Class. It is not yet required to initiate a class,
-        # we might not have a form yet
+        # If adding is allowed, we show (at least) one additional form
+        kwargs = self.get_full_formset_kwargs()
+        if self.allow_add:
+            extra = kwargs.pop('extra', 1)
+            if extra is None or extra == 0:
+                extra = 1
+            kwargs.update({'extra': extra})
+
+        # set self.Formset_Class
         self.Formset_Class = forms.modelformset_factory(
             self.model,
             formfield_callback = formfield_for_dbfield,
-            **self.get_full_formset_kwargs()
+            **kwargs
         )
+        # since this might be the only call to a bind_to method (most likely
+        # if we want to show an empty form) set self.formset to an initiated
+        # version of this formset. use self.name as a prefix
+        #
 
-        # bind the children to the model
-                
-        self.children = [
-            child.bind_to(model = self.model) for child in self.children
-        ]
+        self.formset = self.Formset_Class(prefix = self.name, queryset = self.model.objects.none())
 
-
-
-    # if the edit_handler is bound to a form, the formset for the will not be included 
-    # since it has been kicked out by (wagtail's adaption of) modelform_factory. Just include it
-    
-    def on_form_bound(self):
-        
-        self.formset = self.Formset_Class(queryset = self.model.objects.none())
-        self.form.formsets.update({
-            self.name : self.formset
-        })
-        
-        # bind children to formset_forms:
+        # bind the children 
         self.bind_formset_forms()
 
+    def get_form_class(self):
+        print('IN IQP\'s get_formclass')
+        form = super().get_formclass()
+        form.formsets[self.name] = self.FormsetClass
+        return form
+
+    def on_form_bound(self):
+        # what shall we do with a form? We use formsets here
+        
+        # self.formset = self.Formset_Class(queryset = self.model.objects.none())
+        # self.form.formsets.update({
+        #     self.name : self.formset
+        # })
+        
+        # # bind children to formset_forms:
+        # self.bind_formset_forms()
+        pass
 
 
     # shorthand to bind the children to the forms of  the formset
@@ -379,27 +391,37 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
 
 
         
-    # If an instance is bound, we assume we have a form already. Otherwise, we would have to
-    # check if a form is available and an instance and... to complicated for now
-    #
-    # Rebuild the formset, this time with a query, attach it to the form, and that's it
+    # If an instance is bound, we assume we have a Formset_Class already. 
+    # Rebuild the formset, this time with a query.
     
     def on_instance_bound(self):
+        # without an instance and adding allowed, the extras parameter was ignored if it was 0 or None
+        # Now, it is fine to show just an add-button but no empty form. For this, we have to re-buid
+        # the class
+        
+        self.Formset_Class = forms.modelformset_factory(
+            self.model,
+            formfield_callback = formfield_for_dbfield,
+            **self.get_full_formset_kwargs()
+        )
+        
         qs = self.query_callback(self.instance)
-        self.formset = self.Formset_Class(queryset = qs )
+        self.formset = self.Formset_Class( queryset = qs, prefix = self.name )
         self.bind_formset_forms()
 
 
 
         
-    def bind_to(self, model=None, form=None, instance=None, request=None):
+    def bind_to(self, model=None, form=None, instance=None, request=None, formsets = None):
 
         new = self.clone()
         
         # don't use the parent's model 
         new.model = self.model 
-
-        new.form = self.form if form is None else form
+        # don't use the parent's form
+        new.form = self.form 
+        # don't use parent formsets
+        new.formsets = self.formsets
         
         new.instance = self.instance if instance is None else instance
         new.request = self.request if request is None else request
@@ -409,6 +431,9 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
 
         if new.form is not None:
             new.on_form_bound()
+
+        if new.formsets is not None:
+            new.on_formsets_bound()
             
         if new.instance is not None:
             new.on_instance_bound()
@@ -439,7 +464,6 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
         return {
             'can_order':self.can_order,
             'can_delete':self.can_delete,
-#            'can_add':self.can_add,
             'extra':self.extra,
             'max_num' : self.max_num,
             'validate_max' : self.validate_max,
@@ -458,15 +482,23 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
         return child_edit_handler.bind_to(model=self.model)
 
     def required_formsets(self):
-        child_edit_handler = self.get_child_edit_handler()
-        formsets = {
-            self.name: {
-                'fields': child_edit_handler.required_fields(),
-                'widgets': child_edit_handler.widget_overrides(),
-            }
-        }
-        return formsets
+        # We don't need any formsets in the parent form
+        # child_edit_handler = self.get_child_edit_handler()
+        # formsets = {
+        #     self.name: {
+        #         'fields': child_edit_handler.required_fields(),
+        #         'widgets': child_edit_handler.widget_overrides(),
+        #         'model' : self.model
+        #     }
+        # }
+        # return formsets
+        return {}
 
+    def required_additional_formsets(self):
+        return { self.name: {
+            'model' : self.model,
+            'formset_kwargs' : self.get_formset_kwargs()
+        }}
     def html_declarations(self):
         return self.get_child_edit_handler().html_declarations()
     
