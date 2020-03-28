@@ -1,4 +1,4 @@
-{% load static %}
+{% load static rai_tags %}
 <html>
   <head>
     <link rel="stylesheet" href="{% static 'css/admin/fontspec.css' %}">
@@ -14,8 +14,21 @@
   <body>
     <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
       <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">{% include 'rai/sidebar/rubionlogo.html' %}</a>
-      <div class="w-100">
-	{% block messages %}{% endblock %}
+      <div class="w-100 alert-container">
+	{% block messages %}
+	{% if messages %}
+	{% for message in messages %}
+	<div role="alert" class="alert-dismissible fade show alert {% if message.tags %}alert-{{ message.tags|tags2class }}"{% endif %}>
+	  {{ message }}
+	  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+	    <span aria-hidden="true">&times;</span>
+	  </button>
+	</div>
+	{% endfor %}
+	
+
+	{% endif %}
+	{% endblock %}
       </div>
       <ul class="navbar-nav px-3">
 	<li class="nav-item text-nowrap">
