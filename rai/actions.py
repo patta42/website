@@ -132,7 +132,7 @@ class InactivateAction(SpecificAction):
 
 class DeleteAction(SpecificAction):
     label = _l('Delete')
-    icon = 'thrash'
+    icon = 'trash'
     icon_font = 'fas'
     action_identifier = 'delete'
     text_type = 'danger'
