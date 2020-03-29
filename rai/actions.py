@@ -33,8 +33,8 @@ class RAIAction:
         ]
         return urls
 
-    def get_href(self, *args):
-        return reverse(self.get_url_name(), *args)
+    def get_href(self, *args, **kwargs):
+        return reverse(self.get_url_name(), args = args )
     
         
 
@@ -55,6 +55,7 @@ class SpecificAction(ModelAction):
 class ListAction(ModelAction):
     label = _l('List')
     icon = 'list'
+    icon_font = "fas"
     action_identifier = 'list'
 
     list_item_template = None
@@ -118,13 +119,31 @@ class EditAction(SpecificAction):
     
 class InactivateAction(SpecificAction):
     label = _l('Inactivate')
-    icon = 'power-off'
+    icon = 'ban'
     icon_font = 'fas'
     action_identifier = 'inactivate'
+    text_type = 'danger'
 
     def get_view(self):
-        return self.raiadmin.inactivateview.as_view()
+        return self.raiadmin.inactivateview.as_view(
+            raiadmin = self.raiadmin,
+            active_action = self
+        )
 
+class DeleteAction(SpecificAction):
+    label = _l('Delete')
+    icon = 'thrash'
+    icon_font = 'fas'
+    action_identifier = 'delete'
+    text_type = 'danger'
+
+    def get_view(self):
+        return self.raiadmin.deleteview.as_view(
+            raiadmin = self.raiadmin,
+            active_action = self
+        )   
+        
+    
 class ListSettingsAction(ModelAction):
     label = _l('adjust view')
     icon = 'cogs'
