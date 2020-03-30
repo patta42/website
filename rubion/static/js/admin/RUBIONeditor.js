@@ -334,7 +334,64 @@ $R.editing = {
 		    self.assignToList($(this));
 		})
 	    });
+	    self.$searchSelected.keyup( function() {
+		self.searchSelected();
+	    })
+	    self.$searchSelected.keypress( function(evt){
+		if (evt.which == 13){
+		    event.preventDefault();
+		    if (self.$searchSelected.val().length > 2){
+			self.$selectedContainer.
+			    find('li:visible input[type="checkbox"]').
+			    prop('checked', false).
+			    trigger('change');
+			self.$searchSelected.val('');
+			self.$searchSelected.trigger('keyup');
+		    }
+		    
+		}
+	    })
+	    self.$searchUnselected.keypress( function(evt){
+		if (evt.which == 13){
+		    event.preventDefault();
+		    if (self.$searchUnselected.val().length > 2){
+			self.$unselectedContainer.
+			    find('li:visible input[type="checkbox"]').
+			    prop('checked', true).
+			    trigger('change');
+			self.$searchUnselected.val('');
+			self.$searchUnselected.trigger('keyup');
+		    }
+		    
+		}
+	    })
 
+	    self.$searchUnselected.keyup( function() {
+		self.searchUnselected();
+	    })
+	    self.searchUnselected = function(){
+		self.search(self.$searchUnselected.val(), self.$unselectedContainer);
+	    }
+	    self.searchSelected = function(){
+		self.search(self.$searchSelected.val(), self.$selectedContainer);
+	    }
+
+	    self.search = function(txt, $container){
+		if (txt.length < 3){
+		    $container.find('li').show().unmark();
+		} else {
+		    $container.find('li').each( function(){
+			$this = $(this);
+			$this.hide().unmark({
+			    'done' : function(){
+				$this.mark(txt, { 'className' : 'highlighted' });
+			    }
+			});
+			$('.highlighted').parents('li').first().show();
+		    })
+		}
+
+	    }
 	    self.assignToList = function($checkbox){
 		var $box = $checkbox.parents('li').first();
 		var $target = $checkbox.is(':checked') ? self.$selectedContainer : self.$unselectedContainer;
