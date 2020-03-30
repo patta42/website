@@ -312,12 +312,50 @@ $R.editing = {
 	}
 	return cls;
     })(),
+    RAIMultipleSelectListBoxesWidget : (function(){
+	var cls = function($elem){
+	    self = this;
+	    self.$elem = $elem;
+	    self.$searchUnselected = $elem.find('.search-unselected').first();
+	    self.$searchSelected = $elem.find('.search-selected').first();
+	    self.$unselectedContainer = $elem.find('.unselected ul').first();
+	    self.$selectedContainer = $elem.find('.selected ul').first();
+	    self.$items = self.$elem.find('input[type="checkbox"]');
+	    self.$items.each(function(){
+		$this = $(this)
+		var $box = $this.parents('li').first();
+
+		if ($this.is(':checked')){
+		    $box.appendTo(self.$selectedContainer);
+		} else {
+		    $box.appendTo(self.$unselectedContainer);
+		}
+		$this.change(function(){
+		    self.assignToList($(this));
+		})
+	    });
+
+	    self.assignToList = function($checkbox){
+		var $box = $checkbox.parents('li').first();
+		var $target = $checkbox.is(':checked') ? self.$selectedContainer : self.$unselectedContainer;
+		$box.hide(300, function(){
+		    $target.append($box);
+		    $box.show(300);
+		})
+	    
+	    }
+	}
+	return cls;
+    })(),
 }
 
 $(document).ready(
     function(){
 	$('.inline-panel').each( function() {
 	    new $R.editing.RAIInlinePanel($(this));
-	})
+	});
+	$('.multiple-input-selection-list').each( function() {
+	    new $R.editing.RAIMultipleSelectListBoxesWidget($(this));
+	});
     }
 )
