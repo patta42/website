@@ -1,6 +1,6 @@
 from pprint import pprint
 
-from django.forms import Widget, Select
+from django.forms import Widget, Select, CheckboxSelectMultiple
 
 from rai.utils import update_if_not_defined
 
@@ -227,8 +227,13 @@ class RAICheckboxInput(RequiredClassesField):
             if attrs is None:
                 attrs = {}
             attrs['checked'] = True
-        context = super().get_context(name, value, attrs)            
-        context['widget'].update({ 'label' : label})
+        context = super().get_context(name, value, attrs)
+        # if we have not label in the args, try to fetch it from widget.attrs
+        if not label:
+            label = context['widget']['attrs'].get('label', None)
+        # and update the context only if it does not already have a label-key (should not happen)
+        context['widget'] = update_if_not_defined(context['widget'], 'label', label)
+        
         return context
 
     def render(self, name, value, label = None, attrs=None, renderer=None):
@@ -283,7 +288,15 @@ class RAISelectMultiple(RAISelect):
     allow_multiple_selected = True
     required_attributes = { 'multiple' : True }
 
+class RAISelectMultipleSelectionLists(CheckboxSelectMultiple):
+    template_name = 'rai/forms/widgets/select-multiple-selection-lists.html'
+    option_template_name = 'rai/forms/widgets/checkbox-option-select-multiple-lists.html'
+    option_content_template = 'rai/forms/widgets/checkoption-option-select-multiple-item.html'
 
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        option['content_template'] = self.option_content_template
+        return option
 
 # This is the default context set by django's Widget
     
