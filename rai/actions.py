@@ -21,9 +21,11 @@ class RAIAction:
 
     def get_url_name(self):
         opts = self.raiadmin.model._meta
+        app = getattr(self, 'app_label', opts.app_label)
+        model = getattr(self, 'model_label', opts.model_name)
         return "rai_{app}_{model}_{identifier}".format(
-            app = opts.app_label, 
-            model = opts.model_name,
+            app = app, 
+            model = model, 
             identifier = self.action_identifier
         )
     
