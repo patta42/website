@@ -1,0 +1,41 @@
+{% extends 'rai/views/default/shared/form-view.html' %}
+{% load rai_tags i18n %}
+
+{% block title_action %}{% trans "Delete" %}:{% endblock %}
+{% block heading %}{{model_name}}: {{ object }}{% endblock %}
+{% block formcontent %}
+
+<form action="." method="POST" id="{{ main_form_id|default:"main_form" }}" novalidate>
+  {% csrf_token %}
+  <div class="card ml-5 mt-5" style="max-width:40rem">
+    <div class="card-header text-white bg-danger">
+      {% trans "confirmation" %}
+    </div>
+    <div class="card-body">
+      {% block confirmationbox_content %}
+      <h5 class="card-title">{% trans "Delete" %} {{model_name}}: {{object}}</h5>
+      <p class="card-text">{% trans "Please check the checkbox below to confirm deleting this item" %}</p>
+      <div class="card border-danger p-4 mb-4">
+	{% for field in form %}
+	{{ field }}
+	{% if field.errors %}
+	<div class="error-list">
+	{% for error in field.errors %}
+	<span class="text-danger mr-2">{{ error }}</span>
+	{% endfor %}
+	</div>
+	{% endif %}
+      {% endfor %}
+      {% endblock %}
+      </div>
+      <div class="d-flex flex-row-reverse">
+	<div class="button-group mt-2">
+	  <button class="btn btn-danger-secondary" type"=submit">{% trans "Delete" %}</button>
+	  <a href="{{cancel_url}}" class="btn btn-success">{% trans "Cancel" %}</a>
+	</div>
+      </div>
+    </div>
+
+
+</form>
+{% endblock %}
