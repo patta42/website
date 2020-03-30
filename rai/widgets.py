@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from django.forms import Widget, Select
 
 from rai.utils import update_if_not_defined
@@ -59,6 +61,17 @@ class RAIWidget (Widget, RenderDisabledMixin):
 
         super().__init__(attrs)
 
+    def render_with_errors(self, name, value, attrs = None, renderer = None, errors = []):
+        print('render with errors!')
+        context = super().get_context(name, value, attrs)
+        attrs = context['widget'].pop('attrs', {})
+        css_classes = attrs.pop('class', '')
+        css_classes = add_css_class(css_classes, ['is-invalid'])
+        attrs.update({'class': css_classes})
+        context['widget'].update({'errors': errors, 'attrs':attrs})
+        template = getattr(self, 'error_template_name', self.template_name)
+        pprint(context)
+        return self._render(template, context, renderer)
 
 
 class RAIInputField(RAIWidget):
@@ -166,10 +179,12 @@ class RequiredClassesField(RAIInputField):
         else:
             new_attrs = attrs.copy()
             css_class_string = add_css_class(attrs.pop('class', ''), self.required_css_classes)
-            new_attrs.update('class', css_class_string)
+            new_attrs.update({'class' : css_class_string})
 
         super().__init__(attrs = new_attrs)
-    
+
+def boolean_check(v):
+    return not (v is False or v is None or v == '')
         
 class RAICheckboxInput(RequiredClassesField):
     required_css_classes = ['custom-control-input']
@@ -177,9 +192,42 @@ class RAICheckboxInput(RequiredClassesField):
     template_name = 'rai/forms/widgets/checkbox.html'
     requires_label = True
 
+    def __init__(self, attrs = None, check_test = None):
+        super().__init__(attrs)
+        # check_test is a callable that takes a value and returns True
+        # if the checkbox should be checked for that value.
+        self.check_test = boolean_check if check_test is None else check_test
 
+    def format_value(self, value):
+        """Only return the 'value' attribute if value isn't empty."""
+        if value is True or value is False or value is None or value == '':
+            return
+        return str(value)
+
+    def value_from_datadict(self, data, files, name):
+        if name not in data:
+            # A missing value means False because HTML form submission does not
+            # send results for unselected checkboxes.
+            return False
+        value = data.get(name)
+        # Translate true and false strings to boolean values.
+        values = {'true': True, 'false': False}
+        if isinstance(value, str):
+            value = values.get(value.lower(), value)
+        return bool(value)
+
+    def value_omitted_from_data(self, data, files, name):
+        # HTML checkboxes don't appear in POST data if not checked, so it's
+        # never known if the value is actually omitted.
+        return False
+
+    
     def get_context(self, name, value, label, attrs):
-        context = super().get_context(name, value, attrs)
+        if self.check_test(value):
+            if attrs is None:
+                attrs = {}
+            attrs['checked'] = True
+        context = super().get_context(name, value, attrs)            
         context['widget'].update({ 'label' : label})
         return context
 
@@ -230,8 +278,6 @@ class RAISelect(Select, RenderDisabledMixin):
         return context
 
     # copied from django
-
-
         
 class RAISelectMultiple(RAISelect):
     allow_multiple_selected = True
