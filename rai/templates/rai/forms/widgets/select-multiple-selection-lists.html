@@ -1,0 +1,32 @@
+{% load i18n %}
+<div class="multiple-input-selection-list d-flex w-50">
+  <div class="w-50 border-secondary">
+    <h5>{% trans "available" %}</h5>
+    <div class="form-group">
+      <div class="input-group mb-3">
+	<div class="input-group-prepend">
+	  <span class="input-group-text"><i class="fas fa-search"></i></span>
+	</div>
+	<input type="text" class="search-unselected form-control" placeholder="{% trans "Search unselected" %}" />
+      </div>
+    </div>
+    <div class="selection-list unselected">
+      {% include "rai/forms/widgets/multiple-input-selection-lists.html" with select_checked=False %}
+    </div>
+  </div>
+  <div class="w-50 border-secondary">
+    <h5>{% trans "selected" %}</h5>
+    <div class="form-group">
+      <div class="input-group mb-3">
+	<div class="input-group-prepend">
+	  <span class="input-group-text"><i class="fas fa-search"></i></span>
+	</div>
+	<input type="text" class="search-selected form-control" placeholder="{% trans "Search selected" %}"/>
+      </div>
+    </div>
+    <div class="selection-list selected">
+      {% include "rai/forms/widgets/multiple-input-selection-lists.html" with select_checked=True %}
+    </div>
+  </div>
+  
+</div>
