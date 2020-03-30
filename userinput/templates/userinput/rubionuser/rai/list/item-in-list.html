@@ -1,0 +1,52 @@
+{% extends 'rai/views/default/default-list-item.html' %}
+{% load i18n %}
+
+{% block title %}
+{{object.last_name}},
+  {% if object.academic_title %}{{object.get_academic_title_display}} {% endif %}
+{{object.first_name}}
+{% endblock %}
+{% block sortfields %}{% trans "Name" %},{% trans "first name"%}|{%trans "Workgroup"%}{% endblock %}
+{% block title_sortname %}{% trans "Name" %},{% trans "first name"%}{% endblock %}
+{% block additional_content %}
+  {% if object.email %}
+  <p class="mb-1">
+    <i class="fas fa-envelope"></i> {{object.email}}
+  </p>
+  {% endif %}
+  
+  {% if object.phone %}
+  <p class="mb-1" data-rubion-searchable="true">
+    <i class="fas fa-phone"></i> {{object.phone}}
+  </p>
+  {% endif %}
+<p class="mb-1"><small data-rubion-searchable="true" data-rubion-sortable="{%trans "Workgroup" %}">{{object.get_workgroup}}</small></p>
+<p class="badges">
+{% if not object.is_validated %}
+<span class="badge badge-warning mr-1">
+  <a href="help:rubionuser:not_validated" data-toggle="modal" data-target="#helpModal">
+    {% trans "not validated" %}
+    <i class="fas fa-question-circle"></i>
+  </a>
+</span>
+
+{% endif %}
+{% if object.needs_key and not object.key_number %}
+<span class="badge badge-danger mr-1">
+  <a data-toggle="modal" data-target="#helpModal" href="help::rubionuser:key_requiered">
+    {% trans "key required" %}
+    <i class="fas fa-question-circle"></i>
+  </a>
+</span>
+{% endif %}
+</p>
+
+  {% if last_revision %}
+  <small class="text-muted">
+    {% trans "Last update:" %}
+    {{last_revision.created_at}}
+    {% trans "by" %}
+    {{ last_revision.user.last_name }}, {{ last_revision.user.first_name }}
+  </small>
+  {% endif %}
+{% endblock %}
