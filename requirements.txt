@@ -9,3 +9,4 @@ PyPDF2
 xlsxwriter
 holidays
 django-cron
+markdown
