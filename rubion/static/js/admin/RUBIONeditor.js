@@ -314,7 +314,7 @@ $R.editing = {
     })(),
     RAIMultipleSelectListBoxesWidget : (function(){
 	var cls = function($elem){
-	    self = this;
+	    var self = this;
 	    self.$elem = $elem;
 	    self.$searchUnselected = $elem.find('.search-unselected').first();
 	    self.$searchSelected = $elem.find('.search-selected').first();
@@ -404,15 +404,206 @@ $R.editing = {
 	}
 	return cls;
     })(),
+    RAIMarkdownCommand: ( function (){
+	    var cls = function( pre, post, newline, defaultText ) {
+		var self = this;
+		self.pre = pre;
+		self.post = post;
+		self.newline = newline;
+		
+		if (defaultText === undefined){
+		    self.defaultText = "";
+		}
+		else {
+		    self.defaultText = defaultText;
+		}
+		self.newlineCheck = function(start, text){
+		    if (start == 0){
+			return ''
+		    }
+
+		    if (text.length == 1){
+			if (text == '\n'){
+			    return ''
+			} else {
+			    return '\n\n';
+			}
+		    } else {
+			var nl = '';
+			if (text.slice(-1) != '\n'){
+			    return '\n\n';
+			} else {
+			    if (text.slice(-2,-1) == '\n'){
+				return ''
+			    } else {
+				return '\n'
+			    }
+			}
+			
+		    }
+		}
+		self.execute = function( $elem ){
+
+		    // Get start amnd end of selection
+		    var elem = $elem[0];
+		    var start = elem.selectionStart;
+		    var end = elem.selectionEnd;
+		    if (end < start){
+			start = end;
+			end = elem.selectionStart;
+		    }
+
+		    // get current text
+		    var val = $elem.val()
+
+		    // split into pre and post part
+		    var before = val.slice(0, start);
+		    var after = val.slice(end);
+
+		    // get selected text, fill with default if empty
+		    var selection = end > start ? val.slice(start, end) : self.defaultText;
+		    selection = selection.trim().length == 0 ? self.defaultText : selection;
+
+
+		    // set up first part of markdown command
+		    var fullPre = (
+			newline == "pre" || newline == "both"
+			    ? self.newlineCheck(start, before) : ''
+		    ) + self.pre;
+
+		    // set up complete text to insert
+		    var insert =  fullPre + selection + self.post
+			+ (newline=="post" || newline =="both" ? '\n\n' : '');
+
+
+		    // insert
+		    $elem.val(before+insert+after);
+
+		    elem.focus();
+		    elem.selectionStart = start + fullPre.length;
+		    elem.selectionEnd = elem.selectionStart+selection.length;
+		}
+	    }
+	    return cls;
+	})(),
+    RAIMarkdownEditor : (
+	function() {
+	    var cls = function($elem){
+		var self = this;
+		self.identifier = 'markdown-editor'
+		var $d = (id) => (self.identifier+'-'+id);
+		var $c = (id) => ($('.'+self.identifier+'-'+id));
+		var $textarea = $($elem.data($d('controls')));
+		self.url = $elem.data($d('process'));
+		self.element_id = $textarea.attr('id');
+		var $$ = (id) => ($('#'+self.element_id+id));
+		// set up components
+		self.$components = {
+		    'textarea' : $textarea,
+		    'buttons' : $c('action'),
+		    'textareaContainer' : $$('TextareaContainer'),
+		    'previewBtn' : $$('TabPreviewLabel'),
+		    'previewContainer' : $$('previewContainer'),
+		    'spinnerContainer' : $$('spinnerContainer'),
+		    'previewOuter' : $$('previewOuter'),
+		    'spinner' : $$('Spinner').parent('span')
+		};
+
+		// move textarea
+
+		self.$components.textareaContainer.append(self.$components.textarea);
+
+		// smaller font for textarea
+		self.$components.textareaContainer.css('font-size', 'smaller');
+		// copy height and padding from textarea to preview
+		self.$components.previewOuter.css({
+		    'position': 'relative',
+		    'overflow':'auto'
+		})
+		    .height(self.$components.textareaContainer.height());
+		self.$components.previewContainer
+		    .css({
+			'padding-left': self.$components.textarea.css('padding-left'),
+			'padding-right': self.$components.textarea.css('padding-right'),
+			'padding-top': self.$components.textarea.css('padding-top'),
+			'padding-bottom': self.$components.textarea.css('padding-bottom'),
+		    });
+		
+		// style spinner container
+		self.$components.spinnerContainer.css({
+		    'position': 'absolute',
+		    'top' : 0, 'left' : 0,
+		    'height': '100%', 'width':'100%',
+		    'background-color':'rgba(0,0,0,.25)',
+		    'font-size':'600%', 'color':'rgba(255,255,255,.5)',
+		});
+
+		self.showSpinner = function(){
+		    self.$components.spinnerContainer.css('width','100%');
+		    self.$components.spinner.show();
+		}
+		self.hideSpinner = function(){
+		    self.$components.spinner.hide();
+		    self.$components.spinnerContainer.css('width', 0);
+		}
+		self.render = function(){
+		    $R.post(self.url, {
+			beforeSend: self.showSpinner,
+			data : {'markdown': self.$components.textarea.val()}
+		    }).done(
+			function( data ) {
+			    self.$components.previewContainer.html(data.content);
+			    self.hideSpinner();
+			}
+		    ).fail(
+			function( data ) {
+			    console.log(data);
+			}
+		    )
+		}
+		self.$components.previewBtn.on('shown.bs.tab', function(){
+		    self.render();
+		})
+		self.$components.buttons.each(
+		    function(){
+			var button = $(this);
+			var bind_to = 'insertMarkdown'
+			if (button.data($d('bind_to')) !== undefined){
+			    bind_to = button.data($d('bind_to'));
+			}
+			button.click(function(evt){self[bind_to](this, evt)})
+		    }
+		)
+		self.insertMarkdown = function(button, evt){
+		    $button = $(button);
+		    var command = new $R.editing.RAIMarkdownCommand(
+			$button.data($d('pre')),
+			$button.data($d('post')),
+			$button.data($d('newline')),
+			$button.data($d('default')),
+		    );
+		    command.execute(self.$components.textarea);
+		}
+		    
+		self.render()
+
+	    }
+	    return cls;
+    })(),
 }
 
+var me = {}
 $(document).ready(
     function(){
+	
 	$('.inline-panel').each( function() {
-	    new $R.editing.RAIInlinePanel($(this));
+	    me.foo = new $R.editing.RAIInlinePanel($(this));
 	});
 	$('.multiple-input-selection-list').each( function() {
-	    new $R.editing.RAIMultipleSelectListBoxesWidget($(this));
+	    me.bar = new $R.editing.RAIMultipleSelectListBoxesWidget($(this));
 	});
+	$('.markdown-editor').each(function(){
+	    me.baz = new $R.editing.RAIMarkdownEditor($(this));
+	})
     }
 )
