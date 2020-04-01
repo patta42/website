@@ -1,0 +1,27 @@
+{# the markdown widget #}
+
+{# the bare textarea first. has to be positioned in the UI by JS #}
+<div>
+  <textarea {% if widget.required %}required {% endif %} name="{{widget.name}}"{% for attr,attrvalue in widget.attrs.items %}{% if attrvalue is not False %} {{attr}}{% if attrvalue is not True %}="{{attrvalue}}"{% endif %}{% endif %}{% endfor %}>{{widget.value}}</textarea>
+</div>
+
+<div class="markdown-editor" data-markdown-editor-process="{% url "rai_markdown_mardown2html" %}" data-markdown-editor-controls="#{{widget.attrs.id}}">
+  {% include 'rai/markdown/widgets/editor-menu.html' %}
+  
+  <div class="tab-content" id="{{widget.attrs.id}}TabContent">
+    <div class="tab-pane fade show active" id="{{widget.attrs.id}}TabEditor" role="tabpanel" aria-labelledby="{{widget.attrs.id}}TabEditorLabel" class="markdown-editor-container">
+      
+      <div class="markdown-editor-textarea-container" id="{{widget.attrs.id}}TextareaContainer"></div>
+    </div>
+    <div class="tab-pane fade" id="{{widget.attrs.id}}TabPreview" role="tabpanel" aria-labelledby="{{widget.attrs.id}}TabPreviewLabel">
+      <div class="markdown-editor-preview-outer border" id="{{widget.attrs.id}}previewOuter">
+	<div class="markdown-editor-preview-spinner-container d-flex justify-content-center align-items-center" id="{{widget.attrs.id}}spinnerContainer">
+	  <span><i class="fas fa-cog fa-spin" id="{{widget.attrs.id}}Spinner"></i></span>
+	</div>
+      
+	<div class="markdown-editor-preview" id="{{widget.attrs.id}}previewContainer">Some preview here!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
