@@ -1,0 +1,29 @@
+<div class="markdown-editor-menu d-flex justify-content-between pl-2 pt-1" style="background-color:rgba(0,0,0,.0675)">
+  {# tabs #}
+  <ul class="markdown-editor-tabs nav nav-tabs" role="tablist">
+    <li class="nav-bar-item" >
+      <a href="#{{widget.attrs.id}}TabEditor" id="{{widget.attrs.id}}TabEditorLabel" aria-controls="{{widget.attrs.id}}TabEditor" class="nav-link active" aria-selected="true" data-toggle="tab">Bearbeiten</a>
+    </li>
+    <li class="nav-bar-item">
+      <a href="#{{widget.attrs.id}}TabPreview" aria-controls="{{widget.attrs.id}}TabPreview" class="nav-link" id="{{widget.attrs.id}}TabPreviewLabel" aria-selected="false" data-toggle="tab">Vorschau</a>
+    </li>
+    
+  </ul>
+  {# end tabs #}
+  {# buttons #}
+  <div class="markdown-editor-actions d-flex ">
+    <div class="btn-toolbar" role="group">
+      {% for key, feature in widget.features.items %}
+      <button class="btn markdown-editor-action" type="button" role="button"{% for ckey, cval in feature.command.items %} data-markdown-editor-{{ckey}}="{{cval}}"{%endfor%}>
+	<i class="{{feature.icon.font}} fa-{{feature.icon.icon}}"></i>
+      </button>
+      {% endfor %}
+    </div>
+    <div class="btn-toolbar ml-2" role="group">
+      <a href="help::rai:markdown" class="btn" role="button" type="button">
+	<i class="fas fa-question-circle"></i>
+      </a>
+    </div>
+  </div>
+  {# end buttons #}
+</div>
