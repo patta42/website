@@ -1,4 +1,4 @@
-{% load static rai_tags %}
+{% load static rai_tags rai_help %}
 <html>
   <head>
     <link rel="stylesheet" href="{% static 'css/admin/fontspec.css' %}">
@@ -11,10 +11,10 @@
     <script src="{% static 'js/admin/RUBIONtail.js' %}"></script>
     {% block additional_css %}{% endblock %}
   </head>
-  <body>
+  <body data-rai-help-uri="{% help_uri %}">
     <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
       <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">{% include 'rai/sidebar/rubionlogo.html' %}</a>
-      <div class="w-100 alert-container">
+      <div class="w-100 alert-container" id="alertContainer">
 	{% block messages %}
 	{% if messages %}
 	{% for message in messages %}
@@ -69,7 +69,10 @@
 	</main>
       </div>
     </div>
-    {% block modals %}{% endblock %} 
+    {% block modals %}
+    {# {% include 'rai/help/help_modal.html' %} #}
+    {{ help_modal }}
+    {% endblock %} 
     {% block additional_js %}{% endblock %}
   </body>
 </html>
