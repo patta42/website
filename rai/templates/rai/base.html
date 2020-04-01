@@ -70,8 +70,7 @@
       </div>
     </div>
     {% block modals %}
-    {# {% include 'rai/help/help_modal.html' %} #}
-    {{ help_modal }}
+    {% include 'rai/help/help_modal.html' %}
     {% endblock %} 
     {% block additional_js %}{% endblock %}
   </body>
