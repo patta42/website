@@ -1,10 +1,12 @@
+from pprint import pprint
+
 from django.urls import resolve, reverse
 from django.http import QueryDict, HttpResponseForbidden
 from django.template.loader import render_to_string
 from django.views.generic import TemplateView
 
 from rai.models import ListFilterSettings
-
+from rai.markdown.widgets import RAIMarkdownWidget
 import re
 
 from wagtail.core import hooks
@@ -14,6 +16,23 @@ class RAIView(TemplateView):
     A generic view for RAI which implements rendering the admin menu.
     Does *not* require a RAIAdmin definition
     """
+    media = {
+        'css' : [ 'css/admin/edit_handlers.css'],
+        'js' : [
+            'js/admin/RUBIONeditor.js',
+            'js/admin/third-party/mark.js-8.11.1/jquery.mark.min.js',
+            'js/admin/third-party/moment/moment.min.js',
+            'js/admin/third-party/tempus-dominus/tempusdominus-bootstrap-4.min.js',
+            'js/admin/views/list.js'       
+            
+        ]
+    }
+
+    inline_media = {
+        'js'  : [],
+        'css' : []
+    }
+
     def get_main_admin_menu(self):
         items = []
         for fn in hooks.get_hooks('rai_menu_group'):
@@ -39,13 +58,24 @@ class RAIView(TemplateView):
                 'items' : items
             }
         )
+    def get_help_editor(self):
+        widget = RAIMarkdownWidget({}, attrs = {
+            'id' : 'id_helpMarkdownEditor'
+        })
+        return widget.render('elpMarkdownEditor', '', {})
     
     def get_context_data(self, **kwargs):
         """
         adds the main admin menu to the Context object
         """
         context = super().get_context_data(**kwargs)
-        context['main_admin_menu'] = self.get_main_admin_menu()
+        
+        context.update({
+            'media' : self.media,
+            'inline_media' : self.inline_media,
+            'main_admin_menu' : self.get_main_admin_menu(),
+            'help_editor' : self.get_help_editor(),
+        })
         return context
 
 
@@ -60,28 +90,8 @@ class RAIAdminView(RAIView):
     
     raiadmin = None
     active_action = None
-    media = {
-        'js'  : [],
-        'css' : []
-    }
-    inline_media = {
-        'js'  : [],
-        'css' : []
-    }
 
-    def get_context_data(self, **kwargs):
-        """
-        adds the media to the Context object
-        in 'media', file names are stored which should be inserted in the template via {% static %}
-        in 'inline_media', inline definitions are stored which should be enclosed in <style></style> or <script></script>
-        """
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'media' : self.media,
-            'inline_media' : self.inline_media
-        })
 
-        return context
 
 
 
@@ -273,3 +283,31 @@ class FilterSettingsView(RAIAdminView):
             fl = Fl(qs, value = val)
             qs = fl.get_queryset()
         return qs
+
+
+class SingleObjectMixin:
+    def get_object(self):
+        qs = self.raiadmin.model._default_manager.get_queryset()
+        try:
+            return qs.get(pk = self.kwargs['pk'])
+        except TypeError:
+            return qs.get(id = self.kwargs['pk'])
+
+        
+        
+class RAIAjaxModelView(RAIAdminView, SingleObjectMixin):
+    """
+    A view that responds differently to GET and POST in case of ajax or non ajax requests
+    """
+
+    def get(self, request, *args, *kwargs):
+        if request.is_ajax():
+            return self.get_ajax(request, *args, **kwargs)
+        else:
+            return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, *kwargs):
+        if request.is_ajax():
+            return self.post_ajax(request, *args, **kwargs)
+        else:
+            return super().post(request, *args, **kwargs)
