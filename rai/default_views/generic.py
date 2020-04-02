@@ -62,7 +62,7 @@ class RAIView(TemplateView):
         widget = RAIMarkdownWidget({}, attrs = {
             'id' : 'id_helpMarkdownEditor'
         })
-        return widget.render('elpMarkdownEditor', '', {})
+        return widget.render('helpMarkdownEditor', '', {})
     
     def get_context_data(self, **kwargs):
         """
@@ -297,17 +297,27 @@ class SingleObjectMixin:
         
 class RAIAjaxModelView(RAIAdminView, SingleObjectMixin):
     """
-    A view that responds differently to GET and POST in case of ajax or non ajax requests
+    A view that responds differently to GET and POST in case of ajax or non ajax requests.
+
+    If we answer to an ajax request, the method get_ajax or post_ajax are executed. 
+    Note that this is selected in get or post, which might mot be the best place
     """
-
-    def get(self, request, *args, *kwargs):
-        if request.is_ajax():
-            return self.get_ajax(request, *args, **kwargs)
-        else:
-            return super().get(request, *args, **kwargs)
-
-    def post(self, request, *args, *kwargs):
-        if request.is_ajax():
-            return self.post_ajax(request, *args, **kwargs)
-        else:
-            return super().post(request, *args, **kwargs)
+    def dispatch(self, request, *args, *kwargs):
+        super().dispatch(request, *args, *kwargs)
+        if request.method == 'POST':
+            if request.is_ajax():
+                return self.post_ajax(request, *args, *kwargs)
+            else:
+                return self.post(request, *args, *kwargs)
+        elif request.method == 'GET':
+            if request.is_ajax():
+                return self.get_ajax(request, *args, *kwargs)
+            else:
+                return self.get(request, *args, *kwargs)
+            
+    def get_ajax(self, request, *args, **kwargs):
+        pass
+    
+    def post_ajax(self, request, *args, **kwargs):
+        pass
+    
