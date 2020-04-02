@@ -295,29 +295,45 @@ class SingleObjectMixin:
 
         
         
-class RAIAjaxModelView(RAIAdminView, SingleObjectMixin):
-    """
-    A view that responds differently to GET and POST in case of ajax or non ajax requests.
+# class RAIAjaxModelView(RAIAdminView, SingleObjectMixin):
+#     """
+#     A view that responds differently to GET and POST in case of ajax or non ajax requests.
 
-    If we answer to an ajax request, the method get_ajax or post_ajax are executed. 
-    Note that this is selected in get or post, which might mot be the best place
-    """
-    def dispatch(self, request, *args, *kwargs):
-        super().dispatch(request, *args, *kwargs)
-        if request.method == 'POST':
-            if request.is_ajax():
-                return self.post_ajax(request, *args, *kwargs)
-            else:
-                return self.post(request, *args, *kwargs)
-        elif request.method == 'GET':
-            if request.is_ajax():
-                return self.get_ajax(request, *args, *kwargs)
-            else:
-                return self.get(request, *args, *kwargs)
-            
-    def get_ajax(self, request, *args, **kwargs):
-        pass
+#     If we answer to an ajax request, the value of  get_ajax or post_ajax are returned, if it is 
+#     a normal request, the return values of get or post are returned. 
+
+#     Furthermore, it can respond to two situations: if the view receives a pk argument and 
+#     therefore an object is known to the view, or without pk argument.
+
+#     In the case of a pk-argument:
+#       GET: the view should behave like an edit or detail view,
+#       POST: the view should behave like an update (edit.POST) view
+#     In the case of no pk argument:
+#       GET: the view should behave like a list view,
+#       POST: the view should behave like a creat view
     
-    def post_ajax(self, request, *args, **kwargs):
-        pass
+
+#     """
+#     def dispatch(self, request, *args, **kwargs):
+#         self.has_object = False
+#         if 'pk' in kwargs.keys():
+#             self.obj = self.get_object()
+#             self.has_object = True
+#         super().dispatch(request, *args, **kwargs)
+#         if request.method == 'POST':
+#             if request.is_ajax():
+#                 return self.post_ajax(request, *args, **kwargs)
+#             else:
+#                 return self.post(request, *args, **kwargs)
+#         elif request.method == 'GET':
+#             if request.is_ajax():
+#                 return self.get_ajax(request, *args, **kwargs)
+#             else:
+#                 return self.get(request, *args, **kwargs)
+            
+#     def get_ajax(self, request, *args, **kwargs):
+#         pass
+    
+#     def post_ajax(self, request, *args, **kwargs):
+#         pass
     
