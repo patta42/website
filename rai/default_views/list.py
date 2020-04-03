@@ -7,13 +7,8 @@ from django.template.loader import render_to_string
 from django.urls import resolve, reverse
 
 
-
-
 class ListView(FilterSettingsView):
     template_name = 'rai/views/default/list.html'
-    media = {
-        'js' : [ 'js/admin/third-party/mark.js-8.11.1/jquery.mark.min.js', 'js/admin/views/list.js' ]
-    }
     
     def post(self, request):
         """
@@ -32,11 +27,13 @@ class ListView(FilterSettingsView):
 
     
     
-    def get_group_menu(self):
+    def get_page_menu(self):
         actions = []
+        request = getattr(self, 'request', None)
         for Action in self.raiadmin.group_actions:
             action = Action(self.raiadmin)
-            if action.action_identifier != self.active_action.action_identifier:
+            if (action.action_identifier != self.active_action.action_identifier) and (action.show(request)):
+                
                 actions.append({
                     'icon' : action.icon,
                     'icon_font' : action.icon_font,
@@ -47,7 +44,9 @@ class ListView(FilterSettingsView):
             'rai/menus/group_menu.html',
             {
                 'actions' : actions,
-                'settings_menu' : self.get_settings_menu()    
+                'settings_menu' : self.get_settings_menu(),
+                'sort_button' : True,
+                'filter_button' : True,
             }
         )
     def get_settings_menu(self):
@@ -60,19 +59,21 @@ class ListView(FilterSettingsView):
         }
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        request = getattr(self, 'request', None)
         item_actions = []
         for Action in self.raiadmin.item_actions:
             action = Action(self.raiadmin)
-            item_actions.append({
-                'label' : action.label,
-                'icon_font' : action.icon_font,
-                'icon': action.icon,
-                'urlname': action.get_url_name()
-            })
+            if action.show(request):
+                item_actions.append({
+                    'label' : action.label,
+                    'icon_font' : action.icon_font,
+                    'icon': action.icon,
+                    'urlname': action.get_url_name()
+                })
         context.update({
             'title' : self.raiadmin.menu_label,
             'objects' : self.get_queryset(), 
-            'group_menu' : self.get_group_menu(),
+            'page_menu' : self.get_page_menu(),
             'item_template' : self.active_action.list_item_template,
             'configurable_display_fields' : self.active_action.configurable_display_fields,
             'visible_fields' : [], 
