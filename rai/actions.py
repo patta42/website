@@ -37,7 +37,9 @@ class RAIAction:
 
     def get_href(self, *args, **kwargs):
         return reverse(self.get_url_name(), args = args )
-    
+
+    def show(self, request = None):
+        return True
         
 
 class ModelAction(RAIAction):
@@ -131,6 +133,13 @@ class InactivateAction(SpecificAction):
             raiadmin = self.raiadmin,
             active_action = self
         )
+
+    def show(self, request = None):
+        return False
+        inactivate = getattr(self.model, 'inactivate', None)
+        if inactivate and callable(inactivate):
+            return True
+        return False
 
 class DeleteAction(SpecificAction):
     label = _l('Delete')
