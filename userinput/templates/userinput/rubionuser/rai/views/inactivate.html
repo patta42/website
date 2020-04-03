@@ -1,0 +1,32 @@
+{% extends 'rai/views/default/shared/form-view.html' %}
+{% load i18n rai_help %}
+{% block title_action %}{% trans "Inactivate" %}:{% endblock %}
+{% block heading %}{% if object.title %}{{ object.title }}{% else %}{{object}}{% endif %}{% endblock %}
+{% block innerformcontent %}
+<div class="alert alert-danger mt-5">
+  <h4 class="alert-heading">Bestätigung erforderlich</h4>
+  <div class="pl-5 pt-5">
+  <p>
+    Bitte bestätige das Inaktivieren von
+  </p>
+  <p class="h3">
+    {% include 'userinput/rubionuser/rai/shared/full-user-name.html' %}
+  </p>
+  <p class="mt-5">
+    Zwar kann die Inaktivierung rückgängig gemacht werden, es wird jedoch eine E-Mail an die betreffende Person verschickt.
+  </p>
+  {% if is_staff %}
+  <h5 class="alert-heading">Der Nutzer ist auch ein Mitarbeiter {% help "userinput:rubionuser:inactivate:is_staff" "" %}</h5>
+  <p>
+    {% include 'userinput/rubionuser/rai/shared/full-user-name.html' %}, ist auch als Mitarbeiter des RUBION in der Gruppe »{{staff_group}}« geführt. 
+  </p>
+  <p>
+    Bitte wähle aus, ob {% include 'userinput/rubionuser/rai/shared/full-user-name.html' %} <strong>nur als Nutzer</strong> oder <strong>sowohl als Nutzer als auch als Mitarbeiter</strong> inaktivert werden soll.
+  </p>
+  {% endif %}
+  <hr class="mt-5">
+  {% for button in buttons.values %}
+  {% include 'rai/views/default/shared/inactivate-button.html' %}
+  {% endfor %}
+</div>
+{% endblock %}
