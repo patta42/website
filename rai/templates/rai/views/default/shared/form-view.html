@@ -4,10 +4,11 @@
 {% endblock %}
 {% block content %}
 {% block formcontent %}
-<form action="." method="POST" id="{{ main_form_id|default"main_form" }}">
+<form action="." method="POST" id="{{ main_form_id|default:"main_form" }}" novalidate>
   {% csrf_token %}
+  {% block innerformcontent %}
   {{ edit_handler.render_form_content }}
-
+  {% endblock %}
 </form>
 {% endblock %}
 {% endblock %}
