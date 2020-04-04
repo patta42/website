@@ -1,0 +1,29 @@
+{% load i18n rai_help %}
+<hr />
+<fieldset>
+  <legend class="h5">
+    Der Nutzer ist auch ein Mitarbeiter
+    {% help "userinput:rubionuser:inactivate:is_staff" "" %}
+  </legend>
+  <p>
+    {% include 'userinput/rubionuser/rai/shared/full-user-name.html' %},
+    ist auch als Mitarbeiter des RUBION in der Gruppe »{{staff_group}}« geführt. 
+  </p>
+  <p>
+    Bitte wähle aus, ob
+    {% include 'userinput/rubionuser/rai/shared/full-user-name.html' %}
+    <strong>nur als Nutzer</strong> oder
+    <strong>sowohl als Nutzer als auch als Mitarbeiter</strong>
+    inaktivert werden soll.
+  </p>
+  {% if staff_form.user_staff_choice.errors %}
+  <div class="alert alert-warning w-50 border-rounded">
+    {% for error in staff_form.user_staff_choice.errors %}
+    <div class="mb-2"><strong>{{ error }}</strong></div>
+    {% endfor %}
+    {% endif %}
+    {{staff_form.user_staff_choice}}
+    {% if staff_form.user_staff_choice.errors %}
+  </div>
+  {% endif %}
+</fieldset>
