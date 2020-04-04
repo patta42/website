@@ -318,7 +318,15 @@ class RAIRadioSelect(RadioSelect):
             index, subindex=subindex, attrs=new_attrs
         )
 
-
+class RAIRadioSelectTable(RAIRadioSelect):
+    template_name = 'rai/forms/widgets/multiple-input-table.html'
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        # remove label from attrs
+        
+        return super().create_option(
+            name, value, "", selected,
+            index, subindex=subindex, attrs=attrs
+        )
     
 class RAISelectMultipleSelectionLists(CheckboxSelectMultiple):
     class Meta:
