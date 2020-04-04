@@ -1,0 +1,132 @@
+{% load rai_help %}
+<hr />
+<fieldset>
+  <legend class="h5">
+    Der Nutzer ist Leiter einer Arbeitsgruppe
+    {% help "userinput:rubionuser:inactivate:is_group_leader" "" %}
+  </legend>
+  <p>
+    Bitte entscheide, was mit der Gruppe
+    <strong>»{{object.get_workgroup}}«</strong>
+    und ggf. ihren Mitgliedern und Ihren Projekten geschehen soll.
+  </p>
+  {{group_leader_form.workgroup_choice}}
+  <script>
+    $('[name="workgroup_choice"][value="inactivate"]').click(
+    function(){
+    $('#new_leader_fieldset').hide(300)
+    }
+    )
+    $('[name="workgroup_choice"][value="new_leader"]').click(
+    function(){
+    $('#new_leader_fieldset').show(300)
+    }
+    )
+    
+  </script>
+  
+  <fieldset class="ml-3 h6" id="new_leader_fieldset">
+    <legend>
+      <small>
+	Welcher Nutzer soll neuer Leiter der Arbeitsgruppe werden
+      </small>
+    </legend>
+    {{group_leader_form.new_leader}}
+  </fieldset>
+
+  <fieldset class="ml-3 h6" id="user_decision_fieldset">
+    <legend>
+      <small>
+	Was soll mit den einzelnen Nutzern geschehen?
+      </small>
+    </legend>
+    <table class="mb-4">
+      {% for form in member_decision_formset.forms %}
+      {% if forloop.counter0 == 0 %}
+      <thead style="background-color:rgba(0,0,0,.125)">
+	<tr>
+	  <th>
+	    AG-Mitglied
+	  </th>
+	  <th colspan="2" class="text-center" style="border-bottom:1px solid rgba(0,0,0,.125)">
+	    Entscheidung
+	  </th>
+	  <th>
+	    neue Arbeitsgruppe
+	  </th>
+	</tr>
+	<tr>
+	  <td></td>
+	  {% for key, choice in form.fields.decision.choices %}
+	  <td class="px-1">{{choice}}</td>
+	  {% endfor %}
+	  <td></td>
+	</tr>
+      </thead>
+      <tbody>
+      {% endif %}
+      <tr>
+	<td>
+	  {{form.pk}}
+	  {{form.name.value}}
+	</td>
+	
+	  {{form.decision}}
+	<td>
+	  {{form.target_group}}
+	</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </fieldset>
+  <hr />
+  <fieldset>
+    <legend>
+      <small>
+	Was soll mit den einzelnen Projekten geschehen?
+      </small>
+    </legend>
+    <table>
+      {% for form in project_decision_formset.forms %}
+            {% if forloop.counter0 == 0 %}
+      <thead style="background-color:rgba(0,0,0,.125)">
+	<tr>
+	  <th>
+	    AG-Projekt
+	  </th>
+	  <th colspan="2" class="text-center" style="border-bottom:1px solid rgba(0,0,0,.125)">
+	    Entscheidung
+	  </th>
+	  <th>
+	    neue Arbeitsgruppe
+	  </th>
+
+	</tr>
+	<tr>
+	  <td></td>
+	  {% for key, choice in form.fields.decision.choices %}
+	  <td class="px-1">{{choice}}</td>
+	  {% endfor %}
+	  <td></td>
+	</tr>
+      </thead>
+      <tbody>
+      {% endif %}
+      <tr>
+	<td>
+	  {{form.project_pk}}
+	  {{form.name.value}}
+	</td>
+	
+	{{form.decision}}
+	
+	<td>
+	  {{form.target_group}}
+	</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </fieldset>
+</fieldset>
