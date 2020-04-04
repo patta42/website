@@ -1,9 +1,10 @@
 from pprint import pprint
 
-from django.forms import Widget, Select, CheckboxSelectMultiple
+from django.forms import Widget, Select, CheckboxSelectMultiple, RadioSelect
 
 from rai.utils import update_if_not_defined
 
+import random
 
 def add_css_class(css_string, css_class):
     css_classes = css_string.split(' ')
@@ -62,7 +63,6 @@ class RAIWidget (Widget, RenderDisabledMixin):
         super().__init__(attrs)
 
     def render_with_errors(self, name, value, attrs = None, renderer = None, errors = []):
-        print('render with errors!')
         context = super().get_context(name, value, attrs)
         attrs = context['widget'].pop('attrs', {})
         css_classes = attrs.pop('class', '')
@@ -70,7 +70,6 @@ class RAIWidget (Widget, RenderDisabledMixin):
         attrs.update({'class': css_classes})
         context['widget'].update({'errors': errors, 'attrs':attrs})
         template = getattr(self, 'error_template_name', self.template_name)
-        pprint(context)
         return self._render(template, context, renderer)
 
 
@@ -92,21 +91,26 @@ class RAIInputField(RAIWidget):
 
         return context
 
+
 class RAITextInput(RAIInputField):
     input_type = 'text'
     template_name = 'rai/forms/widgets/text.html'
+
 
 class RAINumberInput(RAIInputField):
     input_type = 'number'
     template_name = 'rai/forms/widgets/number.html'
 
+
 class RAIEMailInput(RAIInputField):
     input_type = 'email'
     template_name = 'rai/forms/widgets/email.html'
 
+
 class RAIUrlInput(RAIInputField):
     input_type = 'url'
     template_name = 'rai/forms/widgets/url.html'
+
 
 class RAIPasswordInput(RAIInputField):
     input_type = 'password'
@@ -160,6 +164,7 @@ class RAIMultiHiddenInput(RAIHiddenInput):
     def format_value(self, value):
         return [] if value is None else value
 
+
 class RAITextarea(RAIWidget):
     template_name = 'rai/forms/widgets/textarea.html'
 
@@ -169,6 +174,7 @@ class RAITextarea(RAIWidget):
         if attrs:
             default_attrs.update(attrs)
         super().__init__(default_attrs)
+
 
 class RequiredClassesField(RAIInputField):
     def __init__(self, attrs = None):
@@ -182,6 +188,7 @@ class RequiredClassesField(RAIInputField):
             new_attrs.update({'class' : css_class_string})
 
         super().__init__(attrs = new_attrs)
+
 
 def boolean_check(v):
     return not (v is False or v is None or v == '')
@@ -241,9 +248,9 @@ class RAICheckboxInput(RequiredClassesField):
         context = self.get_context(name, value, label, attrs)
         return self._render(self.template_name, context, renderer)
 
+
 class RAIRadioInput(RAICheckboxInput):
     input_type = 'radio'
-
 
 
 # input_type is not added by default to the ChoiceWidget context, but ChoiceWidget
@@ -268,7 +275,7 @@ class RAISelect(Select, RenderDisabledMixin):
         else:
             new_attrs = attrs.copy()
             css_class_string = add_css_class(attrs.pop('class', ''), self.required_css_classes)
-            new_attrs.update('class', css_class_string)
+            new_attrs.update({'class', css_class_string})
             
         for attribute, value in self.required_attributes.items():
             new_attrs.update({ attribute: value })
@@ -283,12 +290,39 @@ class RAISelect(Select, RenderDisabledMixin):
         return context
 
     # copied from django
-        
+
+
 class RAISelectMultiple(RAISelect):
+
     allow_multiple_selected = True
     required_attributes = { 'multiple' : True }
 
+    
+    
+class RAIRadioSelect(RadioSelect):
+    input_type = 'radio'
+    template_name = 'rai/forms/widgets/multiple-input.html'
+    option_template_name = 'rai/forms/widgets/checkbox.html'
+    #option_template_name = 'django/forms/widgets/radio_option.html'
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        # add class to attrs
+        if attrs:
+            new_attrs = attrs.copy()
+        else:
+            new_attrs = {}
+        css_classes = add_css_class(new_attrs.get('class', ''), ['custom-control-input'])
+#        random.choice(string.ascii_uppercase + string.ascii_lowercase) for _ in range(10)    
+        new_attrs.update({'class' : css_classes})
+        return super().create_option(
+            name, value, label, selected,
+            index, subindex=subindex, attrs=new_attrs
+        )
+
+
+    
 class RAISelectMultipleSelectionLists(CheckboxSelectMultiple):
+    class Meta:
+        js = ('/js/admin/third-party/mark.js-8.11.1/jquery.mark.min.js',)
     template_name = 'rai/forms/widgets/select-multiple-selection-lists.html'
     option_template_name = 'rai/forms/widgets/checkbox-option-select-multiple-lists.html'
     option_content_template = 'rai/forms/widgets/checkoption-option-select-multiple-item.html'
@@ -297,6 +331,7 @@ class RAISelectMultipleSelectionLists(CheckboxSelectMultiple):
         option = super().create_option(name, value, label, selected, index, subindex, attrs)
         option['content_template'] = self.option_content_template
         return option
+
 
 # This is the default context set by django's Widget
     
