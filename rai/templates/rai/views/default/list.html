@@ -24,12 +24,13 @@
 
 {% endblock %}
 {% block modals %}
+{{ block.super }}
 {% include 'rai/generic/modal_header.html' with size="lg" backdrop="static" id="filterModal" title="Filter settings" %}
 <form id="filterForm" action=".">
   {% csrf_token %}
   {{ filter_form }}
 </form>
-{% include 'rai/generic/modal_footer.html' with id="filterModal" %}
+{% include 'rai/generic/modal_footer.html' with id="filterModal" cancel_button=True apply_button=True save_button=True%}
 
 {% include 'rai/generic/modal_header.html' with backdrop="static" id="listSettingsModal" title="Cancel" %}
 Some content here
