@@ -1,24 +1,36 @@
-<div class="btn-toolbar mb-2 mb-md-0">
-  <div class="btn-group">
+{% load i18n %}
+<div class="btn-toolbar mb-2 mb-md-0 align-items-center">
+  <div class="btn-group mr-2">
     {% for action in actions %}
-    <a href="{{action.url}}" class="btn btn-sm btn-outline-secondary">
+    <a href="{{action.url}}" class="btn{% if action.btn_type %} btn-{{ action.btn_type }}{% endif %}{% if action.text_type %} text-{{ action.text_type }}{% endif %}{% if icons_only %} icon-only{% endif %} page-menu-action" title="{{action.label}}">
       <i class="{{action.icon_font}} fa-{{action.icon}}"></i>
-      {{action.label}}
+      <span class="label">{{action.label}}</span>
     </a>
     {% endfor %}
   </div>
+  {% if save_button %}
+    <button type="submit" form="{{ main_form_id|default:"main_form" }}" class="btn btn-success" id="btnSave">
+      <i class="fas fa-save"></i> {% trans "Save" %}
+    </button>
+  {% endif %}
+    
+  {% if sort_button %}  
   <div class="button-group">
-    <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle ml-2" id="btnSortOrder" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    <button type="button" class="btn btn-outline-primary dropdown-toggle ml-2" id="btnSortOrder" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
       <i class="fas fa-sort-alpha-up fa-fw"></i>
     </button>
     <div class="dropdown-menu" aria-labelledby="btnSortOrder">
     </div>
   </div>
-  <button class="btn btn-outline-primary btn-sm ml-2" type="button" data-toggle="modal" data-target="#filterModal" id="btnOpenFilterSettings">
+  {% endif %}
+  {% if filter_button %}
+  <button class="btn btn-outline-primary ml-2" type="button" data-toggle="modal" data-target="#filterModal" id="btnOpenFilterSettings">
     <i class="fas fa-filter fa-fw"></i>
   </button>
-  <button type="button" class="btn btn-sm btn-secondary ml-2">
+  {% endif %}
+  {% if settings_menu %}
+  <button type="button" class="btn btn-secondary ml-2">
     <i class="{{ settings_menu.icon_font }} fa-{{ settings_menu.icon }} fa-fw"></i>
   </button>
-
+  {% endif %}
 </div>
