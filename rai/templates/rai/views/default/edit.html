@@ -1,0 +1,29 @@
+{% extends 'rai/views/default/shared/form-view.html' %}
+{% load rai_tags i18n %}
+
+{% block title_action %}{% trans "Edit" %}:{% endblock %}
+{% block heading %}{% if object.title %}{{ object.title }}{% else %}{{object}}{% endif %}{% endblock %}
+{% comment "testing the new shared template" %}
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+  <div class="d-inline-flex align-items-center w-75">
+    <h1 class="h2 d-inline-block mr-3">
+      <span class="text-muted font-weight-lighter" style="font-size:75%">{% trans "Edit" %}:</span> <small class="text-primary"><i class="{{icon_font}} fa-{{icon}}"></i></small> {{ object.title_trans }}
+    </h1>
+  </div>
+  {{ group_menu }}
+</div>
+
+<form action="." method="POST">
+  {% csrf_token %}
+  {{ edit_handler.render_form_content }}
+ 
+</form>
+
+{% endblock %}
+{% endcomment %}
+{% block additional_js %}
+{{ block.super }}
+{% endblock %}
+{% block additional_css %}
+{% endblock %}
