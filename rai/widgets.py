@@ -275,7 +275,7 @@ class RAISelect(Select, RenderDisabledMixin):
         else:
             new_attrs = attrs.copy()
             css_class_string = add_css_class(attrs.pop('class', ''), self.required_css_classes)
-            new_attrs.update({'class', css_class_string})
+            new_attrs.update({'class': css_class_string})
             
         for attribute, value in self.required_attributes.items():
             new_attrs.update({ attribute: value })
@@ -341,6 +341,13 @@ class RAISelectMultipleSelectionLists(CheckboxSelectMultiple):
         return option
 
 
+class RAITypeAndSelect(RAISelect):
+    required_css_classes = ['type-and-select'] + RAISelect.required_css_classes
+
+    
+
+    # the differences to a SELECT will be introduced by javascript
+    pass
 # This is the default context set by django's Widget
     
     # context = {}
