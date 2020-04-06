@@ -1,6 +1,5 @@
 from .forms import (
     UserAndStaffInactivationForm, WorkgroupInactivationForm,
-    MemberDecisionForm, ProjectDecisionForm
 )
 
 import datetime
@@ -19,6 +18,7 @@ from wagtail.core.models import Page
 class RUBIONUserEditView(EditView):
     template_name = 'userinput/rubionuser/rai/edit/edit.html'
 
+
 class ExtendedRUBIONUserInformationMixin:
     """
     This mixin  separates getting all the related information of the
@@ -36,7 +36,7 @@ class ExtendedRUBIONUserInformationMixin:
     _user_inactivated = False
     def inactivate_user(self):
         if not self._user_inactivated:
-            self.obj.inactivate(user = request.user)
+            self.obj.inactivate(user = self.request.user)
             self.success_message('Nutzer erfolgreich inaktiviert.')
             self._user_inactivated = True
             
@@ -107,8 +107,6 @@ class ExtendedRUBIONUserInformationMixin:
 
 
 
-
-
 class RUBIONUserInactivateView(InactivateView, ExtendedRUBIONUserInformationMixin):
     template_name = 'userinput/rubionuser/rai/views/inactivate.html'
     staff_form = None
@@ -134,86 +132,78 @@ class RUBIONUserInactivateView(InactivateView, ExtendedRUBIONUserInformationMixi
         context['staff_group'] = self.staff_group
         context['staff_form'] = self.staff_form
         context['group_leader_form'] = self.group_leader_form
-        context['member_decision_formset'] = self.member_decision_formset
-        context['project_decision_formset'] = self.project_decision_formset
-        
+
         return context
 
 
+            
     def get(self, request, *args, **kwargs):
         if self.is_staff:
             self.staff_form = UserAndStaffInactivationForm()
-        print ('Group leader? {}'.format(self.is_group_leader))
         if self.is_group_leader:
             members = self.workgroup_members
-            if members.count() > 0:
-                # decision on members only required if there are additional members in the group
-                initial = []
-                for member in members:
-                    initial.append({
-                        'pk' : member.pk,
-                        'name': '{}, {}'.format(member.specific.last_name, member.specific.first_name),
-                    })
-                self.group_leader_form = WorkgroupInactivationForm(members = members)
-                self.member_decision_formset = formset_factory(
-                    MemberDecisionForm, extra = 0
-                )(
-                    initial = initial,
-                    form_kwargs={'groups': self.target_workgroups_for_choices()},
-                    prefix='members'
-                )
-            if self.projects.count() > 0:
-                # decision on projects only required if there are any
-                initial = []
-                for project in self.projects:
-                    initial.append({
-                        'pk' : project.pk,
-                        'name' : project.specific.title_trans
-                    })
-                    self.project_decision_formset = formset_factory(ProjectDecisionForm, extra = 0)(
-                        initial = initial, prefix='projects',
-                        form_kwargs={'groups': self.target_workgroups_for_choices()}
-                    )
-                        
+            self.group_leader_form = WorkgroupInactivationForm(members)
             
         return super().get(request, *args, **kwargs)
     
     
-    
-        
     def post(self, request, *args, **kwargs):
-        if not self.is_staff and not self.is_group_leader:
-            # simple choice, inactivate the User
-            if request.POST.get('action', None) == 'inactivate':
-                self.inactivate_user()
-            else:
-                self.warning_message('Inaktivierung nicht erfolgreich.')
+        # Check action
+
+        if request.POST.get('action', None) != 'inactivate':
+            self.warning_message('Inaktivierung nicht erfolgreich.')
+            self.debug_message('POST.action not inactivate') 
             return self.redirect_to_default()
+
+        # if its only a user, it's simple
+        if not self.is_staff and not self.is_group_leader:
+            # inactivate the User
+            self.inactivate_user()
+            return self.redirect_to_default()
+        
+        # check if forms are okay
+
+        # Staff first
         staff_valid = False
-        leader_valid = False
         if self.is_staff:
             self.staff_form = UserAndStaffInactivationForm(request.POST)
             if self.staff_form.is_valid():
                 staff_valid = True
-                
-            if self.is_group_leader:
-                
-                pass
 
-            all_valid = (not self.is_staff or staff_valid) and (not self.is_group_leader or leader_valid)
-            if not all_valid:
-                # don't do anything, render the form with errors again:
-                return super().get(request, *args, **kwargs)
-            else:
-                self.inactivate_user()
-                if self.is_staff:
-                    if self.staff_form.cleaned_data['user_staff_choice'] == 'user_and_staff':
-                        self.inactivate_staff()                                    
-                    if self.staff_form.cleaned_data['user_staff_choice'] in ['user_only', 'user_and_staff']:
-                        self.inactivate_user()
+        # leader
+        leader_valid = False
+        if self.is_group_leader:
+            members = self.workgroup_members
+            self.group_leader_form = WorkgroupInactivationForm(members, request.POST)
+            if self.group_leader_form.is_valid():
+                leader_valid = True
+            
+
+        all_valid = (not self.is_staff or staff_valid) and (not self.is_group_leader or leader_valid)
+        if not all_valid:
+            # don't do anything, render the form with errors again:
+            return super().get(request, *args, **kwargs)
+        else:
+            self.inactivate_user()
+            if self.is_staff:
+                if self.staff_form.cleaned_data['user_staff_choice'] == 'user_and_staff':
+                    self.inactivate_staff()                                    
+                if self.staff_form.cleaned_data['user_staff_choice'] in ['user_only', 'user_and_staff']:
+                    self.inactivate_user()
                         
-                if self.is_group_leader:
-                    pass
+            if self.is_group_leader:
+                if self.group_leader_form.cleaned_data.get('workgroup_choice') == 'inactivate':
+                    self.workgroup.inactivate(user = self.request.user)
+                    self.success_message('Die Arbeitsgruppe wurde inaktiviert')
+                elif self.group_leader_form.cleaned_data.get('workgroup_choice') == 'new_leader':
+                    self.inactivate_user()
+                    self.obj.is_leader = False
+                    self.obj.save_revision_and_publish(user=self.request.user)
+                    new_leader = RUBIONUser.objects.get(pk = int(self.group_leader_form.cleaned_data.get('new_leader')))
+                    new_leader.is_leader = True
+                    new_leader.save_revision_and_publish(user = self.request.user)
+                    self.success_message('{}, {} ist neuer Leiter der Arbeitsgruppe'.format(new_leader.last_name, new_leader.first_name))
+
                     
-                return self.redirect_to_default()
+            return self.redirect_to_default()
                     
