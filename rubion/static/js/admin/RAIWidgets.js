@@ -25,7 +25,7 @@ $R.Widgets = {
 	    var inputStructure= $(
 		'<div class="input-group">'+
 		    '  <input type="text" class="form-control" placeholder="Tippe, um zu suchen"/>'+
-		    '    <div class="input-group-append">'+
+		    '    <div class="input-group-append bg-white">'+
 		    '      <button type="button" class="btn btn-outline-secondary">'+
 		    '        <svg width="10" height="10" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5">'+
 		    '          <path fill="#3343a40" d="M2 0L0 2h4zm0 5L0 3h4z"/>'+
@@ -40,6 +40,7 @@ $R.Widgets = {
 	    self.$components.optionSurrounder = $('<ul class="list-group type-and-select-selection"></ul>')
 	    $elem.find('option').each(
 		function(){
+		    $(this).attr('selected', false);
 		    var txt = $(this).text().split('|')
 		    var subline = txt.length > 1 ? '<span class="text-muted">'+txt[1]+'</span>' : ''
 		    self.$components.optionSurrounder.append(
@@ -51,6 +52,9 @@ $R.Widgets = {
 		    )
 		}
 	    )
+	    self.$components.emptyOption = $('<option value="">--</option>');
+	    $elem.append(self.$components.emptyOption);
+	    self.$components.emptyOption.attr('selected', true)
 	    self.$components.wrapper.append(self.$components.optionSurrounder)
 	    self.$components.optionSurrounder.hide();
 	    self.$options = self.$components.optionSurrounder.find('li');
@@ -87,11 +91,13 @@ $R.Widgets = {
 		$this = $(evt.currentTarget);
 		if ($elem.attr('multiple') === undefined){
 		    self.$options.removeClass('selected');
+		    self.$components.emptyOption.attr('selected', true)
 		}
 		var value = $this.data('type-and-select-value');
 		
 		$this.addClass('selected');
 		$elem.find('option[value="'+value+'"]').attr('selected',true);
+		self.$components.emptyOption.attr('selected', false)
 		self.toggleSelection();
 		self.$components.input.val($this.find('h6').text());
 		self.$options.unmark();
