@@ -324,8 +324,11 @@ h6.sidebar-heading{
     position:relative;
     border-bottom: solid thin rgba(0,0,0,.125)
 }
+.type-and-select-selection li {
+    cursor:pointer;
+}
 .type-and-select-selection li:hover{
-    background-color:rgba(0,0,0,.125);
+    background-color:#DFDFDF;
 }
 
 .type-and-select-selection li span.status{
