@@ -27,37 +27,23 @@ class UserAndStaffInactivationForm(RAIForm):
 
     
 class WorkgroupInactivationForm(RAIForm):
-    fieldsets = [
-        {
-            'id' : 'workgroup_choice_fieldset',
-            'legend' : 'Der Nutzer ist Leiter einer Arbeitsgruppe',
-            'help_path':'userinput:rubionuser:inactivate:is_group_leader',
-            'fields' : ['workgroup_choice'],
-            'intro' : 'Bitte entscheide, was mit der Gruppe <strong>»{{workgroup}}«</strong> und ggf. ihren Mitgliedern und Ihren Projekten geschehen soll.',
-            'fieldsets' : [{
-                'id': 'new_leader',
-                'legend':'Wer soll neuer Leiter der Arbeitsgruppe werden?',
-                'fields':['new_leader'],
-                'depends_on_field':'workgroup_choice',
-                'show_at_value':'new_leader' 
-            }]
-        }
-    ]
-
-    fieldsets = [
-        
-    ]
     workgroup_choice = forms.ChoiceField(
         choices = (
-            ('inactivate', 'Die Gruppe inaktivieren'),
-            ('new_leader', 'Anderen Nutzer zum AG-Leiter ernennen (andere Nutzer und Projekte werden beibehalten)'),
+            (
+                'inactivate',
+                'Die Gruppe inaktivieren. Alle Nutzer und Projekte der Gruppe werden ebenfalls inaktiviert.'),
+            (
+                'new_leader',
+                'Anderen Nutzer zum AG-Leiter ernennen (andere Nutzer und Projekte werden beibehalten)'
+            ),
         ), 
         required = True,
         widget = RAIRadioSelect
     )
 
-    def __init__(self, members = None, projects = None, *args, **kwargs):
+    def __init__(self, members = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.members = members
         if members and members.count() > 0:
             self.fields['new_leader'] = forms.ChoiceField(
                 required = False,
@@ -67,50 +53,24 @@ class WorkgroupInactivationForm(RAIForm):
                 widget = RAIRadioSelect
             )
         else:
-            #self.fields.pop('workgroup_choice')
             self.fields['workgroup_choice'] = forms.BooleanField(
                 disabled = True,
                 required = True,
-                label = 'Die Arbeitsgruppe hat keine weiteren Mitglieder und wird inaktiviert.',
                 widget = RAICheckboxInput(
                     attrs = {
                         'checked': True,
                         'label': 'Die Arbeitsgruppe hat keine weiteren Mitglieder und wird inaktiviert.'
                     }
-                ) ,
-                
+                )
             )
-        
-
-class MemberDecisionForm(RAIForm):
-    # fake field to get the user's name into the form
-    name = forms.CharField(required = False)
-    pk = forms.IntegerField(widget=HiddenInput)
-    decision = forms.ChoiceField(
-        choices = (
-            ('inactivate', 'inaktivieren'), 
-            ('move', 'andere Gruppe'),
-        ),
-        widget = RAIRadioSelectTable
-    )
-    target_group = forms.ChoiceField(choices = (), widget = RAISelect)
-    
-
-    def __init__(self, *args, **kwargs):
-        groups = kwargs.pop('groups', [])
-        super().__init__(*args, **kwargs)
-        self.fields['target_group'].choices = groups
-
-
-    
-class ProjectDecisionForm(MemberDecisionForm):
-    decision = forms.ChoiceField(
-        choices = (
-            ('inactivate', 'inaktivieren'), 
-            ('move', 'andere Gruppe'),
-        ),
-        widget = RAIRadioSelectTable
-    )
-
+            
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.members.count() > 0 and  cleaned_data.get('workgroup_choice', None) == 'new_leader':
+            allowed_pks = [str(member.pk) for member in self.members]
+            if cleaned_data.get('new_leader', '') not in allowed_pks:
+                self.add_error('new_leader', forms.ValidationError('Wenn ein neuer Leiter benannt werden soll, muss dieser ausgewählt werden.','required'))
+            
+        return cleaned_data
 
 
