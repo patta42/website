@@ -1,3 +1,5 @@
+from pprint import pprint as pp
+
 from django import template
 from django.template.loader import render_to_string
 
@@ -28,7 +30,6 @@ def render_object_in_list(context, obj, tpl, visible_fields):
 
 @register.simple_tag( takes_context = True )
 def render_list_filters(context):
-    print(context)
     return render_to_string(
         'rai/views/default/list-filter-modal.html',
         {
@@ -39,6 +40,43 @@ def render_list_filters(context):
 @register.filter
 def to_str(val):
     return str(val)
+
+@register.filter
+def tags2class(val):
+    if val == 'debug':
+        val = 'info'
+    elif val == 'error':
+        val = 'danger'
+    return val
+
+
+@register.filter
+def rai_render_with_errors(bound_field, label):
+    """
+    Usage: {{ field|render_with_errors }} as opposed to {{ field }}.
+    If the field (a BoundField instance) has errors on it, and the associated widget implements
+    a render_with_errors method, call that; otherwise, call the regular widget rendering mechanism.
+    """
+    widget = bound_field.field.widget
+    kwargs = { 'attrs' : {'id': bound_field.auto_id}}
+    if hasattr(widget, 'requires_label') and widget.requires_label:
+        kwargs.update({'label' : label})
+    if bound_field.errors and hasattr(widget, 'render_with_errors'):
+        kwargs.update({'errors': bound_field.errors})
+        return widget.render_with_errors(
+            bound_field.html_name,
+            bound_field.value(),
+            **kwargs
+
+        )
+    else:
+        return widget.render(
+            bound_field.html_name,
+            bound_field.value(),
+            **kwargs
+        )
+
+
 
 @register.filter
 def render_disabled(bound_field):
@@ -52,5 +90,26 @@ def render_disabled(bound_field):
     else:
         return bound_field.as_widget()
 
+@register.filter
+def widget_requires_label(bound_field):
+    return bound_field.field.widget.requires_label or False
 
     
+
+@register.filter
+def pprint(obj):
+    print('Output is:')
+    try:
+        pp(obj.__dict__)
+    except AttributeError:
+        pp(obj)
+    return ""
+
+
+@register.simple_tag(takes_context = True)
+def show_for_instance(context, action, instance):
+    if instance == True:
+        return True
+
+    request = context.get('request', None)
+    return action['show_for_instance'](instance, request)
