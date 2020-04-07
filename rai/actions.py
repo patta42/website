@@ -14,18 +14,16 @@ class RAIAction:
         self.raiadmin = raiadmin
     
     def get_url(self):
-        return "{identifier}/{action_identifier}/".format(
-            identifier = self.identifier,
+        return "{identifier}/{sub_id}/{action_identifier}/".format(
+            identifier = self.raiadmin.identifier,
+            sub_id = self.raiadmin.sub_identifier,
             action_identifier = self.action_identifier
         )
 
     def get_url_name(self):
-        opts = self.raiadmin.model._meta
-        app = getattr(self, 'app_label', opts.app_label)
-        model = getattr(self, 'model_label', opts.model_name)
         return "rai_{app}_{model}_{identifier}".format(
-            app = app, 
-            model = model, 
+            app = self.raiadmin.identifier, 
+            model = self.raiadmin.sub_identifier, 
             identifier = self.action_identifier
         )
     
@@ -45,17 +43,20 @@ class RAIAction:
         
 
 class ModelAction(RAIAction):
-    def __init__(self, raiadmin):
-        super().__init__(raiadmin)
-        opts = self.raiadmin.model._meta
-        self.identifier = '{app}/{model}'.format(
-            app = opts.app_label,
-            model = opts.model_name
-        )
+    model = None
+#    def __init__(self, raiadmin):
+#        super().__init__(raiadmin)
+#        self.identifier = '{app}/{model}'.format(
+#            app = self.identifier,
+#            model = self.sub_identifier
+#        )
 
 class SpecificAction(ModelAction):
     def get_url(self):
-        return "{identifier}/<int:pk>/{action_identifier}/".format(identifier = self.identifier, action_identifier = self.action_identifier)
+        return "{identifier}/{sub_id}/<int:pk>/{action_identifier}/".format(
+            identifier = self.raiadmin.identifier,
+            sub_id = self.raiadmin.sub_identifier,
+            action_identifier = self.action_identifier)
     
 class ListAction(ModelAction):
     label = _l('List')
