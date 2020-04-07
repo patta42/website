@@ -40,7 +40,7 @@ class RAIAction:
 
     def show(self, request = None):
         return True
-    def show_for_instance(self, instance):
+    def show_for_instance(self, instance, request = None):
         return True
         
 
