@@ -54,7 +54,8 @@ class ModelAction(RAIAction):
 class SpecificAction(ModelAction):
     def get_url(self):
         return "{identifier}/<int:pk>/{action_identifier}/".format(identifier = self.identifier, action_identifier = self.action_identifier)
-
+    def show_for_instance(self, instance):
+        return True
     
 class ListAction(ModelAction):
     label = _l('List')
@@ -135,8 +136,7 @@ class InactivateAction(SpecificAction):
         )
 
     def show(self, request = None):
-        return False
-        inactivate = getattr(self.model, 'inactivate', None)
+        inactivate = getattr(self.raiadmin.model, 'inactivate', None)
         if inactivate and callable(inactivate):
             return True
         return False
