@@ -1,0 +1,29 @@
+{% extends 'rai/views/default/shared/form-view.html' %}
+{% load i18n rai_help rai_forms wagtailadmin_tags %}
+{% block title_action %}Verschieben:{% endblock %}
+{% block heading %}{% if object.title %}{{ object.title }}{% else %}{{object}}{% endif %}{% endblock %}
+
+{% block innerformcontent %}
+<div class="alert alert-info">
+<fieldset>
+  <legend>Verschieben von {{object}}</legend>
+  <p>
+    Bitte wähle die neue Arbeitsgruppe für {{object}} aus:
+  </p>
+  {% if form.workgroup.errors %}
+  <div class="alter alert-danger p-3">
+    {% for err in form.workgroup.errors %}
+    <p><strong>{{err}}</strong></p>
+    {% endfor %}
+    {% endif %}
+    {{form.workgroup}}
+    {% if form.workgroup.errors %}
+    </div>
+    {% endif %}
+</fieldset>
+<hr class="mt-5">
+{% for button in buttons.values %}
+{% include 'rai/views/default/shared/inactivate-button.html' %}
+{% endfor %}
+</div>
+{% endblock %}
