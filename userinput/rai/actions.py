@@ -36,12 +36,12 @@ def _is_rubion_user_active(instance):
         instance.expire_at >= datetime.datetime.now()
     )
 class RUBIONUserOnlyWhenActiveMixin:
-    def show_for_instance(self, instance):
+    def show_for_instance(self, instance, request=None):
         return _is_rubion_user_active(instance)
 
 class RUBIONUserMoveAction(RUBIONUserOnlyWhenActiveMixin, MoveToWorkgroupAction):
-    def show_for_instance(self, instance):
-        return super().show_for_instance(instance) and not instance.is_leader
+    def show_for_instance(self, instance, request=None):
+        return super().show_for_instance(instance, request) and not instance.is_leader
 
 class RUBIONUserInactivateAction(RUBIONUserOnlyWhenActiveMixin, InactivateAction):
     pass
