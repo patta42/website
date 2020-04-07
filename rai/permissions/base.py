@@ -1,0 +1,2 @@
+
+REGISTERED_ITEMS = []
