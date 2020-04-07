@@ -1,6 +1,7 @@
+
 from .generic import RAIAdminView, SingleObjectMixin, PageMenuMixin
 
-from django.contrib import messages
+
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 
@@ -8,6 +9,8 @@ from django.template.loader import render_to_string
 class InactivateView(RAIAdminView, SingleObjectMixin, PageMenuMixin):
     template_name = 'rai/views/default/inactivate.html'
 
+
+    
     def dispatch(self, request, *args, **kwargs):
         self.obj = self.get_object()
         return super().dispatch(request, *args, **kwargs)
@@ -42,12 +45,15 @@ class InactivateView(RAIAdminView, SingleObjectMixin, PageMenuMixin):
         return context
 
 
+    def redirect_to_default(self):
+        return redirect(self.raiadmin.default_action(self.raiadmin).get_url_name())
+    
     def post(self, request, *args, **kwargs):
         action = request.POST.get('action', None)
         if action and action == 'inactivate':
             self.obj.inactivate(user = request.user)
-            messages.success(request, 'Inaktivierung erfolgreich')
+            self.success_message('Inaktivierung erfolgreich')
         else:
-            messages.warning(request, 'Es ist etwas schief gegangen. Inaktivierung hat nicht geklappt.')
+            self.error_message('Es ist etwas schief gegangen. Inaktivierung hat nicht geklappt.')
+        return self.redirect_to_default()
         
-        return redirect(self.raiadmin.default_action(self.raiadmin).get_url_name())
