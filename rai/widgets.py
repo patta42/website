@@ -2,29 +2,11 @@ from pprint import pprint
 
 from django.forms import Widget, Select, CheckboxSelectMultiple, RadioSelect
 
-from rai.utils import update_if_not_defined
+from rai.utils import update_if_not_defined, add_css_class, remove_css_class
+
 
 import random
 
-def add_css_class(css_string, css_class):
-    css_classes = css_string.split(' ')
-    try:
-        for cls in css_class:
-            if not cls in css_classes:
-                css_classes.append(cls)
-    except TypeError:
-        if not css_class in css_classes:
-            css_classes.append(css_class)
-
-    return ' '.join(css_classes)
-
-def remove_css_class(css_string, css_class):
-    css_classes = css_string.split(' ')
-    try:
-        css_classes.remove(css_class)
-    except ValueError:
-        pass
-    return ' '.join(css_classes)
 
 
 class RenderDisabledMixin:
@@ -267,7 +249,7 @@ class RAISelect(Select, RenderDisabledMixin):
     checked_attribute = {'selected': True}
     option_inherits_attrs = False
 
-    def __init__(self, attrs = None):
+    def __init__(self, attrs = None, choices = ()):
         if attrs is None:
             new_attrs = {
                 'class':  add_css_class('', self.required_css_classes)
@@ -282,7 +264,7 @@ class RAISelect(Select, RenderDisabledMixin):
         for attribute, default in self.default_attributes.items():
             new_attrs = update_if_not_defined(new_attrs, attribute, default)
             
-        super().__init__(attrs = new_attrs)
+        super().__init__(attrs = new_attrs, choices = choices)
         
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
@@ -342,12 +324,22 @@ class RAISelectMultipleSelectionLists(CheckboxSelectMultiple):
 
 
 class RAITypeAndSelect(RAISelect):
+    # the differences to a SELECT will be introduced by javascript
     required_css_classes = ['type-and-select'] + RAISelect.required_css_classes
 
-    
 
-    # the differences to a SELECT will be introduced by javascript
-    pass
+class RAISelectRAIItems(RAISelect):
+    """
+    A select with pre-defined options
+    """
+    required_css_classes = ['select-rai-items'] + RAISelect.required_css_classes
+    def optgroups(self, name, value, attrs = None):
+        from rai.internals import registered_rai_items_as_choices
+        self.choices = registered_rai_items_as_choices()
+        return super().optgroups(name, value, attrs = None)
+
+
+        
 # This is the default context set by django's Widget
     
     # context = {}
