@@ -1,3 +1,4 @@
+from pprint import pprint 
 from .generic import (
     RAIEditHandler,
     RAIBaseFormEditHandler,
@@ -18,7 +19,7 @@ import functools
 #from .utils import extract_panel_definitions_from_model_class
 
 import random
-from rai.forms import formfield_for_dbfield
+from rai.forms import formfield_for_dbfield, RAIAdminModelForm
 
 import string
 import uuid
@@ -41,6 +42,7 @@ class RAITabbedInterface(RAIBaseFormEditHandler):
         new = super().clone()
         new.base_form_class = self.base_form_class
         return new
+
     
 class RAIObjectList(RAIBaseFormEditHandler):
     template = 'rai/edit_handlers/object-list.html'
@@ -55,6 +57,7 @@ class RAIObjectList(RAIBaseFormEditHandler):
     
 class RAIFieldRowPanel(RAIBaseFormEditHandler):
     template = "rai/edit_handlers/field-row-panel.html"
+
 
 class RAICollapsablePanel(RAIBaseFormEditHandler):
     is_collapsable = True
@@ -83,15 +86,18 @@ class RAICollapsablePanel(RAIBaseFormEditHandler):
         })
         return kwargs
         
+
 class RAIUserDataPanel(RAICollapsablePanel):
     """
     A panel that shows information that is entered by external users.
     Issues a visual warning to avoid editing
     """
     template = 'rai/edit_handlers/userdata-panel.html'
+
 class RAICollectionPanel(RAIBaseFormEditHandler):
     template = 'rai/edit_handlers/collection-panel.html'
     
+
 class RAIPillsPanel(RAIBaseFormEditHandler):
     template = 'rai/edit_handlers/pills-panel.html'
 
@@ -111,6 +117,7 @@ class RAIPillsPanel(RAIBaseFormEditHandler):
             'nav_label' : self.nav_label
         })
         return kwargs
+
 
 class RAITranslatedContentPanel(RAIPillsPanel):
     """
@@ -154,6 +161,7 @@ class RAITranslatedContentPanel(RAIPillsPanel):
     def clone(self):
         return RAIPillsPanel(**self.clone_kwargs())
 
+
 class RAIMultiFieldPanel(RAIBaseCompositeEditHandler):
     template = 'rai/edit_handlers/multi-field-panel.html'
 
@@ -161,6 +169,7 @@ class RAIMultiFieldPanel(RAIBaseCompositeEditHandler):
         classes = super().classes()
         classes.append('multi-field')
         return classes
+
 
 class RAIInlinePanel(RAIEditHandler):
     is_collapsable = True
@@ -226,9 +235,6 @@ class RAIInlinePanel(RAIEditHandler):
 
         return [functools.partial(compare.ChildRelationComparison, self.db_field, field_comparisons)]
 
-
-        
-        
     def on_model_bound(self):
         manager = getattr(self.model, self.relation_name)
         self.db_field = manager.rel
@@ -287,7 +293,8 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
     is_collapsable = True
     template = 'rai/edit_handlers/query-inline-panel.html'
     child_template = 'rai/edit_handlers/inline-panel-child.html'
-    
+
+    formset = None
 
     def __init__(self, name, model, query_callback, panels, *args, **kwargs):
         self.name = name
@@ -344,22 +351,23 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
         self.Formset_Class = forms.modelformset_factory(
             self.model,
             formfield_callback = formfield_for_dbfield,
+            form = RAIAdminModelForm,
             **kwargs
         )
         # since this might be the only call to a bind_to method (most likely
         # if we want to show an empty form) set self.formset to an initiated
         # version of this formset. use self.name as a prefix
         #
-
         self.formset = self.Formset_Class(prefix = self.name, queryset = self.model.objects.none())
 
         # bind the children 
         self.bind_formset_forms()
 
     def get_form_class(self):
-        print('IN IQP\'s get_formclass')
         form = super().get_formclass()
+        
         form.formsets[self.name] = self.FormsetClass
+        form.formsets[self.name].readonly_fields = self.readonly_fields()
         return form
 
     def on_form_bound(self):
@@ -402,6 +410,7 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
         self.Formset_Class = forms.modelformset_factory(
             self.model,
             formfield_callback = formfield_for_dbfield,
+            form = RAIAdminModelForm,
             **self.get_full_formset_kwargs()
         )
         
@@ -468,7 +477,7 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
             'max_num' : self.max_num,
             'validate_max' : self.validate_max,
             'min_num' : self.min_num,
-            'validate_min' : self.validate_min
+            'validate_min' : self.validate_min,
         }
 
     def required_fields(self):
@@ -497,8 +506,9 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
     def required_additional_formsets(self):
         return { self.name: {
             'model' : self.model,
-            'formset_kwargs' : self.get_formset_kwargs()
+            'formset_kwargs' : self.get_full_formset_kwargs()
         }}
+    
     def html_declarations(self):
         return self.get_child_edit_handler().html_declarations()
     
@@ -525,7 +535,6 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
             self.__class__.__name__, self.name,
             self.model, self.instance, self.request, self.form.__class__.__name__, self.formset.__class__.__name__)
 
-
     
 class RAIMissingPanel(RAIEditHandler):
     """
@@ -544,3 +553,49 @@ class RAIMissingPanel(RAIEditHandler):
         return {}
     def render(self):
         return render_to_string(self.template, {'self':self})
+
+
+class RAIReadOnlyPanel(RAIFieldPanel):
+    def required_fields(self):
+        return []
+    def classes(self):
+        if self.classname:
+            return [self.classname]
+        return []
+
+    def readonly_fields(self):
+        return {
+            self.field_name: {
+                'label' : self.db_field.verbose_name,
+                'help_text': self.db_field.help_text,
+                'value': getattr(self, 'value', None)
+            }
+        }
+    def on_form_bound(self):
+        pass
+        self.form.readonly_fields.update({
+            self.field_name : {
+                'label' : self.db_field.verbose_name,
+                'help_text' : self.db_field.help_text,
+                'value' : getattr(self.instance, self.field_name, None),
+                'is_bound' : self.instance is not None
+            }
+        })
+#    def on_formset_bound(self):
+
+
+    def on_instance_bound(self):
+        self.form.readonly_fields.update({
+            self.field_name : {
+                'label' : self.db_field.verbose_name,
+                'help_text' : self.db_field.help_text,
+                'value' : getattr(self.instance, self.field_name, None)
+            }
+        })
+        self.value = getattr(self.instance, self.field_name, None)
+  
+
+    def render(self):
+        return mark_safe('{}: {} ({})'.format('me', self.value, self.field_name))
+    def render_as_field(self):
+        return self.render()
