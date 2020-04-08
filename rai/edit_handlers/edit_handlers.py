@@ -453,7 +453,10 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
 
         return new
 
-
+    def classes(self):
+        classes = super().classes()
+        classes.append('inline-panel')
+        return classes
     
     def clone(self):
         return self.__class__(
