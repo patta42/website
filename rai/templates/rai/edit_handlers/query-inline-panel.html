@@ -1,6 +1,6 @@
 {% load i18n %}
 {% load wagtailadmin_tags  %}
-<div class="inline-panel collapsable{% if self.classes %} {{self.classes|join:" "}}{%endif%}" id="{{ self.formset.prefix }}">
+<div class="collapsable{% if self.classes %} {{self.classes|join:" "}}{%endif%}" id="{{ self.formset.prefix }}">
 {{ self.formset.management_form }}
 <div class="multiple" id="id_{{ self.formset.prefix }}-FORMS">
   {% if self.formset.non_form_errors %}
