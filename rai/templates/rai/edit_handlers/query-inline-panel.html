@@ -1,3 +1,31 @@
+{% load i18n %}
+{% load wagtailadmin_tags  %}
+<div class="inline-panel collapsable{% if self.classes %} {{self.classes|join:" "}}{%endif%}" id="{{ self.formset.prefix }}">
+{{ self.formset.management_form }}
+<div class="multiple" id="id_{{ self.formset.prefix }}-FORMS">
+  {% if self.formset.non_form_errors %}
+  <div class="alert alert-warning error-message">
+    {% for error in self.formset.non_form_errors %}
+    <span>{{ error|escape }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
 {% for child in self.children %}
-    {% include "rai/edit_handlers/inline-panel-child.html" %}
+    {% include self.child_template %}
 {% endfor %}
+<div class="add button-group mt-2">
+  {% if self.can_add %}
+  <button type="button" class="btn btn-secondary" id="id_{{ self.formset.prefix }}-add">
+    <i class="fas fa-plus{% if self.label %} mr-1{% endif %}"></i>{% if self.label %} {% blocktrans with label=self.label|lower %}Add {{ label }}{% endblocktrans %}{% endif %}
+  </button>
+  {% endif %}
+</div>
+
+<script type="text/django-form-template" id="id_{{ self.formset.prefix }}-EMPTY_FORM_TEMPLATE">
+{% escapescript %}
+{% include "rai/edit_handlers/inline-panel-child.html" with child=self.empty_child %}
+{% endescapescript %}
+</script>
+
+</div>
