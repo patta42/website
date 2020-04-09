@@ -416,7 +416,23 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
         
         qs = self.query_callback(self.instance)
         self.formset = self.Formset_Class( queryset = qs, prefix = self.name )
+        for subform in self.formset.forms:
+            # override the DELETE field to have a hidden input
+            subform.fields[DELETION_FIELD_NAME].widget = forms.HiddenInput()
+            
+            # ditto for the ORDER field, if present
+            if self.formset.can_order:
+                subform.fields[ORDERING_FIELD_NAME].widget = forms.HiddenInput()
+
         self.bind_formset_forms()
+        empty_form = self.formset.empty_form
+        empty_form.fields[DELETION_FIELD_NAME].widget = forms.HiddenInput()
+        if self.formset.can_order:
+            empty_form.fields[ORDERING_FIELD_NAME].widget = forms.HiddenInput()
+
+        self.empty_child = self.get_child_edit_handler()
+        self.empty_child = self.empty_child.bind_to(
+            instance=empty_form.instance, request=self.request, form=empty_form)
 
 
 
