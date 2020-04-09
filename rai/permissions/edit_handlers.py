@@ -2,13 +2,10 @@ from .internals import PERMISSIONS, get_permissions
 from .models import RAIPermission
 from django import forms
 
-
 from rai.edit_handlers import RAIMultiFieldPanel, RAIFieldPanel, RAIQueryInlinePanel
 from rai.utils import add_css_class, remove_css_class
 from rai.permissions.widgets import RAISelectRAIPermissions
 from rai.widgets import RAISelectRAIItems
-
-
 
 class PermissionForm(forms.Form):
     identifier = forms.ChoiceField()
@@ -44,7 +41,8 @@ class PermissionSelectionInlinePanel(RAIQueryInlinePanel):
 
     def clone(self):
         return self.__class__(
-            self.name, self.rai_items, self.rai_permissions, **(self.clone_kwargs())
+            self.name, self.rai_items, self.rai_permissions,
+            **(self.clone_kwargs())
         )
     
     def get_permissions(self, instance):
