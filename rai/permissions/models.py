@@ -35,7 +35,9 @@ class RAIGroup(models.Model):
     members = models.ManyToManyField(
         StaffUser,
         verbose_name = 'Mitarbeiter in dieser Gruppe',
-        limit_choices_to=get_choices
+        limit_choices_to=get_choices,
+        related_name = 'rai_group'
+
     )
 
     def __repr__(self): 
@@ -62,7 +64,6 @@ class RAIPermission( models.Model ):
          RAIGroup,
          verbose_name = 'verknüpfte Gruppe',
          on_delete = models.CASCADE
-
      )
     
      
