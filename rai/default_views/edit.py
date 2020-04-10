@@ -1,4 +1,4 @@
-from pprint import pprint as print
+from pprint import pprint 
 
 
 from .generic import SingleObjectMixin
@@ -15,45 +15,9 @@ from django.utils.translation import ugettext_lazy as _
 class EditView(CreateView, SingleObjectMixin):
     template_name = 'rai/views/default/edit.html'
     formclass = None
-
-    def get_page_menu(self):
-        actions = []
-        for Action in self.raiadmin.group_actions:
-            action = Action(self.raiadmin)
-            if action.action_identifier != self.active_action.action_identifier:
-                actions.append({
-                    'icon' : action.icon,
-                    'icon_font' : action.icon_font,
-                    'label' : action.label,
-                    'url' : action.get_href(),
-                    'btn_type' : getattr(action,'btn_type', None),
-                    'text_type': getattr(action,'text_type', None),
-                    
-                })
-        for Action in self.raiadmin.item_actions:
-            action = Action(self.raiadmin)
-            if action.action_identifier != self.active_action.action_identifier:
-                actions.append({
-                    'icon' : action.icon,
-                    'icon_font' : action.icon_font,
-                    'label' : action.label,
-                    'url' : action.get_href(self.obj.id),
-                    'btn_type' : getattr(action,'btn_type', None),
-                    'text_type': getattr(action,'text_type', None),
-                    
-                })
-        return render_to_string(
-            'rai/menus/group_menu.html',
-            {
-                'actions' : actions,
-                'sort_button' : False,
-                'filter_button' : False,
-                'save_button': True,
-                'icons_only' : True,
-#                'settings_menu' : self.get_settings_menu()    
-            }
-        )
-
+    
+    def get_actions(self):
+        return self.get_group_actions() + self.get_item_actions()
     
     def dispatch(self, request, *args, **kwargs):
         self.obj = self.get_object()
@@ -74,8 +38,7 @@ class EditView(CreateView, SingleObjectMixin):
         context['object'] = self.obj
         return context
 
-    def post(self, request, *args, **kwargs):
-        self.edit_handler = self.edit_handler.bind_to(instance = self.obj)        
+    def form_for_post(self, request):
         form = self.formclass(request.POST, request.FILES, instance = self.obj, user = request.user)
         self.formsets = {}
         for key, formset_class in self.formset_classes.items():
@@ -85,7 +48,11 @@ class EditView(CreateView, SingleObjectMixin):
                     prefix=key, form_kwargs={'user': request.user}
                 )
             })
-
+        return form
+    
+    def post(self, request, *args, **kwargs):
+        self.edit_handler = self.edit_handler.bind_to(instance = self.obj)        
+        form = self.form_for_post(request)
         all_valid = True
         if not form.is_valid():
             all_valid = False
