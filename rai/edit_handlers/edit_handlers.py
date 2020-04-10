@@ -295,7 +295,8 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
     child_template = 'rai/edit_handlers/inline-panel-child.html'
 
     formset = None
-
+    formset_formclass = None
+    
     def __init__(self, name, model, query_callback, panels, *args, **kwargs):
         self.name = name
         self.query_callback = query_callback
@@ -410,7 +411,7 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
         self.Formset_Class = forms.modelformset_factory(
             self.model,
             formfield_callback = formfield_for_dbfield,
-            form = RAIAdminModelForm,
+            form = self.formset_formclass or RAIAdminModelForm,
             **self.get_full_formset_kwargs()
         )
         
