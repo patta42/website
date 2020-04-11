@@ -6,7 +6,7 @@ import datetime
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _l
 
-from rai.actions import ListAction, CreateAction, EditAction, DetailAction, InactivateAction
+from rai.actions import ListAction, CreateAction, EditAction, DetailAction
 from rai.base import RAIModelAdmin, RAIAdminGroup
 
 from userinput.models import RUBIONUser, WorkGroup, Project
@@ -65,7 +65,8 @@ class RAIWorkGroups(RAIModelAdmin):
     item_actions = [
         actions.RAIWorkgroupEditAction,
         actions.RAIWorkgroupDetailAction,
-        InactivateAction]
+        actions.UserinputInactivateAction
+    ]
 
     
 class RAIProjects(RAIModelAdmin):
@@ -78,7 +79,7 @@ class RAIProjects(RAIModelAdmin):
     item_actions = [
         actions.RAIProjectEditAction,
         DetailAction,
-        InactivateAction,
+        actions.UserinputInactivateAction,
         actions.MoveToWorkgroupAction
     ]
 
