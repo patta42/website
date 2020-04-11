@@ -219,7 +219,6 @@ $.widget(
 			}
 		    )
 	    }
-	    
 	},
 	
 	clear : function(){
@@ -234,9 +233,14 @@ $.widget(
     'raiwidgetsSelectionPanel.permissionSelectionPanelChild',
     {
 	options : {
-	    initAsEmpty : false
+	    initAsEmpty : false,
+	    id : undefined,
+	    prefix : ''
 	},
 	_create : function(){
+	    var id_prefix = 'inline_child_'+this.options.prefix+'-';
+	    this.options['id'] = this.element.attr('id').substring(id_prefix.length)
+	    
 	    this._mainOptions = [],
 	    this._subOptions = {},
 	    this._values = {},
@@ -254,7 +258,8 @@ $.widget(
 	},
 	
 	_$ : function(selector){return this.element.find(selector)},
-	
+	_$$ : function(suffix) {return this._$(
+	    '#id_'+this.options.prefix+'-'+this.options.id+'-'+suffix)},
 	// some "constant" functions generating html 
 	
 	_getEmptyLi: () => (
@@ -271,14 +276,19 @@ $.widget(
 	_initComponents : function(){
 
 	    this.$itemSelect = this._$('.select-rai-items').first();
+	    this.$deleteBtn = this._$$('delete')
+	    this.$deleteIndicator = this._$$('DELETE')
 
-
+	    
 	    if (this.$itemSelect.val() !== '' && !this.options.initAsEmpty ){
 		var tmp = this.$itemSelect.val().split('.')
 		this._mainSelection = tmp[0]
 		this._subSelection = tmp[1]
 	    }
 	    var self = this;
+	    this.$deleteBtn.click( function(evt){
+		self._delete(evt)
+	    })
 	    this.element.attr('tabindex', 0)
 		.blur(
 		    function(){
@@ -429,7 +439,17 @@ $.widget(
 		    .permissionSelectionListBox('value', this._permissionSelection)
 		    .permissionSelectionListBox('shown', false)
 	    } 
-	}
+	},
+	_delete : function(evt){
+	    this._$('input[type="hidden"]').insertBefore(this.element)
+	    
+	    this.element.hide(200, function(){
+		$(this).remove()
+	    })
+	    this.$deleteBtn.remove()
+	    this.$deleteIndicator.val("1")
+	    this._trigger('delete', evt, this)
+	},
     }
 )
 $.widget(
@@ -446,8 +466,9 @@ $.widget(
 	_$$: function(suffix) { return $('#id_'+this.id+suffix) },
 
 	_create : function(){
-	    this.element.find('.inline-child').permissionSelectionPanelChild()
 	    this.id = this.element.attr('id')
+	    this.element.find('.inline-child')
+		.permissionSelectionPanelChild({prefix:this.id})
 	    this.$childTemplate = this._$$(this.options['template'])
 	    this.$totalForms = this._$$(this.options.totalForms)
 	    this.$initialForms = this._$$(this.options.initialForms)
@@ -472,10 +493,10 @@ $.widget(
 	    return this.totalForms(this.totalForms()+1)
 	},	
 	_addChild : function(){
-	    console.log(this.$childTemplate)
 	    var newElem =$(this.$childTemplate.html().replace(/__prefix__/g,(this.incTotalForms()-1)))
 		.insertBefore(this.$add).permissionSelectionPanelChild({
-		    initAsEmpty : true
+		    initAsEmpty : true,
+		    prefix : this.id
 		})
 	    
 	    
