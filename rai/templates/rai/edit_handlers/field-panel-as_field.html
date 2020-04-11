@@ -1,4 +1,4 @@
-<div class="form-group">
+<div class="form-group {{classes|join:" "}}">
 <label for="{{field.id_for_label}}">{{field.label}}</label>
   {% include "rai/edit_handlers/shared/field.html"  with show_label=False show_help_text=False disabled=self.disabled  %}
 <small class="text-muted form-text">{{field.help_text}}</small>
