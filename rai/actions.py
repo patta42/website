@@ -1,7 +1,8 @@
 from django.urls import reverse, path
 from django.utils.translation import ugettext_lazy as _l
 
-# from rai.views import ListSettingsView
+from rai.permissions.utils import (
+    user_can_view, user_can_edit, user_can_create, user_can_delete)
 
 class RAIAction:
     label = None
@@ -36,6 +37,10 @@ class RAIAction:
     def get_href(self, *args, **kwargs):
         return reverse(self.get_url_name(), args = args )
 
+    def get_rai_id(self):
+        return '{}.{}'.format(
+            self.raiadmin.identifier, self.raiadmin.sub_identifier)
+        
     def show(self, request = None):
         return True
     def show_for_instance(self, instance, request = None):
@@ -83,6 +88,9 @@ class ListAction(ModelAction):
     def get_url_for_registration(self):
         urls = super().get_url_for_registration()
         return urls + self.settings_action.get_url_for_registration()
+
+    def show(self, request):
+        return user_can_view(request, self.get_rai_id())
     
 class CreateAction(ModelAction):
     label = _l('Add')
@@ -95,6 +103,9 @@ class CreateAction(ModelAction):
             raiadmin = self.raiadmin,
             active_action = self
         )
+    def show(self, request):
+        return user_can_create(request, self.get_rai_id())
+
 
 class DetailAction(SpecificAction):
     label = 'Details'
@@ -107,7 +118,9 @@ class DetailAction(SpecificAction):
             raiadmin = self.raiadmin,
             active_action = self
         )
-
+    def show(self, request):
+        return user_can_view(request, self.get_rai_id())
+  
 
 class EditAction(SpecificAction):
     label = _l('Edit')
@@ -120,6 +133,9 @@ class EditAction(SpecificAction):
             raiadmin = self.raiadmin,
             active_action = self
         )
+    def show(self, request):
+        return user_can_edit(request, self.get_rai_id())
+  
         
     
     
@@ -154,7 +170,8 @@ class DeleteAction(SpecificAction):
             raiadmin = self.raiadmin,
             active_action = self
         )   
-        
+    def show(self, request):
+        return user_can_delete(request, self.get_rai_id())
     
 class ListSettingsAction(ModelAction):
     label = _l('adjust view')
