@@ -34,6 +34,10 @@ class MoveToWorkgroupAction(SpecificAction):
     def show(self, request):
         return user_has_permission(request, self.get_rai_id(), MovePermission)
 
+class UserinputInactivateAction(InactivateAction):
+    def show(self, request):
+        return user_has_permission(request, self.get_rai_id(), InactivatePermission)
+
     
 def _is_rubion_user_active(instance):
     return (
@@ -51,9 +55,8 @@ class RUBIONUserMoveAction(RUBIONUserOnlyWhenActiveMixin, MoveToWorkgroupAction)
         return super().show_for_instance(instance, request) and not instance.is_leader
       
     
-class RUBIONUserInactivateAction(RUBIONUserOnlyWhenActiveMixin, InactivateAction):
-    def show(self, request):
-        return user_has_permission(request, self.get_rai_id(), InactivatePermission)
+class RUBIONUserInactivateAction(RUBIONUserOnlyWhenActiveMixin, UserinputInactivateAction):
+    pass
         
 class RAIUserDataListAction(ListAction):
     list_item_template = 'userinput/rubionuser/rai/list/item-in-list.html'
