@@ -34,7 +34,7 @@ def permissions_fur_workgroups():
 
 class RAIUserData(RAIModelAdmin):
     model = RUBIONUser
-    menu_label = _l('Users')
+    menu_label = 'Nutzer'
     menu_icon_font = 'fas'
     menu_icon = 'user'
     group_actions = [
