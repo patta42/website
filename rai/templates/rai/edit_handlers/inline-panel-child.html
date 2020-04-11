@@ -1,0 +1,19 @@
+{% load i18n %}
+<div id="inline_child_{{ child.form.prefix }}" class="d-flex align-items-start inline-child pt-1">
+  <div class="btn-group-vertical mr-1">
+    {% if can_order %}
+    <button type="button" class="btn btn-sm btn-secondary" id="id_{{ child.form.prefix }}-move-up" title="{% trans 'Move up' %}">
+      <i class="fas fa-arrow-up"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-secondary" id="id_{{ child.form.prefix }}-move-down" title="{% trans 'Move down' %}">
+      <i class="fas fa-arrow-down"></i>
+    </button>
+    {% endif %}
+    {% if can_delete %}
+    <button type="button" class="btn btn-sm btn-secondary" id="id_{{ child.form.prefix}}-delete" title="{% trans 'Delete' %}"><i class="fas fa-trash-alt"></i></button>
+    {% endif %}
+  </div>
+  <div class="w-100">
+    {{ child.render_form_content }}
+  </div>
+</div>
