@@ -3,12 +3,16 @@ from pprint import pprint
 import datetime
 
 from rai.actions import (
-    ListAction, EditAction, DetailAction, CreateAction, InactivateAction, SpecificAction
+    ListAction, EditAction, DetailAction, CreateAction,
+    InactivateAction, SpecificAction
 )
 import rai.edit_handlers as eh
+from rai.permissions.utils import user_has_permission
 from rai.widgets import RAIRadioInput, RAISelectMultiple, RAISelect
 
 import userinput.rai.filters as filters
+from userinput.rai.permissions import MovePermission, InactivatePermission
+
 from userinput.rai.edit_handlers import (
     project_edit_handler, workgroup_edit_handler, rubionuser_edit_handler
 )
@@ -27,14 +31,17 @@ class MoveToWorkgroupAction(SpecificAction):
             raiadmin = self.raiadmin,
             active_action = self
         )
+    def show(self, request):
+        return user_has_permission(request, self.get_rai_id(), MovePermission)
 
-
+    
 def _is_rubion_user_active(instance):
     return (
         instance.linked_user is None or
         instance.expire_at is None or
         instance.expire_at >= datetime.datetime.now()
     )
+
 class RUBIONUserOnlyWhenActiveMixin:
     def show_for_instance(self, instance, request=None):
         return _is_rubion_user_active(instance)
@@ -42,9 +49,11 @@ class RUBIONUserOnlyWhenActiveMixin:
 class RUBIONUserMoveAction(RUBIONUserOnlyWhenActiveMixin, MoveToWorkgroupAction):
     def show_for_instance(self, instance, request=None):
         return super().show_for_instance(instance, request) and not instance.is_leader
-
+      
+    
 class RUBIONUserInactivateAction(RUBIONUserOnlyWhenActiveMixin, InactivateAction):
-    pass
+    def show(self, request):
+        return user_has_permission(request, self.get_rai_id(), InactivatePermission)
         
 class RAIUserDataListAction(ListAction):
     list_item_template = 'userinput/rubionuser/rai/list/item-in-list.html'
