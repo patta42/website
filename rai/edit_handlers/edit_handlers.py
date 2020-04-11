@@ -352,7 +352,7 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
         self.Formset_Class = forms.modelformset_factory(
             self.model,
             formfield_callback = formfield_for_dbfield,
-            form = RAIAdminModelForm,
+            form = self.formset_formclass or RAIAdminModelForm,
             **kwargs
         )
         # since this might be the only call to a bind_to method (most likely
@@ -414,12 +414,15 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
             form = self.formset_formclass or RAIAdminModelForm,
             **self.get_full_formset_kwargs()
         )
-        
         qs = self.query_callback(self.instance)
         self.formset = self.Formset_Class( queryset = qs, prefix = self.name )
         for subform in self.formset.forms:
             # override the DELETE field to have a hidden input
-            subform.fields[DELETION_FIELD_NAME].widget = forms.HiddenInput()
+            if self.formset.can_delete:
+                try: 
+                    subform.fields[DELETION_FIELD_NAME].widget = forms.HiddenInput()
+                except KeyError:
+                    pass
             
             # ditto for the ORDER field, if present
             if self.formset.can_order:
@@ -427,7 +430,10 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
 
         self.bind_formset_forms()
         empty_form = self.formset.empty_form
-        empty_form.fields[DELETION_FIELD_NAME].widget = forms.HiddenInput()
+        try:
+            empty_form.fields[DELETION_FIELD_NAME].widget = forms.HiddenInput()
+        except KeyError:
+            pass
         if self.formset.can_order:
             empty_form.fields[ORDERING_FIELD_NAME].widget = forms.HiddenInput()
 
