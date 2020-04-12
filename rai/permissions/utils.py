@@ -31,8 +31,6 @@ def _cache_permission(rid, user, rai_id, value):
     _permission_cache_requests.update({user:rid})
     
 def user_has_permission(request, rai_id, permission):
-    print('Asking for: {}:{}'.format(rai_id, permission.key))
-    print('Request id is: {}'.format(id(request)))
     perm = None
     staff = None
     if request.user.is_superuser:
@@ -55,10 +53,8 @@ def user_has_permission(request, rai_id, permission):
                 .order_by('-value').first())
         if not perm:
             perm = NonePermission
-        print('Permission fetched from DB')
         _cache_permission(id(request), staff.user.id, rai_id, perm.value)
-    else:
-        print('Permission fetched from cache')
+
     try:
         value = perm.value
     except AttributeError:
