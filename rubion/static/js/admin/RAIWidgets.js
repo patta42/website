@@ -512,6 +512,7 @@ $R.Widgets = {
 	})
 	instances = []
 	$('.inline-panel-select-permissions').permissionSelectionPanel()
+	$('.hide-show-widget').hideshow()
     },
 
     TypeAndSelect : ( function() {
@@ -629,6 +630,74 @@ $R.Widgets = {
 	return cls;
     })(),
 }
+$.widget(
+    'raiwidgets.hideshow',
+    {
+	options : {
+	    labelShow : 'Anzeigen',
+	    labelHide : 'Verbergen',
+	    buttonPos : 'before',
+	    initial : 'shown'
+	},
+	_create : function(){
+	    // read options from element
+	    if (this.element.data('hide-show-show') !== undefined){
+		this.options['labelShow'] = this.element.data('hide-show-show');
+	    }
+	    if (this.element.data('hide-show-hide') !== undefined){
+		this.options['labelHide'] = this.element.data('hide-show-hide');
+	    }
+	    if (this.element.data('hide-show-button-position') !== undefined){
+		this.options['buttonPos'] = this.element.data('hide-show-button-position');
+	    }
+	    if (this.element.data('hide-show-initial') !== undefined){
+		this.options['initial'] = this.element.data('hide-show-initial');
+	    }
+	    this.$btnText = $('<span></span>');
+	    this.$btnIconWrapper = $('<span class="ml-1"></span>')
+	    this.$showIcon = $('<i class="fas fa-caret-right"></i>')
+	    this.$hideIcon = $('<i class="fas fa-caret-down"></i>')
+	    var self = this
+	    this.$btn = $('<a href="#"></a>')
+		.append(this.$btnText)
+		.append(this.$btnIconWrapper)
+		.click(function(){self._toggle()})
+	    
+	    if (this.options['buttonPos'] == 'before'){
+		this.$btn.insertBefore(this.element)
+	    } else {
+		this.$btn.insertAfter(this.element)
+	    }
+	    if (this.options['initial'] == 'shown'){
+		this.element.addClass('hswidget-hidden')
+	    } else {
+		this.element.addClass('hswidget-shown')
+	    }
+	    this._toggle()
+	},
+	_toggle : function(){
+	    var label, $icon;
+	    if (this.element.hasClass('hswidget-shown')){
+		label = this.options.labelShow
+		$icon = this.$showIcon
+		this.element
+		    .removeClass('hswidget-shown')
+		    .addClass('hswidget-hidden')
+		    .hide(200)
+	    } else {
+		label = this.options.labelHide
+		$icon = this.$hideIcon
+		this.element
+		    .removeClass('hswidget-hidden')
+		    .addClass('hswidget-shown')
+		    .show(200)
+	    }
+	    this.$btnText.text(label);
+	    this.$btnIconWrapper.empty().append($icon)
+	}
+    }
+    
+)
 
 $(document).ready(function(){
     $R.Widgets.init()
