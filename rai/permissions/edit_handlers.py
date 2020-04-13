@@ -1,37 +1,33 @@
 from .internals import PERMISSIONS, get_permissions
 from .models import RAIPermission
 from django import forms
+from rai.forms import RAIAdminModelForm
+
 
 from rai.edit_handlers import RAIMultiFieldPanel, RAIFieldPanel, RAIQueryInlinePanel
 from rai.utils import add_css_class, remove_css_class
 from rai.permissions.widgets import RAISelectRAIPermissions
 from rai.widgets import RAISelectRAIItems
 
-class PermissionForm(forms.Form):
-    identifier = forms.ChoiceField()
-    sub_identifier = forms.ChoiceField()
-    permission = forms.ChoiceField()
 
+class PermissionForm(RAIAdminModelForm):
+    rai_id = forms.CharField(widget = RAISelectRAIItems)
+    value = forms.ChoiceField(widget = RAISelectRAIPermissions)
+    group_id = forms.IntegerField(widget = forms.widgets.HiddenInput)
+    model = RAIPermission
+    
     def __init__(self, *args, **kwargs):
+        self.group = kwargs.pop('group', None)
         super().__init__(*args, **kwargs)
-
-        items = []
-        subitems = []
-        permissions = []
-        for item, subitem in REGISTERED_ITEMS.keys():
-            items.append((item, item))
-            for subitem in subitems:
-                subitems.append('{}.{}'.format(item, subitem['id']), subitem['label'])
-                for permission in get_permissions(item, sub):
-                    permissions.append(
-                        ('{}.{}.{}'.format(item,sub,permission.key), permission.description)
-                    )
-        self.fields['identifier'].choices = items
-        self.fields['sub_identifier'].choices = subitems
-        self.fields['permission'].choices = permissions
-
+        
+        
+    def clean_group_id(self):
+        if not self.cleaned_data['group_id']:
+            return self.group.pk
+        return self.cleaned_data['group_id']
         
 class PermissionSelectionInlinePanel(RAIQueryInlinePanel):
+    formset_formclass = PermissionForm
     def __init__ (self, name, rai_items, rai_permissions, **kwargs):
         self.name = name,
         self.rai_items = rai_items
@@ -53,6 +49,7 @@ class PermissionSelectionInlinePanel(RAIQueryInlinePanel):
         classes.append("inline-panel-select-permissions")
         classes.remove('inline-panel')
         return classes
+
     
 class PermissionSelectionPanel(RAIMultiFieldPanel):
     def __init__(self, rai_items, rai_permissions, classname = '', **kwargs):
