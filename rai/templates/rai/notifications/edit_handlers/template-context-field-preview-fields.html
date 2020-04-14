@@ -1,21 +1,6 @@
 {% load rai_help wagtailcore_tags %}
-<div class="px-2 py-1 bg-light rounded border border-secondary" style="margin:-1rem;">
-  <h6>Optionen für Vorschau auswählen:</h6>
-  <div>
-    {% for label, definition in preview_options.items %}
-    <div class="form-group">
-    <label for="{{definition.prefix}}Selection" style="white-space: nowrap;" class="mr-2">{{label}}:</label>
-    <select class="custom-select mr-2" id="{{definition.prefix}}Selection">
-      {% for pk, name in definition.options %}
-      <option value="{{pk}}">{{name}}</option>
-      {% endfor %}
-    </select>
-    </div>
-    {% endfor %}
-  </div>
-</div>
-<div class="template-editor-preview-wrapper">
-  <h6>Vorschau</h6>
+<div class="d-flex w-100 align-items-start justify-content-between">
+  <div class="template-editor-preview-wrapper pr-2" style="flex-grow:4;">
   <div class="template-editor-preview template-editor-preview-not-loaded border rounded borders-secondary" >
     <div class="load-preview-indicator">
       <div class="load-preview-indicator-not-loaded">
@@ -35,6 +20,23 @@
 	</div>
       </div>
 
+    </div>
+  </div>
+  </div>
+
+  <div class="px-2 py-1 bg-light rounded border border-secondary" style=" flex-grow:1">
+    <div>
+      <h6>Optionen für die Vorschau</h6>
+      {% for label, definition in preview_options.items %}
+      <div class="form-group">
+	<label for="{{definition.prefix}}Selection" style="white-space: nowrap;" class="mr-2">{{label}}:</label>
+	<select class="custom-select mr-2" id="{{definition.prefix}}Selection">
+	  {% for pk, name in definition.options %}
+	  <option value="{{pk}}">{{name}}</option>
+	  {% endfor %}
+	</select>
+      </div>
+      {% endfor %}
     </div>
   </div>
 </div>
