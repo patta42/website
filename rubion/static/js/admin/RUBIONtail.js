@@ -361,5 +361,31 @@ $R.help = {
 $(document).ready(
     function(){
 	$R.help.instance = new $R.help.HelpSystem();
+	$('.sidebar-sticky').sortable({
+	    handle : '.sortable-grip',
+	    items: '.rai-main-menu-container',
+	    axis : 'y',
+	    update : function(evt, ui){
+	     	var count = 0, data = {}, group_order = [];
+		var widget = ui.item.parents('.sidebar-sticky').first()
+		var url = widget.data('admin-menu-settings-url')
+	     	widget.find('.rai-main-menu-container').each(function(){
+	     	    group_order.push($(this).data('admin-menu-container-name'))
+	     	})
+		data['group_order'] = JSON.stringify(group_order)
+		data['user'] = $('body').first().data('rai-user_pk')
+	    	$R.post(url, {
+		    data : data
+		}).done(
+		    function(data){
+			console.log(data)
+		    }
+		)
+		    
+							
+	    }
+	})
+	$('.user-editable').editablecontent()
+
     }
 )
