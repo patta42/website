@@ -17,7 +17,7 @@ def full_academic_name(obj):
     '''Vor- und Nachname inkl. akademischer Titel (automatisch übersetzt)'''
     if obj.academic_title:
         return '{} {} {}'.format(
-            obj.get_academic_title_de_display(),
+            obj.get_academic_title_display(),
             obj.first_name,
             obj.last_name
         )
