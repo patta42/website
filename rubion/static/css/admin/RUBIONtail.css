@@ -397,6 +397,9 @@ h6.sidebar-heading{
     overflow:auto;
     position:relative;
 }
+.template-editor-preview.template-editor-preview-not-loaded{
+    cursor: pointer;
+}
 .template-editor-preview.template-editor-preview-not-loaded,
 .template-editor-preview.template-editor-preview-loading
 {
