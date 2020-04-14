@@ -102,6 +102,7 @@ class RAIView(TemplateView):
             'inline_media' : self.inline_media,
             'main_admin_menu' : self.get_main_admin_menu(),
             'help_editor' : self.get_help_editor(),
+            'user_pk' : self.request.user.pk 
         })
         return context
 
