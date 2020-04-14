@@ -1,0 +1,29 @@
+{% load rai_help wagtailcore_tags %}
+<div class="d-flex align-items-center justify-content-between px-2 py-1 bg-light rounded border border-secondary" style="margin:-1rem;">
+  <div>
+  <span class="mx-2">Vorhandene Felder:</span>
+  {% for label, definition in template_tags.items %}
+  <div class="btn-group" role="group">
+    <button id="{{definition.prefix}}Btn" type="button" class="btn dropdown-toggle" data-toggle="dropdown"  aria-haspopup="true" aria-expanded="false">
+      {{ label }}
+    </button>
+    <div class="dropdown-menu" aria-labelledby="{{definition.prefix}}Btn">
+      {% for name, fnc in definition.tags %}
+      <div class="d-flex align-items-center justify-content-between">
+	<a class="dropdown-item" href="{{fnc}}" data-template-tag-prefix="{{definition.prefix}}">{{name}}</a>
+	<span class="pr-2">
+      {% with foo="rai:notificatons:template_syntax:"|add:notification_id|add:":"|add:fnc %}
+        {% help foo "" %}
+      {% endwith %}
+      </span>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+  {% endfor %}
+  </div>
+  <span style="font-size:150%">
+    {% help "rai:notifications:template_syntax" "" %}
+  </span>
+</div>
