@@ -1,0 +1,26 @@
+<div class="card template-editor">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs">
+      <li class="nav-item">
+	<a href="#template-editor-template" data-toggle="tab" role="tab" class="nav-link active" id="template-editor-template-tab" aria-controls="template-editor-template">Vorlage</a>
+      </li>
+      <li class="nav-item">
+	<a href="#template-editor-preview" data-toggle="tab" role="tab" aria-controls="template-editor-preview" class="nav-link" id="template-editor-preview-tab">Vorschau</a>
+      </li>
+    </ul>
+  </div>
+  <div class="card-body">
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="template-editor-template" role="tabpanel" aria-labelledby="template-editor-template-tab">
+	
+	{{ context.render }}
+	<div class="p-2 mt-3" style="margin-left:-1.5rem; margin-right:-1.5rem">
+	  {{ template.render_as_object }}
+	</div>
+      </div>
+      <div class="tab-pane fade" id="template-editor-preview" role="tabpanel" aria-labelledby="template-editor-preview-tab">
+	{{ context.render_preview_fields }}
+      </div>
+    </div>
+  </div>
+</div>
