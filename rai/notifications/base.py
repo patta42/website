@@ -4,9 +4,11 @@ from .models import NotificationTemplate
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.signals import pre_save, post_save
+from django.template import Template, Context
 from django.template.loader import get_template
 
-from inspect import getmembers, isfunction
+
+from inspect import getmembers, isfunction, getmodulename, getfile
 
 from wagtail.core import hooks
 from wagtail.core.models import Page 
@@ -100,6 +102,7 @@ class RAINotification(RAIListener):
         super().register()
         self.register_template()
         self.register_with_wagtail()
+        
     def register_template(self):
         """
         Adds the notification template to the database to allow
@@ -133,6 +136,46 @@ class RAINotification(RAIListener):
         def register_notification():
             return self
 
+    def _get_query_from_definition(self, definition):
+        cb = definition.get('preview_options_callback', None)
+        
+        if cb:
+            query = cb()
+        else:
+            model = definition.get('preview_model', None)
+            if model:
+                query = model.objects.all()
+            else:
+                raise ImproperlyConfigured(
+                    'Every entry in the context definition of a RAINotification '
+                    'needs either a '
+                    '  \'preview_model\' : <model> or a '
+                    '  \'preview_options_callback\' : <callback> '
+                    'entry.'
+                )
+        return query
+
+    def render_template(self, template, **kwargs):
+        tags2load = []
+        context = {}
+        for key, definition in self.context_definition.items():
+            tags2load.append(getmodulename(getfile(definition['tags'])))
+            context.update({
+                definition['prefix'] : kwargs.get(definition['prefix'], None)
+            })
+        template = '{{% load {} %}}{}'.format(' '.join(tags2load), template)
+        tpl = Template(template)
+        return tpl.render(Context(context))
+        
+    def render_preview(self, template, **kwargs):
+        render_kwargs = {}
+        for key, definition in self.context_definition.items():
+            pk = kwargs.get(definition['prefix'], None)
+            if pk:
+                query = self._get_query_from_definition(definition)
+                render_kwargs.update({definition['prefix'] : query.get(pk = pk) })
+        return self.render_template(template, **render_kwargs)
+        
     def get_template_tags(self):
         context_tags = {}
         for key, definition in self.context_definition.items():
@@ -151,21 +194,7 @@ class RAINotification(RAIListener):
         options = {}
         for key, definition in self.context_definition.items():
             # if we have a callback, use that
-            cb = definition.get('preview_options_callback', None)
-            if cb:
-                query = cb()
-            else:
-                model = definition.get('preview_model', None)
-                if model:
-                    query = model.objects.all()
-                else:
-                    raise ImproperlyConfigured(
-                        'Every entry in the context definition of a RAINotification '
-                        'needs either a '
-                        '  \'preview_model\' : <model> or a '
-                        '  \'preview_options_callback\' : <callback>'
-                        'entry.'
-                    )
+            query = self._get_query_from_definition(definition)
             options.update({
                 definition['label'] : {
                     'prefix' : definition['prefix'],
@@ -173,7 +202,10 @@ class RAINotification(RAIListener):
                 }
             })
         return options
-        
+
+    
+
+    
 def register_listener(Listener):
     listener = Listener()
     listener.register()
