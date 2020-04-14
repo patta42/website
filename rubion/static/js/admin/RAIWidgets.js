@@ -504,6 +504,97 @@ $.widget(
     }
 )
 
+$.widget('raiwidgets.templateeditor', {
+    _$ : function(selector){
+	return this.element.find(selector)
+    },
+    _create : function(){
+	this.previewUrl = this.element.data('template-editor-preview-url')
+	this.notificationId = this.element.data('template-editor-notification-id')
+	this.$template = this._$('textarea[name=template]').first()
+	
+	this.$btnContainer = this._$('.template-editor-button-container').first()
+
+	// assign functionality for buttons and preview field
+	var self = this
+	this.$btnContainer.find('a.dropdown-item').each(function(){
+	    $(this).click(function(evt){self._insertFilter(evt)})
+	})
+	this.$previewWrapper =  this._$('.template-editor-preview').first().click(
+	    function(){
+		if ($(this).hasClass('template-editor-preview-not-loaded')){
+		    self._getPreview()
+		}
+	    }
+	)
+	this.$preview = $('<div class="p-2"/>').appendTo(this.$previewWrapper)
+	
+
+	this.$previewOptions = this._$('.template-editor-preview-options select')
+	    .change(
+		function(){ self._setPreviewInvalid() }
+	    )
+	this.$template.change(
+	    function(){ self._setPreviewInvalid() }
+	)
+	
+    },
+    _setPreviewInvalid : function(){
+	this.$preview.html('')
+	this.$previewWrapper
+	    .removeClass('template-editor-preview-loading')
+	    .addClass('template-editor-preview-not-loaded')
+	
+    },
+    _insertFilter : function(evt){
+	evt.preventDefault()
+	var filter = $(evt.currentTarget).attr('href')
+	var prefix = $(evt.currentTarget).data('template-tag-prefix')
+	var tpl = this.$template.val()
+	var textarea = this.$template[0],
+	    start = textarea.selectionStart,
+	    end = textarea.selectionEnd,
+	    pre = tpl.slice(0, start),
+	    post = tpl.slice(end),
+	    insert = '{{ '+prefix+'|'+filter+' }}'
+	this.$template.val(pre+insert+post)
+	textarea.selectionStart = start + insert.length
+	textarea.selectionStart = start + insert.length
+    },
+    _getPreview : function(){
+	var data = {}
+	data['template'] = this.$template.val()
+	data['notification_id'] = this.notificationId
+	this.$previewOptions.each(function(){
+	    data[$(this).attr('name')] = $(this).val()
+	})
+	var self = this
+	$R.post(this.previewUrl, {
+	    data : data,
+	    beforeSend : function(){
+		self.$previewWrapper
+		    .removeClass('template-editor-preview-not-loaded')
+		    .addClass('template-editor-preview-loading')
+	    }
+	})
+	    .fail(
+		self.$previewWrapper
+		    .addClass('template-editor-preview-not-loaded')
+		    .removeClass('template-editor-preview-loading')
+	    )
+	    .done(
+		function(data){
+		    self.$previewWrapper
+			.removeClass('template-editor-preview-loading')
+			.removeClass('template-editor-preview-not-loaded')
+		    self.$preview.html('<pre>'+data['preview']+'</pre>')
+		}
+	    )
+	
+    }
+    
+})
+
 $R.Widgets = {
     init : function(){
 	// activate all widgets
@@ -513,6 +604,7 @@ $R.Widgets = {
 	instances = []
 	$('.inline-panel-select-permissions').permissionSelectionPanel()
 	$('.hide-show-widget').hideshow()
+	$('.template-editor').templateeditor()
     },
 
     TypeAndSelect : ( function() {
