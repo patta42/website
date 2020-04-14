@@ -116,7 +116,7 @@ body {
 }
 
 #mainlist li:hover{
-    background:#8dae10;
+    background:rgba(141,174,16,.25);
 }
 #mainlist li:hover p,#mainlist li:hover  h5{
     color:#003560;
@@ -348,4 +348,75 @@ h6.sidebar-heading{
 .type-and-select-selection li  .not-selected-icon,
 .type-and-select-selection li.selected  .selected-icon{
     display:inline;
+}
+/* Permission Selection panel */
+
+
+.inline-panel-select-permissions .inline-child:focus {
+    color: #495057;
+    background-color: #fff;
+    border-color: #007be0;
+    outline: 0;
+    box-shadow: 0 0 0 .2rem rgba(0,53,96,0.25);
+}
+
+.inline-panel-select-permissions .inline-child:focus .list-group-select-header.active{
+    background-color:rgba(0,53,96,1);
+    color:white;
+}
+
+.inline-panel-select-permissions .inline-child .list-group-select-header.active{
+    background-color:rgba(0,0,0,.125);
+    color:rgba(0,53,96,.5);
+}
+
+
+.inline-panel-select-permissions li.list-group-item.list-group-choice:hover{
+    background:rgba(141,174,16,.25);
+    cursor:default;
+}
+.list-group-select-header{
+    cursor:pointer;
+}
+.list-group-select-header .open-close-indicator.is-open .is-open,
+.list-group-select-header .open-close-indicator.is-closed .is-closed
+{
+    display:inline;
+}
+.list-group-select-header .open-close-indicator.is-open .is-closed,
+.list-group-select-header .open-close-indicator.is-closed .is-open
+{
+    display:none;
+}
+
+/* Template editor*/
+.template-editor-preview-wrapper{
+    margin-top:3rem;
+}
+.template-editor-preview{
+    height: 300px;
+    overflow:auto;
+    position:relative;
+}
+.template-editor-preview.template-editor-preview-not-loaded,
+.template-editor-preview.template-editor-preview-loading
+{
+    background-color:rgba(0,0,0,.5)
+}
+.template-editor-preview .load-preview-indicator > div{
+    display:none;
+}
+.load-preview-indicator .load-preview-indicator-icon{
+    font-size:5rem;
+}
+.template-editor-preview.template-editor-preview-not-loaded .load-preview-indicator-not-loaded,
+.template-editor-preview.template-editor-preview-loading .load-preview-indicator-loading
+{
+    display:block;
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform: translate(-50%, -50%);
+    text-align:center;
+    color:rgba(255,255,255,.5);
 }
