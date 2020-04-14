@@ -60,7 +60,8 @@ class RAINotificationTemplateEditor(RAICollectionPanel):
                 {
                     'context':  self.children[0],
                     'template' : self.children[1],
-                    'preview_url' : reverse('rai_notifications_render_preview')
+                    'preview_url' : reverse('rai_notifications_render_preview'),
+                    'notification_id' : self.instance.notification_id
                 }
             )
         )
