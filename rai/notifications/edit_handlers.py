@@ -4,6 +4,7 @@ from .internals import REGISTERED_NOTIFICATIONS
 
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
+from django.urls import reverse
 
 from rai.edit_handlers import RAIFieldPanel, RAICollectionPanel
 
@@ -24,6 +25,7 @@ class RAINotificationContextField(RAIFieldPanel):
                 }
             )
         )
+
     def render_preview_fields(self):
         preview_options = REGISTERED_NOTIFICATIONS[self.instance.notification_id].get_preview_options()
         return mark_safe(
@@ -57,7 +59,8 @@ class RAINotificationTemplateEditor(RAICollectionPanel):
                 self.template,
                 {
                     'context':  self.children[0],
-                    'template' : self.children[1]
+                    'template' : self.children[1],
+                    'preview_url' : reverse('rai_notifications_render_preview')
                 }
             )
         )
