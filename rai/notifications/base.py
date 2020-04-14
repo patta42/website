@@ -39,7 +39,6 @@ class RAIListener:
         if self.signal == 'page_unpublished':
             signal = page_unpublished
         if signal:
-            print('Registering signal')
             signal.connect(
                 self.signal_received, sender=self.model,
                 dispatch_uid = self.identifier
