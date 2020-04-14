@@ -1,5 +1,6 @@
 from pprint import pprint
 
+from django.contrib import messages
 from django.urls import resolve, reverse
 from django.http import QueryDict, HttpResponseForbidden
 from django.template.loader import render_to_string
@@ -17,13 +18,19 @@ class RAIView(TemplateView):
     Does *not* require a RAIAdmin definition
     """
     media = {
-        'css' : [ 'css/admin/edit_handlers.css'],
+        'css' : [
+            'css/admin/edit_handlers.css'
+            'js/admin/third-party/jquery-ui-1.12.1.custom/jquery-ui.min.css',
+        ],
         'js' : [
+            'js/admin/third-party/jquery-ui-1.12.1.custom/jquery-ui.min.js',
             'js/admin/RUBIONeditor.js',
+            'js/admin/RAIWidgets.js',
             'js/admin/third-party/mark.js-8.11.1/jquery.mark.min.js',
             'js/admin/third-party/moment/moment.min.js',
             'js/admin/third-party/tempus-dominus/tempusdominus-bootstrap-4.min.js',
-            'js/admin/views/list.js'       
+            'js/admin/views/list.js',
+            
             
         ]
     }
@@ -33,24 +40,44 @@ class RAIView(TemplateView):
         'css' : []
     }
 
+
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        return super().dispatch(request, *args, **kwargs)
+    def error_message(self, msg):
+        messages.error(self.request, msg)
+    def warning_message(self, msg):
+        messages.warning(self.request, msg)
+
+    def success_message(self, msg):
+        messages.success(self.request, msg)
+    def debug_message(self, msg):
+        messages.debug(self.request, msg)
+    def info_message(self, msg):
+        messages.info(self.request, msg)
+        
     def get_main_admin_menu(self):
+        request = getattr(self, 'request', None)
         items = []
         for fn in hooks.get_hooks('rai_menu_group'):
-            item = fn()
+            group = fn()
             components = [];
-            for Component in item.components:
-                component = Component()
-                components.append({
-                    'label' : component.menu_label,
-                    'icon' : component.menu_icon,
-                    'icon_font' : component.menu_icon_font,
-                    'url' : component.get_default_url()
-                })
-                    
-            items.append({
-                'label' : item.menu_label,
-                'components' : components
-            })
+            if group.show(request):
+                for Component in group.components:
+                    component = Component()
+                    if component.show(request):
+                        components.append({
+                            'label' : component.menu_label,
+                            'icon' : component.menu_icon,
+                            'icon_font' : component.menu_icon_font,
+                            'url' : component.get_default_url()
+                        })
+                # only show the group if there are any components in it
+                if components:
+                    items.append({
+                        'label' : group.menu_label,
+                        'components' : components
+                    })
             
         return render_to_string(
             'rai/menus/main_admin_menu.html',
@@ -293,7 +320,68 @@ class SingleObjectMixin:
         except TypeError:
             return qs.get(id = self.kwargs['pk'])
 
-        
+
+class PageMenuMixin:
+    save_button = False
+    sort_button = False
+    filter_button = False
+    icons_only = True
+    
+    def get_group_actions(self):
+        request = getattr(self, 'request', None)
+        actions = []
+        for Action in self.raiadmin.group_actions:
+            action = Action(self.raiadmin)
+            if action.action_identifier != self.active_action.action_identifier and action.show(request):
+                actions.append({
+                    'icon' : action.icon,
+                    'icon_font' : action.icon_font,
+                    'label' : action.label,
+                    'url' : action.get_href(),
+                    'btn_type' : getattr(action,'btn_type', None),
+                    'text_type': getattr(action,'text_type', None),
+                    'show_for_instance': action.show_for_instance,
+                    'object': getattr(self, 'obj', True)
+                })
+        return actions
+
+    def get_item_actions(self):
+        actions = []
+        request = getattr(self, 'request', None)
+        for Action in self.raiadmin.item_actions:
+            action = Action(self.raiadmin)
+            if action.action_identifier != self.active_action.action_identifier and action.show(request):
+                actions.append({
+                    'icon' : action.icon,
+                    'icon_font' : action.icon_font,
+                    'label' : action.label,
+                    'url' : action.get_href(self.obj.id),
+                    'btn_type' : getattr(action,'btn_type', None),
+                    'text_type': getattr(action,'text_type', None),
+                    'show_for_instance': action.show_for_instance,
+                    'object' : getattr(self, 'obj', True)
+                    
+                })
+        return actions
+
+    def get_actions(self):
+        return self.get_group_actions() + self.get_item_actions()
+    
+    def get_page_menu(self):
+        actions = self.get_actions()
+        return render_to_string(
+            'rai/menus/group_menu.html',
+            {
+                'actions' : actions,
+                'sort_button' : self.sort_button,
+                'filter_button' : self.filter_button,
+                'save_button': self.save_button,
+                'icons_only' : self.icons_only,
+                'request' : self.request
+#                'settings_menu' : self.get_settings_menu()    
+            }
+        )
+
         
 # class RAIAjaxModelView(RAIAdminView, SingleObjectMixin):
 #     """
