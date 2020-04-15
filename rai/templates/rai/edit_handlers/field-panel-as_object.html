@@ -1,9 +1,22 @@
-<div class="form-group col-md-12 col">
-  <label for="{{self.id_for_label}}">{{self.label}}</label>
-  {% include "wagtailadmin/shared/field.html" with show_label=False show_help_text=False %}
-  {% if self.help_text %}
-    <small id="{{self.self.id_for_label}}HelpText" class="text-muted form-text">
-      {{ self.help_text }}
-    </small>
+{% load rai_tags wagtailadmin_tags %}
+{% comment %}<div class="form-group" data-rubion-render-info="{{self.panel_type}} (as object)">
+  
+  {% if not field|widget_requires_label %}
+  <label for="{{field.id_for_label}}" class="{% if field.errors %} text-danger{% endif%}{% if field.field.required %} required{% endif %}">{{field.label}}</label>
   {% endif %}
+  {% include "rai/edit_handlers/shared/field.html" with show_label=False show_help_text=False disabled=self.disabled %}
+  {% if field.help_text %}
+    <small id="{{field.id_for_label}}HelpText" class="text-muted form-text">
+      {{ field.help_text }}
+    </small>
+    {% endif %}
+{% if field.errors %}
+<p class="error-list text-danger">
+  {% for error in field.errors %}
+  <span>{{ error|escape }}</span>
+  {% endfor %}
+</p>
+{% endif %}  
 </div>
+{% endcomment %}
+{% include "rai/edit_handlers/shared/field.html" with show_label=False show_help_text=False disabled=self.disabled %}
