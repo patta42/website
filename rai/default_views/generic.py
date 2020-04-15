@@ -64,7 +64,8 @@ class RAIView(TemplateView):
             user_settings = AdminMenuSettings.objects.get(user__pk = request.user.pk)
         except AdminMenuSettings.DoesNotExist:
             user_settings = None
-            
+        user_settings = user_settings.as_dict()
+
         items = []
         for fn in hooks.get_hooks('rai_menu_group'):
             group = fn()
@@ -72,24 +73,32 @@ class RAIView(TemplateView):
             if group.show(request):
                 for Component in group.components:
                     component = Component()
-                    user_label = component.menu_label
+                    url = component.get_default_url()
+                    user_label = user_settings['item_labels'].get(
+                        url, 
+                        component.menu_label
+                    )
                     if component.show(request):
                         components.append({
                             'label' : component.menu_label,
                             'user_label' : user_label,
                             'icon' : component.menu_icon,
                             'icon_font' : component.menu_icon_font,
-                            'url' : component.get_default_url()
+                            'url' : url
                         })
                 # only show the group if there are any components in it
                 if components:
+                    user_label = user_settings['group_item_labels'].get(
+                        group.menu_label,
+                        group.menu_label
+                    )
                     items.append({
                         'label' : group.menu_label,
+                        'user_label' : user_label,
                         'components' : components
                     })
-        if user_settings:
-            group_order = json.loads(getattr(user_settings, 'group_order', ''))
-            
+        group_order = user_settings.get('group_order', None)
+        if group_order:
             items_sorted = []
             items_copy = items
             if group_order:
