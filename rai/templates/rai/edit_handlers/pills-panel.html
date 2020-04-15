@@ -1,0 +1,22 @@
+<div class="pills-panel" data-rubion-render-info="{{ self.panel_type }}">
+  <div class="d-flex align-items-center">
+    {% if self.nav_label %}
+    <div class="pills-nav-label mr-2 mb-3 text-muted">{{self.nav_label}}</div>
+    {% endif %}
+  <ul class="nav nav-pills mb-3" id="{{self.unique_id}}" role="tablist">
+    {% for child in self.children %}
+    
+  <li class="nav-item">
+    <a class="nav-link{%if forloop.counter0 == 0 %} active{% endif %}" data-toggle="tab" aria-expanded="{%if forloop.counter0 == 0 %}true{%else%}false{%endif%}" href="#{{self.unique_id}}{{forloop.counter0}}">{{child.heading}}</a>
+  </li>
+  {% endfor %}
+  </ul>
+  </div>
+  <div class="tab-content">
+  {% for child in self.children %}
+  <div class="tab-pane fade{%if forloop.counter0 == 0 %} active show{% endif %}" id="{{self.unique_id}}{{forloop.counter0}}">
+    {{ child.render_as_field }}
+  </div> 
+  {% endfor %}
+  </div>
+</div>
