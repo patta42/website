@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from .models import AdminMenuSettings
 
 from django.contrib.auth import get_user_model
@@ -17,12 +19,21 @@ def admin_menu_settings(request):
             admin_settings = AdminMenuSettings(
                 user = user
             )
+        user_settings = admin_settings.as_dict()
 
-        for item in ['group_order', 'item_labels', 'group_item_labels']:
-            val = request.POST.get(item, None)
-            if val:
-                setattr(admin_settings, item, val)
-            
+        # group order can be overrideen
+        group_order = request.POST.get('group_order', None)
+        if group_order:
+            user_settings['group_order'] = group_order
+
+
+        for key in ['item_labels', 'group_item_labels']:
+            labels = request.POST.get(key, None)
+            if labels:
+                labels = json.loads(labels)
+                user_settings[key].update(labels)
+
+        admin_settings.update(user_settings)
         admin_settings.save()
         return JsonResponse({'status':'ok'})
 
