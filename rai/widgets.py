@@ -338,8 +338,19 @@ class RAISelectRAIItems(RAISelect):
         self.choices = registered_rai_items_as_choices()
         return super().optgroups(name, value, attrs = None)
 
+class RAIFileInput(RequiredClassesField):
+    required_css_classes = ['custom-file-input']
+    input_type = "file"
+    template_name = 'rai/forms/widgets/file-input.html'
 
-        
+class RAIExtendedFileInput(RAIInputField):
+    input_type = "file"
+    template_name = 'rai/forms/widgets/x-file-input.html'
+    
+    # def __init__(self, attrs = None):
+    #     super().__init__(attrs = attrs)
+    #     pprint(self.attrs)
+    
 # This is the default context set by django's Widget
     
     # context = {}
