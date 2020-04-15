@@ -590,10 +590,56 @@ $.widget('raiwidgets.templateeditor', {
 		    self.$preview.html('<pre>'+data['preview']+'</pre>')
 		}
 	    )
-	
     }
     
 })
+
+$.widget(
+    'raiwidget.editablecontent',
+    {
+	options : {
+	    bgColor : 'rgba(0,0,128,.25)'
+	},
+	_create : function(){
+	    this.$button = $(this.element.data('activated-by'))
+	    this.$parentAnchor = this.element.parents('a[href]')
+	    var self = this
+	    var css  
+	    this.$button.click(function(){
+		self.element[0].contentEditable = true;
+		css = self.element.css(['backgroundColor', 'cursor'])
+		self.element.focus().css({
+		    'backgroundColor': self.options['bgColor'],
+		    'cursor' : 'text'
+		})
+		var href = self.$parentAnchor.attr('href');
+		self.$parentAnchor.removeAttr('href');
+		self.element.blur( function(){
+		    self.element[0].contentEditable = false;
+		    self.element.css(css)
+		    self.$parentAnchor.attr('href', href)
+		    self._save()
+		})
+	    })
+	},
+	_save : function(){
+	    var url = this.element
+		.parents('[data-admin-menu-settings-url]')
+		.first()
+		.data('admin-menu-settings-url')
+	    var data = {}
+	    console.log(this.element.data('edit-type'), this.element.data('edit-type-id'))
+	    var content = {}
+	    content[this.element.data('edit-type-id')] = this.element.text().trim()
+	    data[this.element.data('edit-type')] = JSON.stringify(content)
+	    data['user'] = $('body').first().data('rai-user_pk')
+	    $R.post(url, {data:data})
+		.done()
+		.fail()
+	    
+	}
+    }
+)
 
 $R.Widgets = {
     init : function(){
