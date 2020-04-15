@@ -422,3 +422,55 @@ h6.sidebar-heading{
     text-align:center;
     color:rgba(255,255,255,.5);
 }
+
+/* admin menu interactions */
+
+.sidebar-heading .admin-menu-actions{
+    display: none;
+}
+.sidebar-heading .admin-menu-actions .sortable-grip{
+    cursor:grab;
+}
+
+.sidebar-heading:hover .admin-menu-actions{
+    display: inline;
+}
+.rai-main-menu-container .edit-field{
+    cursor:pointer
+}
+
+.rai-main-menu-container .nav-item .user-actions{
+    display:none;
+}
+
+.rai-main-menu-container .nav-item:hover .user-actions{
+    display:inline;
+}
+
+
+/* X-File-Input */
+.file-upload-widget{
+    background-color:rgba(0,0,0,.0625);
+    position:relative;
+    border: thin dashed rgba(0,0,0,.125);
+    
+}
+.file-upload-widget input[type=file] {
+    position:absolute;
+    top:-10000px
+}
+.file-upload-widget label{
+    display:block;
+    padding:3rem;
+    text-align:center;
+}
+.file-upload-widget label span{
+    display:block;
+    margin: 0 auto;
+}
+
+.file-upload-widget label span.icon{
+    font-size:2.5rem;
+    margin-bottom:.5rem;
+    color:rgba(0,0,0,.5)
+}
