@@ -66,6 +66,7 @@ $R.listView = {
 		    .click(
 			function(){
 			    self.sort(label);
+			    self.group_by(label);
 			}
 		    )
 		    .append($('<i></i>').addClass('fas fa-sort-alpha-down'))
@@ -76,6 +77,7 @@ $R.listView = {
 		    .click(
 			function(){
 			    self.sortDesc(label);
+			    self.group_by(label);
 			}
 		    )
 		    .append($('<i></i>').addClass('fas fa-sort-alpha-up-alt'))
@@ -107,15 +109,29 @@ $R.listView = {
 		    (a_fallback < b_fallback) ? -1 : (a_fallback > b_fallback) ? 1 : 0;
 	    },
 	    self.sort = function(attribute){
+		$(self.base+' li.group-header').remove();
 		$(self.base+' > li').sort( function(a, b){
 		    return self.compareFcn(a,b, attribute);
 		}).appendTo($(self.base));
 	    },
 	    self.sortDesc = function(attribute){
+		$(self.base+' li.group-header').remove();
 		$(self.base+' > li').sort( function(a, b){
 		    return -1 * self.compareFcn(a, b, attribute);
 		}).appendTo($(self.base));
+	    },
+	    self.group_by = function(attribute){
+		var last_group = undefined;
+		$(self.base+ ' > li').each(function(){
+		    
+		    var $elem = $(this).find('[data-rubion-groupby="'+attribute+'"]').first()
+		    if ($elem.data('rubion-group-title') != last_group){
+			last_group = $elem.data('rubion-group-title');
+			$(this).before('<li class="list-group-item group-header"><h5>'+last_group+'</h5></li>')
+		    }
+		})
 	    }
+	    
 
 	    var fields = [];
 	    $(self.base).find('[data-rubion-sortable]').each(
@@ -137,6 +153,7 @@ $R.listView = {
     }
     
 };
+
 
 $(document).ready(
     function(){
