@@ -7,11 +7,14 @@ from .generic import (
 )
 
 
+#from .utils import extract_panel_definitions_from_model_class
+
 from django import forms
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.formsets import DELETION_FIELD_NAME, ORDERING_FIELD_NAME
 from django.forms.models import fields_for_model
 from django.template.loader import render_to_string
+from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 
 import functools
@@ -19,7 +22,7 @@ import functools
 #from .utils import extract_panel_definitions_from_model_class
 
 import random
-from rai.forms import formfield_for_dbfield, RAIAdminModelForm
+from rai.forms import formfield_for_dbfield, RAIAdminModelForm, rai_modelform_factory
 
 import string
 import uuid
@@ -94,22 +97,33 @@ class RAIUserDataPanel(RAICollapsablePanel):
     """
     template = 'rai/edit_handlers/userdata-panel.html'
 
+    
 class RAICollectionPanel(RAIBaseFormEditHandler):
+    """
+    A collection panel is a panel without any sorrounding HTML introduced by 
+    the panel. Children are rendered as fields.
+    """
     template = 'rai/edit_handlers/collection-panel.html'
     
 
 class RAIPillsPanel(RAIBaseFormEditHandler):
-    template = 'rai/edit_handlers/pills-panel.html'
-
+    """
+    A pills panel shows its children in pills. Children are rendered as objects.
+    if rendered as field, it is shown in a fieldset.
+    """
+    object_template = 'rai/edit_handlers/pills-panel.html'
+    field_template = 'rai/edit_handlers/pills-panel_as-field.html'
+    
     def __init__(self, *args, **kwargs):
         self.unique_id = kwargs.pop(
             'unique_id',
             ''.join(
-                random.choice(string.ascii_uppercase + string.ascii_lowercase) for _ in range(10)
+                random.choice(string.ascii_uppercase + string.ascii_lowercase) for _ in range(10) 
             )
         )
         self.nav_label = kwargs.pop('nav_label', None)
         super().__init__(*args, **kwargs)
+
     def clone_kwargs(self):
         kwargs = super().clone_kwargs()
         kwargs.update({
@@ -118,7 +132,23 @@ class RAIPillsPanel(RAIBaseFormEditHandler):
         })
         return kwargs
 
+    def render(self):
+        # default is to render as field
+        return self.render_as_field()
+    
+    def render_as_object(self):
+        return self._render(self.object_template)
+    def render_as_field(self):
+        return self._render(self.field_template)
 
+    def _render(self, template):
+        return mark_safe(
+            render_to_string(template, {
+                'self' : self
+            })
+        )
+
+    
 class RAITranslatedContentPanel(RAIPillsPanel):
     """
     A Panel which automatically builds a RAIPillsPanel for translated content.
@@ -199,9 +229,8 @@ class RAIInlinePanel(RAIEditHandler):
         if self.panels is not None:
             return self.panels
         # Failing that, get it from the model
-        return rai.edit_handlers.utils.extract_panel_definitions_from_model_class(
-            self.db_field.related_model,
-            exclude=[self.db_field.field.name]
+        raise ImproperlyConfigured(
+            'RAIInlinePanels needs a panel definition.'
         )
 
     def get_child_edit_handler(self):
@@ -582,6 +611,9 @@ class RAIMissingPanel(RAIEditHandler):
 
 
 class RAIReadOnlyPanel(RAIFieldPanel):
+    field_template = 'rai/edit_handlers/readonly-as_field.html'
+    object_template = 'rai/edit_handlers/readonly-as_object.html'
+    
     def required_fields(self):
         return []
     def classes(self):
@@ -590,25 +622,23 @@ class RAIReadOnlyPanel(RAIFieldPanel):
         return []
 
     def readonly_fields(self):
+        try:
+            db_field = self.db_field
+        except ImproperlyConfigured:
+            db_field = None
+        if db_field:
+            label = db_field.verbose_name,
+            help_text = db_field.help_text
+        else:
+            label = ''
+            help_text = ''
         return {
             self.field_name: {
-                'label' : self.db_field.verbose_name,
-                'help_text': self.db_field.help_text,
+                'label' : label,
+                'help_text': help_text,
                 'value': getattr(self, 'value', None)
             }
         }
-    def on_form_bound(self):
-        pass
-        self.form.readonly_fields.update({
-            self.field_name : {
-                'label' : self.db_field.verbose_name,
-                'help_text' : self.db_field.help_text,
-                'value' : getattr(self.instance, self.field_name, None),
-                'is_bound' : self.instance is not None
-            }
-        })
-#    def on_formset_bound(self):
-
 
     def on_instance_bound(self):
         self.form.readonly_fields.update({
@@ -623,5 +653,182 @@ class RAIReadOnlyPanel(RAIFieldPanel):
 
     def render(self):
         return mark_safe('{}: {} ({})'.format('me', self.value, self.field_name))
+
+    def render_as_field(self):
+        return mark_safe(
+            render_to_string(self.field_template, {
+                'field_name' : self.field_name,
+                'label' : self.db_field.verbose_name,
+                'help_text' : self.db_field.help_text,
+                'value' : getattr(self.instance, self.field_name, None)
+            })
+        )
+        
+    def render_as_object(self):
+        return mark_safe(
+            render_to_string(self.object_template, {
+                'field_name' : self.field_name,
+                'label' : self.db_field.verbose_name,
+                'help_text' : self.db_field.help_text,
+                'value' : getattr(self.instance, self.field_name, None)
+            })
+        )
+    def on_form_bound(self):
+        pass
+    
+    @cached_property
+    def db_field(self):
+        try:
+            model = self.model
+        except AttributeError:
+            raise ImproperlyConfigured("%r must be bound to a model before calling db_field" % self)
+        if not model:
+            raise ImproperlyConfigured("%r must be bound to a model before calling db_field" % self)
+        return model._meta.get_field(self.field_name)
+
+
+class RAIInputGroupCollectionPanel(RAIBaseCompositeEditHandler):
+    template = 'rai/edit_handlers/input-group.html'
+
+    def render_as_object(self):
+        return self.render()
     def render_as_field(self):
         return self.render()
+    
+    def render(self):
+        return mark_safe(
+            render_to_string(self.template, {
+                'prepend' : self.children[0],
+                'field': self.children[1]
+            })
+        )
+        
+
+class RAIDecorationPanel(RAIObjectList):
+    def __init__(self, rai_model_id, panels = [], *args, **kwargs):
+        self.rai_model_id = rai_model_id
+        self.panels = panels
+        super().__init__(*args, **kwargs)
+
+    def clone_kwargs(self):
+        kwargs = super().clone_kwargs()
+        kwargs['rai_model_id'] = self.rai_model_id
+        kwargs['panels'] = self.panels
+        
+        return kwargs
+
+    def get_child_edit_handler(self):
+        return RAIMultiFieldPanel(self.panels)
+            
+    
+    def get_queryset(self):
+        field = self.decorator.field_in_decorated_model
+        return getattr(self.instance, field).all()
+
+        
+    def on_model_bound(self):
+        from rai.internals import get_decorator_for
+        opts = self.model._meta
+        decorated_model_id = '{}.{}'.format(opts.app_label, opts.model_name)
+        self.decorator = get_decorator_for(self.rai_model_id, decorated_model_id)
+        self.rai_model = self.decorator.get_rai_model()
+        child_edit_handler = self.get_child_edit_handler()
+        self.form_class = self.get_form_class()
+        child_edit_handler = child_edit_handler.bind_to(
+            model = self.rai_model,
+            form = self.form_class(),
+        )
+        self.children = [ child_edit_handler ]
+    def on_form_bound(self):
+        pass
+
+    def on_instance_bound(self):
+        from rai.internals import get_decorator_for
+        opts = self.model._meta
+        decorated_model_id = '{}.{}'.format(opts.app_label, opts.model_name)
+        
+        qs = self.get_queryset()
+        
+        children = []
+        for obj in qs:
+            child_edit_handler = self.get_child_edit_handler()
+            child_edit_handler = child_edit_handler.bind_to(
+                model = self.decorator.get_rai_model(),
+                form = self.form_class(instance = obj.rai_model),
+                instance = obj.rai_model
+            )
+            children.append(child_edit_handler)
+        self.children = children
+
+    def on_request_bound(self):
+        from rai.internals import get_decorator_for
+        opts = self.model._meta
+        decorated_model_id = '{}.{}'.format(opts.app_label, opts.model_name)
+        
+
+        children = []
+        if self.instance:
+            qs = self.get_queryset()
+            for obj in qs:
+                child_edit_handler = self.get_child_edit_handler()
+                child_edit_handler = child_edit_handler.bind_to(
+                    model = self.decorator.get_rai_model(),
+                    form = self.form_class(instance = obj.rai_model),
+                    instance = obj.rai_model,
+                    request = self.request
+                )
+                children.append(child_edit_handler)
+        else:
+            child_edit_handler = self.get_child_edit_handler()
+            child_edit_handler = child_edit_handler.bind_to(model = self.decorator.get_rai_model())
+            child_edit_handler = child_edit_handler.bind_to(request = self.request)
+
+        self.children = children
+        
+    def get_form_class(self):
+        """
+        Adapt to use RAIAdminModelForm instead of WagtailAdminModelForm
+        """
+        
+        """
+        Construct a form class that has all the fields and formsets named in
+        the children of this edit handler. 
+        """
+        if not hasattr(self, 'model'):
+            raise AttributeError(
+                '%s is not bound to a model yet. Use `.bind_to(model=model)` '
+                'before using this method.' % self.__class__.__name__)
+        # If a custom form class was passed to the EditHandler, use it.
+        # Otherwise, use the rai_base_form_class from the model.
+        # If that is not defined, use RAIAdminModelForm.
+        model_form_class = getattr(self.model, 'rai_base_form_class',
+                                   RAIAdminModelForm)
+        base_form_class = self.base_form_class or model_form_class
+
+        formsets = self.required_formsets()
+
+        form_class = rai_modelform_factory(
+            self.decorator.get_rai_model(),
+            form_class=base_form_class,
+            fields=self.required_internal_fields(),
+            formsets=formsets,
+            widgets=self.widget_overrides())
+        form_class.readonly_fields = self.readonly_fields()
+        return form_class
+
+        
+
+    def required_internal_fields(self):
+        return super().required_fields()
+
+    def required_fields(self):
+        return []
+
+    def required_formsets(self):
+        return {}
+
+    def required_additional_formsets(self):
+        return {}
+
+    def html_declarations(self):
+        return ''
