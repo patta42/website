@@ -1,0 +1,49 @@
+<div class="card mb-3" data-rai-comment-id="{{id}}" style="width:75%; max-width:50rem">
+  You are: {{request_user}}
+  <div class="card-body p-2">
+    <div>
+      <div style="color:rgba(0,0,0,.25); float:left">
+	<i class="fas fa-quote-left fa-2x"></i>
+      </div>
+      <div style="margin-left:2.5rem">
+	{% if has_instance %}
+	<div class="d-flex justify-content-between bg-light">
+	  <h6>
+	    {% if owner %}
+	    {{owner.last_name}}, {{owner.first_name}}
+	    {% else %}
+	    unbekannter Autor 
+	    {% endif %}
+	  </h6>
+	  <div class="rai-comment-timestamp">
+	    Verfasst am: {{timestamp}}
+	  </div>
+	</div>
+	{% else %}
+	<h6 class="card-heading">Kommentar hinzufügen:</h6>
+	{% endif %}
+      </div>
+    </div>
+    <hr />
+    {% if has_instance %}
+    <div>
+      {{ content.render_as_object }}
+    </div>
+    {% if may_edit %}
+    <div class="text-right">
+      <a href="">Kommentar ändern</a>
+    </div>
+    {% endif %}
+
+    {% else %}
+    
+    {{ content.render_as_object }}
+    {% endif %}
+	  
+  </div>
+</div>
+
+{% comment %}
+
+
+{% endcomment %}
