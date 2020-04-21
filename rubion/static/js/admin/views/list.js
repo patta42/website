@@ -8,6 +8,17 @@ $R.listView = {
 	    }
 	    self.items = $(this.base + ' *[data-rubion-searchable="true"]');
 
+	    var searchTitles = [],
+		title;
+
+	    // set placeholder for search field
+	    self.items.each(function(){
+		title =  $(this).data('rubion-searchable-title');
+		if (title != undefined && searchTitles.indexOf(title) == -1){
+		    searchTitles.push(title);
+		}
+	    })
+	    
 	    self.doSearch = function(input){
 		if (input.length < 3) {
 		    $(self.base + ' li').removeClass('pseudofirst').show().unmark();
@@ -33,6 +44,7 @@ $R.listView = {
 	    }
 	    this.attachTo = function( elements ){
 		elements.each( function() {
+		    $(this).attr('placeholder', searchTitles.join(', '));
 		    $(this).keyup( function(){
 			self.doSearch($(this).val());
 		    });
