@@ -1,0 +1,36 @@
+{% extends 'rai/views/default/default-list-item.html' %}
+
+{% load i18n %}
+
+{% block title %}
+{% include 'userinput/rubionuser/rai/shared/full-user-name.html' %}
+{% endblock %}
+{% block sortfields %}Mitarbeiter-Gruppe|{% trans "Name" %},{% trans "first name"%}{% endblock %}
+{% block title_sortname %}{% trans "Name" %},{% trans "first name"%}{% endblock %}
+{% block additional_content %}
+  {% if object.email %}
+  <p class="mb-1">
+    <i class="fas fa-envelope"></i> {{object.email}}
+  </p>
+  {% endif %}
+  {% with group=object.get_parent.specific %}
+  
+  <p class="mb-1" data-rubion-sortable="Mitarbeiter-Gruppe" data-rubion-searchable="true" data-rubion-searchable-title="Mitarbeiter-Gruppe" data-rubion-groupby="Mitarbeiter-Gruppe" data-rubion-group-title="{{group.title_de}}">
+    {{group.title_de}}
+  </p>
+  {% endwith %}
+  {% if object.phone %}
+  <p class="mb-1" data-rubion-searchable="true">
+    <i class="fas fa-phone"></i> {{object.phone}}
+  </p>
+  {% endif %}
+
+  {% if last_revision %}
+  <small class="text-muted">
+    {% trans "Last update:" %}
+    {{last_revision.created_at}}
+    {% trans "by" %}
+    {{ last_revision.user.last_name }}, {{ last_revision.user.first_name }}
+  </small>
+  {% endif %}
+{% endblock %}
