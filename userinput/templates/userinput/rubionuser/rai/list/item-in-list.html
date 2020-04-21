@@ -2,9 +2,7 @@
 {% load i18n %}
 
 {% block title %}
-{{object.last_name}},
-  {% if object.academic_title %}{{object.get_academic_title_display}} {% endif %}
-{{object.first_name}}
+{% include 'userinput/rubionuser/rai/shared/full-user-name.html' %}
 {% endblock %}
 {% block sortfields %}{% trans "Name" %},{% trans "first name"%}|{%trans "Workgroup"%}{% endblock %}
 {% block title_sortname %}{% trans "Name" %},{% trans "first name"%}{% endblock %}
@@ -16,15 +14,15 @@
   {% endif %}
   
   {% if object.phone %}
-  <p class="mb-1" data-rubion-searchable="true">
+  <p class="mb-1" data-rubion-searchable="true" data-rubion-searchable-title="Telefonnummer">
     <i class="fas fa-phone"></i> {{object.phone}}
   </p>
   {% endif %}
-<p class="mb-1"><small data-rubion-searchable="true" data-rubion-sortable="{%trans "Workgroup" %}">{{object.get_workgroup}}</small></p>
+<p class="mb-1"><small data-rubion-searchable="true" data-rubion-searchable-title="Arbeitsgruppe" data-rubion-sortable="{%trans "Workgroup" %}">{{object.get_workgroup}}</small></p>
 <p class="badges">
 {% if not object.is_validated %}
 <span class="badge badge-warning mr-1">
-  <a href="help:rubionuser:not_validated" data-toggle="modal" data-target="#helpModal">
+  <a href="help::userinput:rubionuser:not_validated" data-toggle="modal" data-target="#helpModal">
     {% trans "not validated" %}
     <i class="fas fa-question-circle"></i>
   </a>
