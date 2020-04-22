@@ -23,7 +23,7 @@ class RAIEditHandler:
     """
     Base EditHandler for RAI
 
-    Code as in WT 2.8, but RAI currently uses 2.4, so the code is repeated here.
+    Code as in WT 2.8, but RAI currently uses WT 2.4, so the code is repeated here.
 
     - adds information about the PanelType, for debugging purposes mostly
     - picks up RAIWidgets if possible
@@ -98,7 +98,7 @@ class RAIEditHandler:
     # to the dict.
     def required_additional_formsets(self):
         return {}
-    
+
     # return a dict of fields that are included, but not editable
     def readonly_fields(self):
         return {}
@@ -283,12 +283,19 @@ class RAIBaseCompositeEditHandler(RAIEditHandler):
         return mark_safe(''.join([c.html_declarations() for c in self.children]))
 
     def on_model_bound(self):
-
+        
         try:
-            self.children = [child.bind_to(model=self.model)
-                             for child in self.children]
+            model = self.model
         except AttributeError:
+            model = None
+        
+        if model:
+            self.children = [
+                child.bind_to(model=self.model) for child in self.children
+            ]
+        else:
             self.children = []
+            
             
     def on_instance_bound(self):
         self.children = [child.bind_to(instance=self.instance)
@@ -326,10 +333,13 @@ class RAIBaseCompositeEditHandler(RAIEditHandler):
         self.children = [child.disable(disabled_class)
                          for child in self.children]
     def render(self):
-        return mark_safe(render_to_string(self.template, {
+        return self._render(self.template)
+    
+    def _render(self, template):
+        return mark_safe(render_to_string(template, {
             'self': self
         }))
-
+    
     def get_comparison(self):
         comparators = []
 
@@ -337,7 +347,9 @@ class RAIBaseCompositeEditHandler(RAIEditHandler):
             comparators.extend(child.get_comparison())
 
         return comparators
-    
+
+        
+
 class RAIBaseFormEditHandler(RAIBaseCompositeEditHandler):
 
     base_form_class = None
@@ -493,6 +505,7 @@ class RAIFieldPanel(RAIEditHandler):
         except AttributeError:
             raise ImproperlyConfigured("%r must be bound to a model before calling db_field" % self)
 
+        
         return model._meta.get_field(self.field_name)
 
     def on_form_bound(self):
