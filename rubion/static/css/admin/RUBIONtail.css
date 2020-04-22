@@ -126,6 +126,9 @@ body {
     background:#003560;
     color:#fff;
 }
+#mainlist li.group-header{
+    background-color:rgba(0,0,0,.125);
+}
 
 .highlighted{
     padding:0;
@@ -474,3 +477,155 @@ h6.sidebar-heading{
     margin-bottom:.5rem;
     color:rgba(0,0,0,.5)
 }
+/* indicator bar for multi-forms */
+
+.multiform-indicator nav{
+    overflow:hidden;
+    margin-left:1rem;
+}
+.multiform-indicator li{
+    position:relative;
+    background-color: #003560;
+    color:#fff;
+    padding-left:1rem;
+}
+.multiform-indicator li:first-child{
+    padding-left:.25rem;
+}
+.multiform-indicator li.active{
+    background-color: #8dae10;
+}
+.multiform-indicator li a{
+    color:#fff;
+}
+.multiform-indicator li.disabled{
+    background-color: #ccc;
+}
+.multiform-indicator li:after{
+    content: ' ';
+    position: absolute;
+    left:100%;
+    color:#fff;
+    top:50%;
+    height:0;
+    width:0;
+    margin-top:-25px;
+    border-top:25px solid transparent;
+    border-bottom:25px solid transparent;
+    border-left:15px solid #003560;
+    z-index:2;
+    
+}
+.multiform-indicator li:before{
+    content: ' ';
+    position: absolute;
+    left:100%;
+    color:#fff;
+    top:50%;
+    height:0;
+    width:0;
+    margin-top:-25px;
+    margin-left:2px;
+    border-top:25px solid transparent;
+    border-bottom:25px solid transparent;
+    border-left:15px solid white;
+    z-index:1;
+    
+}
+.multiform-indicator li.active:after{
+    border-left:15px solid #8dae10;
+}
+.multiform-indicator li.disabled:after{
+    border-left:15px solid #ccc;
+}
+/* form styling */
+
+#main_form fieldset{
+    max-width:800px;
+    margin-top:3rem;
+    border-left: solid 2px #003560;
+    margin-left:1rem;
+}
+
+#main_form fieldset fieldset{
+    max-width:100%;
+    margin-top:.5rem;
+    border-left: none;
+    margin-left:1rem;
+
+}
+#main_form fieldset legend {
+    margin-top:-3rem;
+    margin-left:-1rem;
+}
+/* required fields*/
+.form-group.required > label span:after{
+    font-family: "Font Awesome 5 Free";
+    content: "\f069";
+    display: inline-block;
+    margin-left:.25rem;
+    vertical-align: middle;
+    font-weight: 900;
+    margin-top:-.5em;
+    color:#dc3545;
+}
+
+/* help texts in forms */
+
+.form-group .help-text{
+    max-width:800px;
+}
+
+.form-group > label{
+    font-size:larger;
+    position:relative;
+    overflow:visible;
+    margin-left:-1rem;
+
+}
+
+.form-group{
+    /* border-left:1rem solid rgba(0,0,0,.125); */
+    padding-left:2rem;
+    margin-bottom:2rem;
+}
+#main_form .alert{
+    margin-left:1rem;
+}
+#main_form .alert:before, 
+.form-group > label:not(.custom-control-label):before
+{
+    content:' ';
+    position:absolute;
+    width:0;
+    height:0;
+    left:-1rem;
+    top:50%;
+    margin-top:-10px;
+    border-top:transparent solid 10px;
+    border-bottom:transparent solid 10px; 
+    border-left:#003560 solid 10px;
+    z-index:1;
+}
+#main_form .alert:before{
+    border-left-color:#dc3545;
+    margin-left:-1px;
+    top:15px;
+}
+.alert .form-group label:not(.custom-control-label):before,
+.alert .form-group.required label:not(.custom-control-label):before{
+    content:'';
+    position:inline;
+    margin:0;
+    border:none;
+    padding:0;
+}
+.alert .form-group{
+    background-color:#fff;
+}
+.form-group .form-group{
+    border:none;
+    padding-left: 0;
+    margin-bottom:.5rem;
+}
+
