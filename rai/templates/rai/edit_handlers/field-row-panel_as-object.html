@@ -1,0 +1,5 @@
+<div class="form-row" data-rubion-render-info-field-type="{{self.panel_type}}">
+  {% for child in self.children %}
+    {{ child.render_as_field }}
+  {% endfor %}
+</div>
