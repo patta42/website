@@ -558,6 +558,15 @@ h6.sidebar-heading{
     margin-top:-3rem;
     margin-left:-1rem;
 }
+.form-row-wrapper .form-group,
+.form-group .form-group{
+    border:none;
+    padding-left: 0;
+    margin-bottom:.5rem;
+    margin-top:0;
+
+}
+
 /* required fields*/
 .form-group.required > label span:after{
     font-family: "Font Awesome 5 Free";
@@ -575,7 +584,9 @@ h6.sidebar-heading{
 .form-group .help-text{
     max-width:800px;
 }
-
+.input-group-wrapper.as-field h6,
+.form-row-wrapper h6.label,
+fieldset.multi-field-panel legend,
 .form-group > label{
     font-size:larger;
     position:relative;
@@ -584,16 +595,32 @@ h6.sidebar-heading{
 
 }
 
-.form-group{
+.input-group-wrapper .form-group label,
+.form-group .form-group label,
+.form-row-wrapper .form-group label {
+    font-size:inherit;
+}
+.form-group, .form-row-wrapper, .input-group-wrapper.as-field{
     /* border-left:1rem solid rgba(0,0,0,.125); */
     padding-left:2rem;
-    margin-bottom:2rem;
+    margin-top:2rem;
+}
 }
 #main_form .alert{
     margin-left:1rem;
 }
-#main_form .alert:before, 
-.form-group > label:not(.custom-control-label):before
+
+#main_form fieldset fieldset{
+    margin-top:1rem;
+}
+#main_form fieldset fieldset legend{
+    margin-top:0;
+}
+#main_form .alert-danger:before, 
+.form-group > label:not(.custom-control-label):before,
+fieldset.multi-field-panel legend:before,
+.form-row-wrapper h6.label:before,
+.input-group-wrapper.as-field h6.label:before
 {
     content:' ';
     position:absolute;
@@ -612,20 +639,23 @@ h6.sidebar-heading{
     margin-left:-1px;
     top:15px;
 }
-.alert .form-group label:not(.custom-control-label):before,
-.alert .form-group.required label:not(.custom-control-label):before{
+.alert-danger .form-group label:not(.custom-control-label):before,
+.alert-danger .form-group.required label:not(.custom-control-label):before,
+.multi-field .form-group label:not(.custom-control-label):before,
+.multi-field .form-group.required label:not(.custom-control-label):before,
+.form-row .form-group label:not(.custom-control-label):before,
+.form-row .form-group.required label:not(.custom-control-label):before
+{
     content:'';
-    position:inline;
+    position:relative;
     margin:0;
     border:none;
     padding:0;
 }
+.form-row label{
+    margin-left:0;
+}
 .alert .form-group{
     background-color:#fff;
-}
-.form-group .form-group{
-    border:none;
-    padding-left: 0;
-    margin-bottom:.5rem;
 }
 
