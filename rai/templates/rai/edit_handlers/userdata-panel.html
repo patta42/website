@@ -1,0 +1,12 @@
+{% load i18n %}
+<div class="alert alert-warning" role="alert">
+  {% blocktrans %}
+  The information in this area is meant to be entered by the user. Please
+  edit these elements carefully.
+  {% endblocktrans %}
+</div>
+  {% for child in self.children %}
+    {{ child.render_as_field }}
+  {% endfor %}
+
+
