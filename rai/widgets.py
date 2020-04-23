@@ -358,6 +358,9 @@ class RUBLoginIdInput(RAIInputField):
 
 class RAIDateInput(RAIInputField):
     input_type = 'date'
+
+class RAIDateTimeInput(RAIInputField):
+    input_type = 'datetime-local'
 # This is the default context set by django's Widget
     
     # context = {}
