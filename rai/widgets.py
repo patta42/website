@@ -343,14 +343,21 @@ class RAIFileInput(RequiredClassesField):
     input_type = "file"
     template_name = 'rai/forms/widgets/file-input.html'
 
+
 class RAIExtendedFileInput(RAIInputField):
     input_type = "file"
     template_name = 'rai/forms/widgets/x-file-input.html'
+
+class RUBLoginIdInput(RAIInputField):
+    input_type = "text"
+    template_name = 'rai/forms/widgets/rub-login-input.html'
     
     # def __init__(self, attrs = None):
     #     super().__init__(attrs = attrs)
     #     pprint(self.attrs)
-    
+
+class RAIDateInput(RAIInputField):
+    input_type = 'date'
 # This is the default context set by django's Widget
     
     # context = {}
