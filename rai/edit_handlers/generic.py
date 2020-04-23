@@ -408,14 +408,17 @@ class RAIFieldPanel(RAIEditHandler):
         widget = kwargs.pop('widget', None)
         if widget is not None:
             self.widget = widget
+        self.label = kwargs.pop('label', None)
         super().__init__(*args, **kwargs)
         self.field_name = field_name
+        
     def clone_kwargs(self):    
         kwargs = super().clone_kwargs()
-        kwargs.update(
-            field_name=self.field_name,
-            widget=self.widget if hasattr(self, 'widget') else None,
-        )
+        kwargs.update({
+            'field_name':self.field_name,
+            'widget':self.widget if hasattr(self, 'widget') else None,
+            'label' : self.label,
+        })
         
     
         return kwargs
@@ -510,8 +513,12 @@ class RAIFieldPanel(RAIEditHandler):
 
     def on_form_bound(self):
         self.bound_field = self.form[self.field_name]
+        if self.label:
+            self.bound_field.label = self.label
+        if self.help_text:
+            self.bound_field.help_text = self.help_text
         self.heading = self.bound_field.label
-        self.help_text = self.bound_field.help_text
+#        self.help_text = self.bound_field.help_text
         
         
     def __repr__(self):
