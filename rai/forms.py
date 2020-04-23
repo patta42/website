@@ -1,3 +1,5 @@
+from pprint import pprint
+
 """
 This is heavily copied from wagtail.admin.forms.models
 """
@@ -5,8 +7,18 @@ import copy
 
 import rai.widgets as widgets
 
+from django import forms
 from django.db import models
-from django.forms.models import modelform_factory
+
+from django.forms import formset_factory
+from django.forms.forms import Form, DeclarativeFieldsMetaclass
+from django.forms.models import (
+    modelform_factory, modelformset_factory, BaseModelFormSet, ModelForm, ModelFormMetaclass
+)
+from django.forms.formsets import BaseFormSet
+from django.forms.utils import ErrorList
+from django.template.loader import render_to_string
+
 
 from modelcluster.forms import ClusterForm, ClusterFormMetaclass
 
@@ -18,20 +30,20 @@ FORM_FIELD_OVERRIDES = {
     # TODO: Check the DB Fields from Wagtail
     models.BigIntegerField: {'widget': widgets.RAINumberInput},
     models.BinaryField: {'widget': widgets.RAITextInput},
-#    models.BooleanField: {'widget' : widgets.RAICheckBox},
-    models.CharField: {'widget': widgets.RAITextInput},
+    models.BooleanField: {'widget' : widgets.RAICheckboxInput},
+#
 #    models.DateField: {'widget': widgets.RAIDateInput},
 #    models.DateTimeField: {'widget': widgets.RAIDateTimeInput},
     models.DecimalField: {'widget': widgets.RAINumberInput},
     models.DurationField: {'widget': widgets.RAITextInput},
     models.EmailField: {'widget': widgets.RAIEMailInput},
 #    models.FileField:  {'widget': widgets.RAIFileInput},
-#    models.FilePathField: {'widget': widgets.RAISelect},
+    models.FilePathField: {'widget': widgets.RAISelect},
     models.FloatField: {'widget': widgets.RAINumberInput},
 #    models.ImageField: {'widget': widgets.RAIImageInput},
     models.IntegerField: {'widget': widgets.RAINumberInput},
-#    models.GenericIPAddressField: {'widget': widgets.RAITextInput},
-#    models.NullBooleanField: {'widget': widgets.RAINullBooleanSelect},
+    models.GenericIPAddressField: {'widget': widgets.RAITextInput},
+#    models.NullBooleanField: {'widget': widgets.RAICheckboxInput},
     models.PositiveIntegerField: {'widget': widgets.RAINumberInput},
     models.PositiveSmallIntegerField: {'widget': widgets.RAINumberInput},
     models.SlugField: {'widget': widgets.RAITextInput},
@@ -39,7 +51,9 @@ FORM_FIELD_OVERRIDES = {
     models.TextField: {'widget': widgets.RAITextarea},
 #    models.TimeField: {'widget': wigets.RAITimeInput},
     models.URLField: {'widget': widgets.RAIUrlInput},
-    models.UUIDField: {'widget': widgets.RAITextInput}
+    models.UUIDField: {'widget': widgets.RAITextInput},
+    models.ForeignKey: {'widget': widgets.RAISelect},
+    models.ManyToManyField: {'widget': widgets.RAISelectMultiple},
 }
     
 
@@ -49,6 +63,7 @@ FORM_FIELD_OVERRIDES = {
 # the RichTextField widget alone)
 DIRECT_FORM_FIELD_OVERRIDES = {
 #    models.TextField: {'widget': widgets.RAITextarea },
+    models.CharField: {'widget': widgets.RAITextInput},
 }
 
 
@@ -77,7 +92,7 @@ def formfield_for_dbfield(db_field, **kwargs):
     return db_field.formfield(**kwargs)
 
 
-class RAIAdminModelFormMetaclass(ClusterFormMetaclass):
+class RAIAdminModelFormMetaclass(ClusterFormMetaclass):#ModelFormMetaclass):
     # Override the behaviour of the regular ModelForm metaclass -
     # which handles the translation of model fields to form fields -
     # to use our own formfield_for_dbfield function to do that translation.
@@ -92,17 +107,39 @@ class RAIAdminModelFormMetaclass(ClusterFormMetaclass):
     def __new__(cls, name, bases, attrs):
 
         if 'formfield_callback' not in attrs or attrs['formfield_callback'] is None:
-            attrs['formfield_callback'] = formfield_for_dbfield
-        new_class = super().__new__(cls, name, bases, attrs)
+            attrs.update({'formfield_callback': formfield_for_dbfield})
 
+        if 'readonly_fields' not in attrs or attrs['readonly_fields'] is None:
+            attrs.update({'readonly_fields': {}})
+
+        new_class = super().__new__(cls, name, bases, attrs)        
         return new_class
 
     @classmethod
     def child_form(cls):
         return RAIAdminModelForm
 
+class RAIAdminFormMetaClass(DeclarativeFieldsMetaclass):
+    def __new__(cls, name, bases, attrs):
 
+        if 'formfield_callback' not in attrs or attrs['formfield_callback'] is None:
+            attrs['formfield_callback'] = formfield_for_dbfield
+        new_class = super().__new__(cls, name, bases, attrs)
+
+        return new_class
+
+class RAIAdminForm(Form, metaclass = RAIAdminFormMetaClass):
+    pass
+
+    
 class RAIAdminModelForm(ClusterForm, metaclass=RAIAdminModelFormMetaclass):
+    readonly_fields = {}
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+
+       
     @property
     def media(self):
         # Include media from formsets forms. This allow StreamField in InlinePanel for example.
@@ -112,6 +149,19 @@ class RAIAdminModelForm(ClusterForm, metaclass=RAIAdminModelFormMetaclass):
         return media
 
 
+    def save(self, commit = True):
+        if commit:
+            if issubclass(self._meta.model, Page):
+                instance = super().save(commit = False)
+                instance.save_revision_and_publish(user = self.user)
+            else:
+                super().save(commit = True)
+        else:
+            return super().save(commit = False)
+        
+        
+        
+    
 def rai_modelform_factory(
         model,
         form_class=RAIAdminModelForm,
@@ -137,7 +187,7 @@ def rai_modelform_factory(
                 'first_published_at', 'search_description', 'slug' ]
             
         for excl in auto_exclude:
-            if hasattr(model, excl) and excl not in exclude and excl not in dont_exclude:
+            if hasattr(model, excl) and excl not in exclude and excl not in fields:
                 exclude.append(excl)
     if exclude is not None:
         attrs['exclude'] = exclude
@@ -157,8 +207,42 @@ def rai_modelform_factory(
         bases = (form_class.Meta,) + bases
 
     form_class_attrs = {
-        'Meta': type(str('Meta'), bases, attrs)
+        'Meta': type(str('Meta'), bases, attrs) 
     }
 
     metaclass = type(form_class)
-    return metaclass(class_name, (form_class,), form_class_attrs)
+    new_class = metaclass(class_name, (form_class,), form_class_attrs)
+
+    return new_class
+
+
+
+class RAIForm(Form):
+    sub_forms = []
+    fieldsets = []
+    fieldset_template = 'rai/forms/form-as-fieldsets.html'
+
+    edit_handler = None
+    
+    def set_fieldset_context(self, id, context):
+        for fieldset in self.fieldsets:
+            if id == fieldset['id']:
+                fieldset.update(context)
+
+                
+    def as_fieldsets(self):
+        fieldsets = []
+        defaults = {
+            'intro_context' : {},
+            'legend_context': {}
+        }
+        for fieldset in self.fieldsets:
+            fieldsets.append({**defaults, **fieldset})
+            return render_to_string(
+            self.fieldset_template,
+            {
+                'form':self,
+                'fieldsets' : fieldsets
+            }
+        )
+
