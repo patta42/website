@@ -32,8 +32,8 @@ FORM_FIELD_OVERRIDES = {
     models.BinaryField: {'widget': widgets.RAITextInput},
     models.BooleanField: {'widget' : widgets.RAICheckboxInput},
 #
-#    models.DateField: {'widget': widgets.RAIDateInput},
-#    models.DateTimeField: {'widget': widgets.RAIDateTimeInput},
+    models.DateField: {'widget': widgets.RAIDateInput},
+    models.DateTimeField: {'widget': widgets.RAIDateTimeInput},
     models.DecimalField: {'widget': widgets.RAINumberInput},
     models.DurationField: {'widget': widgets.RAITextInput},
     models.EmailField: {'widget': widgets.RAIEMailInput},
