@@ -644,6 +644,7 @@ fieldset.multi-field-panel legend:before,
     margin-left:-1px;
     top:15px;
 }
+.inline-panel-all-options .form-group label:not(.custom-control-label):before,
 .alert-danger .form-group label:not(.custom-control-label):before,
 .alert-danger .form-group.required label:not(.custom-control-label):before,
 .multi-field .form-group label:not(.custom-control-label):before,
