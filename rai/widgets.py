@@ -356,11 +356,20 @@ class RUBLoginIdInput(RAIInputField):
     #     super().__init__(attrs = attrs)
     #     pprint(self.attrs)
 
-class RAIDateInput(RAIInputField):
-    input_type = 'date'
+class RAIDateInput(RequiredClassesField):
+    required_css_classes = ['datetimepicker-input', 'form-control']
+    template_name = 'rai/forms/widgets/date.html'
+    input_type = 'text'
 
-class RAIDateTimeInput(RAIInputField):
-    input_type = 'datetime-local'
+class RAITimeInput(RequiredClassesField):
+    required_css_classes = ['datetimepicker-input', 'form-control']
+    template_name = 'rai/forms/widgets/time.html'
+    input_type = 'text'
+
+class RAIDateTimeInput(RequiredClassesField):
+    required_css_classes = ['datetimepicker-input', 'form-control']
+    template_name = 'rai/forms/widgets/datetime.html'
+    input_type = 'text'
 # This is the default context set by django's Widget
     
     # context = {}
