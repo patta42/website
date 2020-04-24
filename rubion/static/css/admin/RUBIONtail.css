@@ -584,6 +584,7 @@ h6.sidebar-heading{
 .form-group .help-text{
     max-width:800px;
 }
+.inline-panel-all-options h6.label,
 .input-group-wrapper.as-field h6,
 .form-row-wrapper h6.label,
 fieldset.multi-field-panel legend,
@@ -600,7 +601,10 @@ fieldset.multi-field-panel legend,
 .form-row-wrapper .form-group label {
     font-size:inherit;
 }
-.form-group, .form-row-wrapper, .input-group-wrapper.as-field{
+.inline-panel-all-options,
+.form-group,
+.form-row-wrapper,
+.input-group-wrapper.as-field{
     /* border-left:1rem solid rgba(0,0,0,.125); */
     padding-left:2rem;
     margin-top:2rem;
@@ -616,6 +620,7 @@ fieldset.multi-field-panel legend,
 #main_form fieldset fieldset legend{
     margin-top:0;
 }
+.inline-panel-all-options h6.label:before,
 #main_form .alert-danger:before, 
 .form-group > label:not(.custom-control-label):before,
 fieldset.multi-field-panel legend:before,
@@ -658,4 +663,5 @@ fieldset.multi-field-panel legend:before,
 .alert .form-group{
     background-color:#fff;
 }
+
 
