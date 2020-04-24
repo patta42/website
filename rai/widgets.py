@@ -361,15 +361,13 @@ class RAIDateInput(RequiredClassesField):
     template_name = 'rai/forms/widgets/date.html'
     input_type = 'text'
 
-class RAITimeInput(RequiredClassesField):
-    required_css_classes = ['datetimepicker-input', 'form-control']
+class RAITimeInput(RAIDateInput):
     template_name = 'rai/forms/widgets/time.html'
-    input_type = 'text'
 
-class RAIDateTimeInput(RequiredClassesField):
-    required_css_classes = ['datetimepicker-input', 'form-control']
+class RAIDateTimeInput(RAIDateInput):
     template_name = 'rai/forms/widgets/datetime.html'
-    input_type = 'text'
+
+    
 # This is the default context set by django's Widget
     
     # context = {}
