@@ -21,7 +21,7 @@ class RAIView(TemplateView):
     """
     media = {
         'css' : [
-            'css/admin/edit_handlers.css'
+            'css/admin/edit_handlers.css',
             'js/admin/third-party/jquery-ui-1.12.1.custom/jquery-ui.min.css',
         ],
         'js' : [
@@ -360,6 +360,9 @@ class SingleObjectMixin:
 
 class PageMenuMixin:
     save_button = False
+    save_button_label = 'Save'
+    proceed_button = False
+    proceed_button_label = 'Proceed'
     sort_button = False
     filter_button = False
     icons_only = True
@@ -413,6 +416,9 @@ class PageMenuMixin:
                 'sort_button' : self.sort_button,
                 'filter_button' : self.filter_button,
                 'save_button': self.save_button,
+                'save_button_label' : self.save_button_label,
+                'proceed_button': self.proceed_button,
+                'proceed_button_label' : self.proceed_button_label,
                 'icons_only' : self.icons_only,
                 'request' : self.request
 #                'settings_menu' : self.get_settings_menu()    
