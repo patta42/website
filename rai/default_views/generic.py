@@ -23,6 +23,7 @@ class RAIView(TemplateView):
         'css' : [
             'css/admin/edit_handlers.css',
             'js/admin/third-party/jquery-ui-1.12.1.custom/jquery-ui.min.css',
+            'js/admin/third-party/tempus-dominus/tempusdominus-bootstrap-4.min.css'
         ],
         'js' : [
             'js/admin/third-party/jquery-ui-1.12.1.custom/jquery-ui.min.js',
