@@ -2,7 +2,7 @@
 {% comment %}<div class="form-group" data-rubion-render-info="{{self.panel_type}} (as object)">
   
   {% if not field|widget_requires_label %}
-  <label for="{{field.id_for_label}}" class="{% if field.errors %} text-danger{% endif%}{% if field.field.required %} required{% endif %}">{{field.label}}</label>
+  <label for="{{field.id_for_label}}" class="{% if field.errors %} text-danger{% endif%}{% if field.field.required %} required{% endif %}"><span>{{field.label}}</span></label>
   {% endif %}
   {% include "rai/edit_handlers/shared/field.html" with show_label=False show_help_text=False disabled=self.disabled %}
   {% if field.help_text %}
