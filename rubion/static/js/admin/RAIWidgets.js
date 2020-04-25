@@ -641,6 +641,133 @@ $.widget(
     }
 )
 
+$.widget(
+    'raiwidget.inlinealloptions',
+    {
+	_create : function(){
+	    this.id = this.element.attr('id')
+	    var self = this
+	    var $$ = function(sel){
+		return self.element.find('#id_'+self.id+sel)
+	    }
+	    
+	    this.$formTemplate = $$('-EMPTY_FORM_TEMPLATE')
+	    this.$totalForms = $$('-TOTAL_FORMS')
+	    this.$initialForms = $$('-INITIAL_FORMS')
+	    var $template = $(this.$formTemplate.html()),
+		$options = $template.find('select').first().find('option'),
+		$addBtn = $$('-add').parent().hide()
+	    
+	    this._totalForms(this.$initialForms.val())
+	    this.$wrapper = $$('-FORMS').css({
+		position : 'absolute',
+		top : '-10000px',
+		left : '-10000px'
+	    })
+	    console.log(this.$wrapper)
+	    this.$list = this._getListWrapper().insertAfter(this.$wrapper)
+	    var count = 0;
+	    $options.sort(function(a,b){
+		var $a = $(a),
+		    $b = $(b)
+		return $a.html() < $b.html() ? -1 :
+		    $a.html() > $b.html() ? 1 : 0
+		    
+	    }).each(function(){
+		if ($(this).val() !== undefined && $(this).val() !== ''){ 
+		    self._addOption(this, count)
+		}
+		$(this).data('options-count', count)
+		count += 1;
+	    })
+	    
+	},
+	
+	_totalForms : function(val){
+	    if (val == undefined){
+		return parseInt(this.$totalForms.val())
+	    } else {
+		this.$totalForms.val(val)
+	    }
+		
+	},
+	_incTotalForms : function(){
+	    this._totalForms(this._totalForms()+1)
+	    
+	},
+	_decTotalForms : function(){
+	    this._totalForms(this._totalForms()-1)
+	},
+	_getListWrapper : function(){
+	    return $('<ul class="list-group"/>')
+	},
+	_addOption: function(elem, count){
+	    var self = this
+	    $elem = $(elem);
+	    this.$list.append(
+		$('<li />')
+		    .data('selection-value', $elem.val())
+		    .addClass('list-group-item')
+		    .append(
+		    	$('<div>')
+		    	    .addClass('custom-control custom-checkbox checked-indicator mr-2')
+		    	    .append(
+		    		$('<input type="checkbox" />')
+		    		    .addClass('custom-control-input')
+				    .data('options-count', count)
+		    		    .attr('id', 'cbfor_'+self.id+'_'+$elem.val())
+		    		    .change(
+		    			function(){
+		    			    self._toggle($(this))
+		    			}
+		    		    )
+		    	    )
+		    	    .append(
+		    		$('<label />')
+		    		    .addClass('custom-control-label')
+		    		    .attr('for', 'cbfor_'+this.id+'_'+$elem.val())
+		    		    .html($elem.html())
+				
+		    	    )
+			
+		    )
+	    
+	    )
+	    
+	},
+	_toggle : function($elem){
+	    if ($elem.prop('checked')){
+		// add new form
+		this._incTotalForms()
+		var $form = $(
+		    this.$formTemplate.html().replace(/__prefix__/g, this._totalForms())
+		),
+		    $li = $elem.parents('.list-group-item').first(),
+		    // move first select to invisible wrapper
+		    $select = $form
+		    .find('select')
+		    .first()
+		    .parents('.form-group')
+		    .appendTo(this.$wrapper),
+		
+		    $additionalInputs = $('<div />').addClass('additional-inputs').hide()
+		    .appendTo($li)
+		$form
+		    .find('.form-group')
+		    .appendTo($additionalInputs)
+		$additionalInputs.show(
+		    200,
+		)
+		
+	    } else {
+		// remove new form
+	    }
+	    
+	    
+	}
+    }
+)
+
 $R.Widgets = {
     init : function(){
 	// activate all widgets
@@ -649,8 +776,48 @@ $R.Widgets = {
 	})
 	instances = []
 	$('.inline-panel-select-permissions').permissionSelectionPanel()
+	$('.inline-panel-all-options').inlinealloptions()
 	$('.hide-show-widget').hideshow()
 	$('.template-editor').templateeditor()
+	$('.depending-field').dependingfield()
+	$.fn.datetimepicker.Constructor.Default =
+	    $.extend(
+		{}, $.fn.datetimepicker.Constructor.Default,
+		{
+		    icons: {
+			time: "fas fa-clock",
+			date: "fas fa-calendar",
+			up: "fas fa-arrow-up",
+			down: "fas fa-arrow-down",
+			previous: 'fa fa-chevron-left',
+			next: 'fas fa-chevron-right',
+			today: 'fas fa-calendar-check',
+			clear: 'fas fa-trash-alt',
+			close: 'fas fa-times'
+		    },
+		    locale : 'de',
+		    allowInputToggle : true,
+		    calendarWeeks : true,
+		    buttons: {
+			showToday: true,
+			showClear: true,
+			showClose: true
+		    }
+			
+		}
+	    )
+	
+	$('.input-group.date').datetimepicker({
+	    format : 'YYYY/MM/DD'
+	})
+	    
+	$('.input-group.date-time').datetimepicker({
+	    format : 'YYYY/MM/DD HH:mm'
+	})
+	$('.input-group.time').datetimepicker({
+	    format : 'HH:mm'
+	})
+	
     },
 
     TypeAndSelect : ( function() {
@@ -836,6 +1003,45 @@ $.widget(
     }
     
 )
+$.widget('raiforms.dependingfield', {
+    _create : function(){
+	// this is a weird mutli-protected json string. let's put it into a parsable form
+	var dataString = this.element.data('depends-on')
+	    .replace(/\\/g,'')
+	    .replace(/\"\"/g, '')
+	    .replace(/\"/g, '"')
+	    .slice(1,-1);
+	var dependsObj = JSON.parse(dataString);
+	var self = this;
+	for (item in dependsObj) {
+	    var $item = $('[name='+item+']')
+	    $item.change(function(evt){
+		self._toggle($(this), dependsObj[item])
+	    }).each(
+		function(){
+		    if($(this).prop('checked')){
+			self._toggle($(this), dependsObj[item])
+		    }
+		}
+	    )
+	}
+    },
+    _toggle : function($elem, values){
+	var self = this;
+	console.log('Elem val', $elem.val(), 'values', values)
+	if (values.indexOf($elem.val()) > -1){
+	    console.log('in if')
+	    self.element.find('.form-group').addClass('required')
+	    self.element.show(200);
+	    
+	    
+	} else {
+	    console.log('in else')
+	    self.element.find('.form-group').removeClass('required')
+	    self.element.hide(200);
+	}
+    }
+})
 
 $(document).ready(function(){
     $R.Widgets.init()
