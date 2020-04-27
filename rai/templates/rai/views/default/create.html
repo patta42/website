@@ -1,5 +1,5 @@
 {% extends 'rai/views/default/shared/form-view.html' %}
 {% load rai_tags i18n %}
-
+{% block pagetitle %}{% trans "Create" %} {{model_name}}{% endblock %}
 {% block title_action %}{% trans "Create" %}:{% endblock %}
 {% block heading %}{{model_name}}{% endblock %}
