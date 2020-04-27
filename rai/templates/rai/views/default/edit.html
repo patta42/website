@@ -1,5 +1,8 @@
 {% extends 'rai/views/default/shared/form-view.html' %}
 {% load rai_tags i18n %}
+{% block pagetitle %}
+{% trans "Edit" %} {% if object.title %}{{ object.title }}{% else %}{{object}}{% endif %}
+{% endblock %}
 
 {% block title_action %}{% trans "Edit" %}:{% endblock %}
 {% block heading %}{% if object.title %}{{ object.title }}{% else %}{{object}}{% endif %}{% endblock %}
