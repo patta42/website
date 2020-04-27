@@ -58,7 +58,11 @@ create_staff_edit_handler = RAIMultiFormEditHandler([
                     eh.RAIFieldPanel('room', classname="col-md-4"),
                     eh.RAIFieldPanel('fax', classname="col-md-4", widget = RAITextInput),
                 ], heading = "Angaben zur Erreichbarkeit"),
-
+                eh.RAIFieldRowPanel([
+                    eh.RAIFieldPanel('key_number', classname="col-md-6"),
+                    eh.RAIFieldPanel('gate_key_number', classname="col-md-6"),
+                ], heading = "Schlüssel"),
+                
 
             ],
         )
@@ -78,7 +82,8 @@ create_staff_edit_handler = RAIMultiFormEditHandler([
                         'expire_at',
                         classname="",
                         label='Vertragsende',
-                        help_text = 'Bei permanenten Mitarbeitern dieses Feld leer lassen.'),
+                        help_text = 'Bei permanenten Mitarbeitern dieses Feld leer lassen.',
+                    ),
                 ], heading = 'Vertragsstatus'),
                 eh.RAIInlinePanel('roles', panels=[
                     eh.RAIFieldPanel('role'),
@@ -89,4 +94,41 @@ create_staff_edit_handler = RAIMultiFormEditHandler([
     )
 
 
+])
+
+edit_staff_user_handler = eh.RAIPillsPanel([
+    eh.RAIObjectList([
+        eh.RAICollapsablePanel([
+            eh.RAIFieldRowPanel([
+                eh.RAIFieldPanel ('last_name', classname="col-md-5"),
+                eh.RAIFieldPanel ('first_name', classname="col-md-5"),
+                eh.RAIFieldPanel ('sex', classname="col-md-2", widget=RAISelect),
+                eh.RAIFieldPanel ('email', classname="col-md-4"),
+                eh.RAIFieldPanel ('room', classname="col-md-4"),
+                eh.RAIFieldPanel ('phone', classname="col-md-4"),
+            ])
+        ], heading = 'Kontaktdaten'),
+        eh.RAICollapsablePanel([
+            eh.RAIInlinePanel('roles', panels = [
+                eh.RAIFieldPanel('role')
+            ])
+        ], heading = 'Aufgaben im RUBION')
+ 
+    ], heading ="öffentliche Angaben"),
+    eh.RAIObjectList([
+        
+    ], heading = 'Strahlenschutz'),
+    eh.RAIObjectList([
+        eh.RAICollapsablePanel([
+            eh.RAIFieldPanel( 'key_number' )
+        ], heading = "Schlüssel"),
+        eh.RAICollapsablePanel([
+            eh.RAIFieldPanel('hired_by_rubion'),
+            eh.RAIFieldPanel(
+                'expire_at',
+                label = 'Vertrag bis',
+                help_text = 'Bei permanent angestellten Mitarbeitern bitte leer lassen')
+        ], heading = "Vertragsdaten")
+    ], heading = 'Interna')
+    
 ])
