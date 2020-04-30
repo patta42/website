@@ -1,6 +1,6 @@
 from pprint import pprint as print
 
-from .generic import RAIAdminView
+from .generic import RAIAdminView, PageMenuMixin
 
 from django.template.loader import render_to_string
 from django.contrib import messages
@@ -10,38 +10,14 @@ from django.utils.translation import ugettext_lazy as _
 from rai.edit_handlers.utils import convert_from_wagtail, make_edit_handler_for_model
 from rai.utils import get_model_verbose_name
 
-class CreateView(RAIAdminView):
+class CreateView(RAIAdminView, PageMenuMixin):
     template_name = 'rai/views/default/create.html'
-    media = {
-        'css' : [ 'css/admin/edit_handlers.css'],
-        'js' : [ 'js/admin/RUBIONeditor.js' ]
-    }
+    save_button = True
+    formclass = None
 
-    def get_page_menu(self):
-        actions = []
-        for Action in self.raiadmin.group_actions:
-            action = Action(self.raiadmin)
-            if action.action_identifier != self.active_action.action_identifier:
-                actions.append({
-                    'icon' : action.icon,
-                    'icon_font' : action.icon_font,
-                    'label' : action.label,
-                    'url' : action.get_href(),
-                    'btn_type' : getattr(action,'btn_type', None),
-                    'text_type': getattr(action,'text_type', None),
-                    
-                })
-        return render_to_string(
-            'rai/menus/group_menu.html',
-            {
-                'actions' : actions,
-                'sort_button' : False,
-                'filter_button' : False,
-                'save_button': True,
-                'icons_only' : True,
-#                'settings_menu' : self.get_settings_menu()    
-            }
-        )
+    def get_actions(self):
+        return self.get_group_actions()
+    
     def get_settings_menu(self):
         settings_action = self.active_action.settings_action
         return {
@@ -50,9 +26,8 @@ class CreateView(RAIAdminView):
             'label' : settings_action.label,
             
         }
-    
-    def dispatch(self, request, *args, **kwargs):
-        
+
+    def prepare_edit_handler(self):
         if hasattr(self.active_action, 'edit_handler'):
             edit_handler = self.active_action.edit_handler
         elif hasattr(self.raiadmin.model, 'edit_handler'):
@@ -61,8 +36,12 @@ class CreateView(RAIAdminView):
             edit_handler = make_edit_handler_for_model(self.raiadmin.model)
 
         self.edit_handler = edit_handler.bind_to(model=self.raiadmin.model)
-        self.formclass = self.edit_handler.get_form_class()
-        self.formset_classes = self.edit_handler.get_additional_formset_classes()
+
+    def dispatch(self, request, *args, **kwargs):
+        self.prepare_edit_handler()
+        if not self.formclass:
+            self.formclass = self.edit_handler.get_form_class()
+            self.formset_classes = self.edit_handler.get_additional_formset_classes()
         self.formsets = {}
         for key,formset_class in self.formset_classes.items():
             self.formsets.update({key : formset_class(prefix = key)})
@@ -70,14 +49,16 @@ class CreateView(RAIAdminView):
         self.request = request
         return super().dispatch(request, *args, **kwargs)
 
+    def redirect_to_default(self):
+        return redirect(self.raiadmin.default_action(self.raiadmin).get_url_name())
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         form = self.formclass()
-        formsets = {
-            key : { formset_class( prefix = key ) }
-            for key, formset_class in self.formset_classes.items()
-        }
+        #formsets = {#
+        #     key : { formset_class( prefix = key ) }
+        #     for key, formset_class in self.formset_classes.items()
+        # }
         edit_handler = self.edit_handler.bind_to(
             form = form, request = self.request
         )
@@ -93,6 +74,7 @@ class CreateView(RAIAdminView):
             
         return context
 
+            
     def post(self, request):
         form = self.formclass(request.POST, request.FILES, user = request.user)
         self.formsets = {}
@@ -126,4 +108,4 @@ class CreateView(RAIAdminView):
             for formset in self.formsets.values():
                 subform.save()
             messages.success(request, _('The data was saved.'))
-        return redirect(self.raiadmin.default_action(self.raiadmin).get_url_name())
+        return self.redirect_to_default()
