@@ -596,6 +596,7 @@ fieldset.multi-field-panel legend,
 
 }
 
+.inline-panel-all-options .form-group label,
 .input-group-wrapper .form-group label,
 .form-group .form-group label,
 .form-row-wrapper .form-group label {
@@ -620,8 +621,9 @@ fieldset.multi-field-panel legend,
 #main_form fieldset fieldset legend{
     margin-top:0;
 }
+
 .inline-panel-all-options h6.label:before,
-#main_form .alert-danger:before, 
+#main_form .alert-danger:not(.confirmation):before, 
 .form-group > label:not(.custom-control-label):before,
 fieldset.multi-field-panel legend:before,
 .form-row-wrapper h6.label:before,
@@ -639,7 +641,7 @@ fieldset.multi-field-panel legend:before,
     border-left:#003560 solid 10px;
     z-index:1;
 }
-#main_form .alert:before{
+#main_form .alert:not(.confirmation):before{
     border-left-color:#dc3545;
     margin-left:-1px;
     top:15px;
@@ -665,4 +667,29 @@ fieldset.multi-field-panel legend:before,
     background-color:#fff;
 }
 
+
+.inline-panel-all-options .additional-inputs{
+    margin-left:2rem;
+    background-color:rgba(0,0,0,.0675);
+    border: thin solid rgba(0,0,0,.125);
+    border-radius:.25rem;
+}
+.inline-panel-all-options .list-group-item{
+    margin-bottom: 0px;
+}
+.additional-inputs .form-group{
+    margin:0;
+    margin-top:1rem;
+    padding-top:0
+}
+
+ul.inline-list li{
+    list-style-item:none;
+    display:inline-block;
+}
+
+/* list for type-and-select widget*/
+.list-group.type-and-select-selection{
+    z-index:100;
+}
 
