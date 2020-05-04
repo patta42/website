@@ -3,6 +3,8 @@ The models in the package implement a way to deal with user data.
 It goes well behind additional data for user accounts, but implements 
 this, too.
 """
+import datetime
+
 from django import forms
 from django.conf import settings
 from django.db import models
@@ -17,6 +19,7 @@ from modelcluster.fields import ParentalKey, ParentalManyToManyField
 from rubion.helpers import get_unique_value
 
 from userinput.models import RUBIONUser
+from userinput.query import ActiveInactivePageManager
 
 from wagtail.admin.edit_handlers import (
     FieldPanel, StreamFieldPanel, MultiFieldPanel,
@@ -122,6 +125,8 @@ class StaffUser ( TranslatedPage ):
     
     parent_page_types = [ 'userdata.UserContainer' ]
 
+    objects = ActiveInactivePageManager()
+
     # A staff member is usually connected to a Wagtauil user, but 
     # some (Director, Vice director) are not
     user = models.ForeignKey(
@@ -177,7 +182,9 @@ class StaffUser ( TranslatedPage ):
         verbose_name = _('Gender'),
     )
 
-
+    hired_by_rubion = models.BooleanField(
+        default = False
+    )
     # # Some more stuff...
     # role_en = models.CharField(
     #     max_length = 255, verbose_name = _( 'role' ),
@@ -246,7 +253,12 @@ class StaffUser ( TranslatedPage ):
         default = '',
         verbose_name = _('Key number')
     )
-
+    gate_key_number = models.CharField(
+        max_length = 64,
+        blank = True,
+        default = '',
+        verbose_name = _('Gate Key number')
+    )
     needs_safety_instructions =  ParentalManyToManyField(
         'userdata.SafetyInstructionsSnippet',
         verbose_name = _('user needs safety instruction'),
@@ -396,7 +408,23 @@ class StaffUser ( TranslatedPage ):
         raise Http404('The page does not exist')
 
 
-    
+    def inactivate(self, user = None, inactivate_website_user = True):
+        # inactivation means:
+        # - set expire_at to now
+        # - unpublish the page
+        # - lock the page
+        now = datetime.datetime.now()
+        self.expire_at = now
+        self.live = False
+        self.locked = True
+        self.locked_by = user
+        self.locked_at = now
+        self.save()
+        self.save_revision(user = user)
+        if inactivate_website_user:
+            if self.user:
+                self.user.is_active = False
+                self.user.save()
 
     class Meta:
         verbose_name = _('staff member')
@@ -428,6 +456,11 @@ class StaffRoles( ClusterableModel ):
 
     role = TranslatedField('role')
 
+    is_beirat = models.BooleanField(
+        default = False,
+        help_text = 'Bezeichnet diese Aufgabe Mitglieder des Beirats?',
+        
+    )
     def __str__( self ):
         return self.role
 
