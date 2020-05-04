@@ -209,6 +209,7 @@ class StaffUser ( TranslatedPage ):
     institute = TranslatedField('institute')
     room = models.CharField(
         max_length = 20, verbose_name = _( 'room' ),
+        null = True, blank = True
     )
     phone = models.CharField( max_length = 64, verbose_name = _( 'phone' ),  )
     fax = models.IntegerField( 
