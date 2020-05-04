@@ -132,3 +132,35 @@ edit_staff_user_handler = eh.RAIPillsPanel([
     ], heading = 'Interna')
     
 ])
+
+edit_role_handler = eh.RAIObjectList([
+    eh.RAIFieldPanel('role_de'),
+    eh.RAIFieldPanel('role_en'),
+    eh.RAIFieldPanel('is_beirat')
+])
+
+beirat_group_edit_handler = eh.RAIObjectList([
+    eh.RAIFieldPanel('title_de'),
+    eh.RAIFieldPanel('title_en'),
+    eh.RAIFieldPanel('order'),
+    eh.RAIFieldPanel('has_sub_groups'),
+])
+
+beirat2staff_edit_handler = eh.RAIFieldList([
+        eh.RAIFieldPanel('beirat_group'),
+        eh.RAIFieldPanel('member'),
+        eh.RAIFieldPanel('is_head'),
+        eh.RAIFieldPanel('is_surrogate'),
+        eh.RAIFieldPanel('faculty_group', widget = RAISelect),
+], heading = "Angaben zur Mitgliedschaft im Beirat" )
+
+beirat_replace_edit_handler = eh.RAIFieldList([
+    eh.RAIFieldPanel('source'),
+    eh.RAIFieldPanel('member_selection'),
+    eh.RAIFieldRowPanel([
+        eh.RAIFieldPanel('first_name', classname="col-md-6"),
+        eh.RAIFieldPanel('last_name', classname="col-md-6"),
+        eh.RAIFieldPanel('email', classname="col-md-6"),
+        eh.RAIFieldPanel('phone', classname="col-md-6"),
+    ], heading="Angaben zur Person")
+], heading =" Angaben zum neuen Beiratsmitglied")
