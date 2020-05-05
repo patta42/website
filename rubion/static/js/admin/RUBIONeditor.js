@@ -503,6 +503,7 @@ $R.editing = {
 		    'buttons' : $c('action'),
 		    'textareaContainer' : $$('TextareaContainer'),
 		    'previewBtn' : $$('TabPreviewLabel'),
+		    'editorBtn' : $$('TabEditorLabel'),
 		    'previewContainer' : $$('previewContainer'),
 		    'spinnerContainer' : $$('spinnerContainer'),
 		    'previewOuter' : $$('previewOuter'),
@@ -514,13 +515,30 @@ $R.editing = {
 		self.$components.textareaContainer.append(self.$components.textarea);
 
 		// smaller font for textarea
-		self.$components.textareaContainer.css('font-size', 'smaller');
+		self.$components.textarea.css('font-size', '.9rem');
 		// copy height and padding from textarea to preview
 		self.$components.previewOuter.css({
 		    'position': 'relative',
 		    'overflow':'auto'
 		})
-		    .height(self.$components.textareaContainer.height());
+		self.setSizes = function(evt){
+		    self.textareaContainerHeight = self.$components.textareaContainer.height()
+		    var height = self.textareaContainerHeight;
+		    if (height == 0){
+			// happens if we are in a modal
+			if ($elem.parents('.modal').length > 0){
+			    // just set a reasonable height of both components
+			    height = Math.min($(window).height()/3, 350);
+			    self.$components.textareaContainer.height(height);
+			}
+		    } 
+		    self.$components.previewOuter.height(height);
+
+		}
+		self.adjustPreviewHeight = function(){
+			
+		}
+		    
 		self.$components.previewContainer
 		    .css({
 			'padding-left': self.$components.textarea.css('padding-left'),
@@ -548,7 +566,10 @@ $R.editing = {
 		}
 		self.render = function(){
 		    $R.post(self.url, {
-			beforeSend: self.showSpinner,
+			beforeSend: function(){
+			    self.showSpinner(),
+			    self.adjustPreviewHeight()
+			},
 			data : {'markdown': self.$components.textarea.val()}
 		    }).done(
 			function( data ) {
@@ -561,6 +582,9 @@ $R.editing = {
 			}
 		    )
 		}
+		self.$components.editorBtn.on('hide.bs.tab', function(evt){
+		    self.setSizes(evt);
+		})
 		self.$components.previewBtn.on('shown.bs.tab', function(){
 		    self.render();
 		})
@@ -584,7 +608,7 @@ $R.editing = {
 		    );
 		    command.execute(self.$components.textarea);
 		}
-		    
+		self.adjustPreviewHeight()		    
 		self.render()
 
 	    }
