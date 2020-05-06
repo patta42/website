@@ -27,7 +27,11 @@ from rai.forms import formfield_for_dbfield, RAIAdminModelForm, rai_modelform_fa
 import string
 import uuid
 
-
+class RenderObjectFieldMixin:
+    def render_as_object(self):
+        return self._render(self.object_template)
+    def render_as_field(self):
+        return self._render(self.field_template)
 
 
 
@@ -50,18 +54,27 @@ class RAITabbedInterface(RAIBaseFormEditHandler):
 class RAIObjectList(RAIBaseFormEditHandler):
     template = 'rai/edit_handlers/object-list.html'
     def __init__(self, *args, **kwargs):
+        self.wrapper_classes = kwargs.pop('wrapper_classes', None)
         self.base_form_class = kwargs.pop('base_form_class', None)
         super().__init__(*args, **kwargs)
     def clone_kwargs(self):
         kwargs = super().clone_kwargs()
-        kwargs.update({'base_form_class': self.base_form_class})
+        kwargs.update({'base_form_class': self.base_form_class, 'wrapper_classes' : self.wrapper_classes})
         return kwargs
+    
+class RAIFieldList(RAIObjectList):
+    template = 'rai/edit_handlers/field-list.html'
     
     
 class RAIFieldRowPanel(RAIBaseFormEditHandler):
-    template = "rai/edit_handlers/field-row-panel.html"
+    object_template = "rai/edit_handlers/field-row-panel_as-object.html"
+    field_template = "rai/edit_handlers/field-row-panel_as-field.html"
 
-
+    def render_as_object(self):
+        return self._render(self.object_template)
+    def render_as_field(self):
+        return self._render(self.field_template)
+    
 class RAICollapsablePanel(RAIBaseFormEditHandler):
     is_collapsable = True
     template = 'rai/edit_handlers/collapsable-panel.html'
@@ -204,7 +217,7 @@ class RAIMultiFieldPanel(RAIBaseCompositeEditHandler):
 class RAIInlinePanel(RAIEditHandler):
     is_collapsable = True
     def __init__(self, relation_name, panels=None, heading='', label='',
-                 min_num=None, max_num=None, *args, **kwargs):
+                 min_num=None, max_num=None, show_all_options = False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.relation_name = relation_name
         self.panels = panels
@@ -212,6 +225,7 @@ class RAIInlinePanel(RAIEditHandler):
         self.label = label
         self.min_num = min_num
         self.max_num = max_num
+        self.show_all_options = show_all_options
 
     def clone_kwargs(self):
         kwargs = super().clone_kwargs()
@@ -221,6 +235,7 @@ class RAIInlinePanel(RAIEditHandler):
             label=self.label,
             min_num=self.min_num,
             max_num=self.max_num,
+            show_all_options = self.show_all_options
         )
         return kwargs
 
@@ -228,7 +243,7 @@ class RAIInlinePanel(RAIEditHandler):
         # Look for a panels definition in the InlinePanel declaration
         if self.panels is not None:
             return self.panels
-        # Failing that, get it from the model
+        # otehrwise, raise an error
         raise ImproperlyConfigured(
             'RAIInlinePanels needs a panel definition.'
         )
@@ -287,8 +302,17 @@ class RAIInlinePanel(RAIEditHandler):
         # if this formset is valid, it may have been re-ordered; respect that
         # in case the parent form errored and we need to re-render
         if self.formset.can_order and self.formset.is_valid():
-            self.children.sort(
-                key=lambda child: child.form.cleaned_data[ORDERING_FIELD_NAME] or 1)
+            print(len(self.children))
+            
+            for child in self.children:
+                pprint(child.form.fields)
+                for field in child.form.fields:
+                    print(field)
+                    #print ('{}: {}'.format(field, 'foo'))
+                
+                pprint(child.form.cleaned_data)
+            #self.children.sort(
+            #    key=lambda child: child.form.cleaned_data[ORDERING_FIELD_NAME] or 1)
 
         empty_form = self.formset.empty_form
         empty_form.fields[DELETION_FIELD_NAME].widget = forms.HiddenInput()
@@ -687,17 +711,18 @@ class RAIReadOnlyPanel(RAIFieldPanel):
         return model._meta.get_field(self.field_name)
 
 
-class RAIInputGroupCollectionPanel(RAIBaseCompositeEditHandler):
-    template = 'rai/edit_handlers/input-group.html'
+class RAIInputGroupCollectionPanel(RenderObjectFieldMixin, RAIBaseCompositeEditHandler):
+    object_template = 'rai/edit_handlers/input-group.html'
+    field_template = 'rai/edit_handlers/input-group_as-field.html'
 
-    def render_as_object(self):
-        return self.render()
-    def render_as_field(self):
-        return self.render()
-    
     def render(self):
+        return self.render_as_field()
+    
+    def _render(self, template):
+        print ('Using template: {}'.format(template))
         return mark_safe(
-            render_to_string(self.template, {
+            render_to_string(template, {
+                'self' : self,
                 'prepend' : self.children[0],
                 'field': self.children[1]
             })
@@ -832,3 +857,5 @@ class RAIDecorationPanel(RAIObjectList):
 
     def html_declarations(self):
         return ''
+
+    
