@@ -1,6 +1,6 @@
 {% for child in self.children %}
 
-<fieldset data-rubion-render-information="{{self.panel_type}}-{{forloop.counter0}}" class="mb-4">
+<fieldset data-rubion-render-information="{{self.panel_type}}-{{forloop.counter0}}" class="mb-4{% if self.wrapper_classes %} {{self.wrapper_classes}}{% endif %}">
   <legend>{% if child.heading %}
       {% if child.is_collapsable %}
         <a aria-expanded="{{child.is_expanded|yesno:"true,false,false"}}" class="hideshowbutton" data-toggle="collapse" href="#collapseid{{forloop.counter0}}"><span class="downBtn mr-1"><i class="fas fa-angle-down"></i></span><span class="upBtn mr-1"><i class="fas fa-angle-up"></i></span>
