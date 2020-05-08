@@ -1067,6 +1067,45 @@ $.widget('raiforms.dependingfield', {
     }
 })
 
+$.widget(
+    'raiwidgets.ajaxify',
+    {
+	_options : {
+	    successCallback : undefined,
+	    failCallBack : undefined
+	},
+	_create : function(){
+	    if (this.element.data('ajaxify-container') !== undefined){
+
+	    }
+	    this.element.click(function(evt){
+		evt.preventDefault();
+		$R.post(
+		    this.element.attr('href'),
+		    this._collectData()
+		).fail(
+		    function(){
+			if (this._options.failCallBack !== undefined){
+			    this._options.failCallBack()
+			}
+		    }
+			
+		).done(
+		    function(data){
+			if (this._options.successCallBack !== undefined){
+			    this._options.successCallBack(data)
+			}
+		    }
+		
+		)
+	    })
+	},
+	_collectData : function(){
+	    return {}
+	}
+	
+    }
+)
 $(document).ready(function(){
     $R.Widgets.init()
 })
