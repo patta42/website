@@ -1,8 +1,16 @@
+{% load rai_markdown %}
 {# the markdown widget #}
 
 {# the bare textarea first. has to be positioned in the UI by JS #}
+{% if widget.is_editable %}
 <div>
-  <textarea {% if widget.required %}required {% endif %} name="{{widget.name}}"{% for attr,attrvalue in widget.attrs.items %}{% if attrvalue is not False %} {{attr}}{% if attrvalue is not True %}="{{attrvalue}}"{% endif %}{% endif %}{% endfor %}>{{widget.value}}</textarea>
+  <textarea {% if widget.required %}required {% endif %}
+	    name="{{widget.name}}"{% for attr,attrvalue in widget.attrs.items %}
+	    {% if attrvalue is not False %} {{attr}}{% if attrvalue is not True %}="{{attrvalue}}"{% endif %}
+	    {% endif %}{% endfor %}>
+    {% if widget.value %}{{widget.value}}{% endif %}
+  </textarea>
+  
 </div>
 
 <div class="markdown-editor" data-markdown-editor-process="{% url "rai_markdown_mardown2html" %}" data-markdown-editor-controls="#{{widget.attrs.id}}">
@@ -24,4 +32,13 @@
     </div>
   </div>
 </div>
+{% else %}
+{# widget is shown for content only #}
+{% if widget.value %}
+<div class="markdowm-widget-content">
+  {{widget.value|md}}
+</div>
+{% endif %}
+{% endif %}
+
 
