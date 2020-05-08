@@ -629,7 +629,6 @@ $.widget(
 		.first()
 		.data('admin-menu-settings-url')
 	    var data = {}
-	    console.log(this.element.data('edit-type'), this.element.data('edit-type-id'))
 	    var content = {}
 	    content[this.element.data('edit-type-id')] = this.element.text().trim()
 	    data[this.element.data('edit-type')] = JSON.stringify(content)
