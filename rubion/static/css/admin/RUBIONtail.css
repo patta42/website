@@ -547,6 +547,10 @@ h6.sidebar-heading{
     margin-left:1rem;
 }
 
+#main_form fieldset.wide{
+    max-width:100%;
+}
+
 #main_form fieldset fieldset{
     max-width:100%;
     margin-top:.5rem;
@@ -584,6 +588,7 @@ h6.sidebar-heading{
 .form-group .help-text{
     max-width:800px;
 }
+.rai-comment h6.label,
 .inline-panel-all-options h6.label,
 .input-group-wrapper.as-field h6,
 .form-row-wrapper h6.label,
@@ -602,6 +607,7 @@ fieldset.multi-field-panel legend,
 .form-row-wrapper .form-group label {
     font-size:inherit;
 }
+.rai-comment,
 .inline-panel-all-options,
 .form-group,
 .form-row-wrapper,
@@ -621,7 +627,7 @@ fieldset.multi-field-panel legend,
 #main_form fieldset fieldset legend{
     margin-top:0;
 }
-
+.rai-comment h6.label:before,
 .inline-panel-all-options h6.label:before,
 #main_form .alert-danger:not(.confirmation):before, 
 .form-group > label:not(.custom-control-label):before,
@@ -693,3 +699,26 @@ ul.inline-list li{
     z-index:100;
 }
 
+
+.user-profile-picture-in-comment{
+    border-radius:5px;
+    border:thin solid rgba(0,0,0,.25);
+}
+.rai-comment .markdown-editor-preview h1,
+.rai-comment-content .markdown-widget-content h1{
+    font-size:120%;
+    text-transform:uppercase;
+    font-weight:bold;
+}
+.rai-comment .markdown-editor-preview h2,
+.rai-comment-content .markdown-widget-content h2{
+    font-size:100%;
+    text-transform:uppercase;
+    font-weight:bold;
+}
+.rai-comment .markdown-editor-preview h3,
+.rai-comment-content .markdown-widget-content h3{
+    font-size:100%;
+    text-transform:uppercase;
+    font-weight:normal;
+}
