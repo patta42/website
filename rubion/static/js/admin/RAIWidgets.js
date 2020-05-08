@@ -612,6 +612,7 @@ $.widget(
 		    'backgroundColor': self.options['bgColor'],
 		    'cursor' : 'text'
 		})
+		$R.selectElementText(self.element[0]);
 		var href = self.$parentAnchor.attr('href');
 		self.$parentAnchor.removeAttr('href');
 		self.element.blur( function(){
@@ -716,11 +717,13 @@ $.widget(
 		    		    .addClass('custom-control-input')
 				    .data('options-count', count)
 		    		    .attr('id', 'cbfor_'+self.id+'_'+$elem.val())
+				    .val($elem.val())
 		    		    .change(
 		    			function(){
 		    			    self._toggle($(this))
 		    			}
 		    		    )
+				    
 		    	    )
 		    	    .append(
 		    		$('<label />')
@@ -738,7 +741,6 @@ $.widget(
 	_toggle : function($elem){
 	    if ($elem.prop('checked')){
 		// add new form
-		this._incTotalForms()
 		var $form = $(
 		    this.$formTemplate.html().replace(/__prefix__/g, this._totalForms())
 		),
@@ -749,16 +751,22 @@ $.widget(
 		    .first()
 		    .parents('.form-group')
 		    .appendTo(this.$wrapper),
-		
-		    $additionalInputs = $('<div />').addClass('additional-inputs').hide()
-		    .appendTo($li)
-		$form
-		    .find('.form-group')
-		    .appendTo($additionalInputs)
-		$additionalInputs.show(
-		    200,
-		)
-		
+		    $additionalInputs = $('<div />').addClass('additional-inputs').hide(),
+		    $children = $form.find('.form-group').appendTo($additionalInputs)
+
+				    
+		$select.find('option[value="'+$elem.val()+'"]').prop('selected', true)
+		$form.find('input[name="'+this.id+'-'+this._totalForms()+'-ORDER"]')
+		    .val(0)
+		    .appendTo(this.$wrapper)
+		    
+		if ($children.length > 0){
+		    
+		    $additionalInputs.appendTo($li).show(
+			200,
+		    )
+		}
+		this._incTotalForms()
 	    } else {
 		// remove new form
 	    }
@@ -808,11 +816,11 @@ $R.Widgets = {
 	    )
 	
 	$('.input-group.date').datetimepicker({
-	    format : 'YYYY/MM/DD'
+	    format : 'YYYY-MM-DD'
 	})
 	    
 	$('.input-group.date-time').datetimepicker({
-	    format : 'YYYY/MM/DD HH:mm'
+	    format : 'YYYY-MM-DD HH:mm'
 	})
 	$('.input-group.time').datetimepicker({
 	    format : 'HH:mm'
@@ -852,25 +860,32 @@ $R.Widgets = {
 	    self.$components.input = self.$components.wrapper.find('input').first();
 	    self.$components.button = self.$components.wrapper.find('button').first();
 	    self.$components.optionSurrounder = $('<ul class="list-group type-and-select-selection"></ul>')
+	    var selectedValues = []
 	    $elem.find('option').each(
 		function(){
+		    if ($(this).prop('selected') == true){
+			selectedValues.push($(this).val());
+		    }
 		    $(this).attr('selected', false);
 		    var txt = $(this).text().split('|')
 		    var subline = txt.length > 1 ? '<span class="text-muted">'+txt[1]+'</span>' : ''
-		    self.$components.optionSurrounder.append(
-			$('<li class="list-group-item d-flex" data-type-and-select-value="'
-			  + $(this).val()+'">'+
-			  '<span class="status"><i class="selected-icon fas fa-check"></i><i class="not-selected-icon far fa-circle"></i></span>'+
-			  '<span><h6>'+txt[0]+'</h6>'+subline+'</span></li>'
-			 )
-		    )
+		    if ($(this).val() != '' && $(this).val() !== undefined){ 
+			self.$components.optionSurrounder.append(
+			    $('<li class="list-group-item d-flex align-items-center" data-type-and-select-value="'
+			      + $(this).val()+'">'+
+			      '<span class="status"><i class="selected-icon fas fa-check"></i><i class="not-selected-icon far fa-circle"></i></span>'+
+			      '<span><h6>'+txt[0]+'</h6>'+subline+'</span></li>'
+			     )
+			)
+		    }
 		}
 	    )
+	    
 	    self.$components.emptyOption = $('<option value="">--</option>');
 	    $elem.append(self.$components.emptyOption);
 	    self.$components.emptyOption.attr('selected', true)
 	    self.$components.wrapper.append(self.$components.optionSurrounder)
-	    self.$components.optionSurrounder.hide();
+	    self.$components.optionSurrounder.toggle();
 	    self.$options = self.$components.optionSurrounder.find('li');
 	    self.$options.click(function(evt){
 		self.select(evt);
@@ -878,7 +893,9 @@ $R.Widgets = {
 	    self.$components.wrapper.css({
 		'height':self.$components.wrapper.height()+'px',
 		'overflow':'visible',
-	    }) 
+	    })
+	    
+	    
 
 	    self.$components.button.click(
 		function(){self.toggleSelection()}
@@ -910,7 +927,7 @@ $R.Widgets = {
 		var value = $this.data('type-and-select-value');
 		
 		$this.addClass('selected');
-		$elem.find('option[value="'+value+'"]').attr('selected',true);
+		$elem.find('option[value="'+value+'"]').prop('selected',true);
 		self.$components.emptyOption.attr('selected', false)
 		self.toggleSelection();
 		self.$components.input.val($this.find('h6').text());
@@ -930,6 +947,14 @@ $R.Widgets = {
 	    self.toggleSelection = function(){
 		self.$components.optionSurrounder.css('height', self.getHeight()+'px');
 		self.$components.optionSurrounder.toggle()
+	    }
+
+	    // init initial values
+	    var evt = $.Event('click');
+	    console.log(selectedValues);
+	    for (var count = 0; count < selectedValues.length; count ++){
+		self.$components.optionSurrounder.find('li[data-type-and-select-value="'+selectedValues[count]+'"]').trigger(evt);
+		self.$components.optionSurrounder.hide()
 	    }
 	}
 	return cls;
