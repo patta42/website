@@ -775,6 +775,75 @@ $.widget(
     }
 )
 
+$.widget(
+    'raiwidgets.commenthandlers',
+    {
+	_create : function(){
+	    var self = this
+	    this.element.find('.comment-delete-button').ajaxify({
+		successCallback : function(){self._commentDeleted()}
+	    })
+	    this.$modal = this.element.find('.comment-edit-button').first()
+	    var self = this;
+	    this.$modal.genericmodal(
+		{
+		    title : 'Kommentar ändern',
+		    contentReady : function(evt, $content){
+			var $mde = $content.find('.markdown-editor').first()
+			new $R.editing.RAIMarkdownEditor($mde)
+		    },
+		    onSave : function(evt, data){
+			self._save(evt, data)
+		    }
+		}
+	    )
+	},
+	_save : function(evt, data){
+	    var $body = data['body'],
+		$textarea = $body.find('textarea').first(),
+		self = this
+	    
+	    $R.post(data.url, {data : {comment: $textarea.val()}})
+		.done(
+		    function(data){
+			if (data.status == 200){
+			    self.$modal.genericmodal('destroy')
+			    self.element.find('.markdown-widget-content').first().html(
+				data['html']
+			    ).before(
+				'<div class="alert alert-info alert-dismissible fade show" role="alert">'+
+				    'Kommentar wurde geändert'+
+				    '<button type="button" class="close" data-dismiss="alert" aria-label="Close">'+
+				    '<span aria-hidden="true">&times;</span>'+
+				    '</button>'+
+				    '</div>'
+			    )
+			    
+			} else {
+			    console.log(data)
+			}
+		    }
+		    
+		)
+		.fail()
+	},
+	_commentDeleted : function(data){
+	    var self = this;
+	    this.element.hide(200, function(){
+		var $notification = $(
+		    '<div class="alert alert-warning alert-dismissible fade show ml-5" role="alert">' +
+			'<strong>Kommentar gelöscht!</strong>'+
+			'<button type="button" class="close" data-dismiss="alert" aria-label="Close">'+
+			'<span aria-hidden="true">&times;</span>'+
+			'</button>'+
+			'</div>')
+		self.element.before($notification)
+		self.element.remove()
+	    })
+	}
+	    
+    }
+)
 $R.Widgets = {
     init : function(){
 	// activate all widgets
@@ -824,7 +893,8 @@ $R.Widgets = {
 	$('.input-group.time').datetimepicker({
 	    format : 'HH:mm'
 	})
-	
+	$('.rai-comment').commenthandlers()
+//	$('.rai-comment a[href$="#genericModal"').genericmodal()
     },
 
     TypeAndSelect : ( function() {
@@ -1070,30 +1140,31 @@ $.widget('raiforms.dependingfield', {
 $.widget(
     'raiwidgets.ajaxify',
     {
-	_options : {
+	options : {
 	    successCallback : undefined,
-	    failCallBack : undefined
+	    failCallback : undefined
 	},
 	_create : function(){
 	    if (this.element.data('ajaxify-container') !== undefined){
 
 	    }
+	    var self = this;
 	    this.element.click(function(evt){
 		evt.preventDefault();
 		$R.post(
-		    this.element.attr('href'),
-		    this._collectData()
+		    self.element.attr('href'),
+		    self._collectData()
 		).fail(
 		    function(){
-			if (this._options.failCallBack !== undefined){
-			    this._options.failCallBack()
+			if (self.options.failCallback !== undefined){
+			    self.options.failCallback()
 			}
 		    }
 			
 		).done(
 		    function(data){
-			if (this._options.successCallBack !== undefined){
-			    this._options.successCallBack(data)
+			if (self.options.successCallback !== undefined){
+			    self.options.successCallback(data)
 			}
 		    }
 		
@@ -1104,6 +1175,116 @@ $.widget(
 	    return {}
 	}
 	
+    }
+)
+
+$.widget(
+    'raiwidgets.genericmodal',
+    {
+	options : {
+	    'events' : ['click'],
+	    'content' : null,
+	    'title' : null,
+	    'saveButtonLabel': 'Speichern',
+	    'cancelButtonLabel': 'Abbrechen',
+	    'applyButtonLabel': 'Anwenden',
+	    'saveButton' : true,
+	    'applyButton' : true,
+	    'cancelButton' : true,
+	    
+	    
+	},
+
+	_create : function(){
+	    this.$modal = $('#genericModal')
+	    this.$saveButton = $('#btnSavegenericModal')
+	    console.log(this.$saveButton)
+	    var self = this;
+	    this.$applyButton = $('#btnApplygenericModal')
+	    
+	    this.$cancelButton = $('#btnCancelgenericModal')
+	    this.$body = this.$modal.find('.modal-body').first()
+	    this.$title = $('#genericModalTitle')
+	    var splitVals = this.element.attr('href').split('#')
+	    this.url = splitVals[0]
+	    
+	    for (var count = 0; count < this.options['events'].length; count ++){
+		this.element.on(
+		    this.options.events[count],
+		    function(evt){
+			evt.preventDefault()
+			self._launch()
+		    }
+		)
+	    }
+	    
+	},
+	destroy : function(){
+	    this.$saveButton.off('click')
+	    this.$applyButton.off('click')
+	    this.$cancelButton.off('click')
+	    this.$body.html('')
+	    this.$modal.modal('hide')
+	},
+	_launch : function(){
+	    for (key in this.options){
+		this._setOption(key, this.options[key])
+	    }
+	    var self = this;
+	    this.$saveButton.click(
+		function(evt){
+		    console.log("triggering onSave")
+		    self._trigger('onSave', null, {url : self.url, body : self.$body})
+		}
+	    )
+	    this.$applyButton.click(
+		function(evt){
+		    self._trigger('onApply', null, {url : self.url, body : self.$body})
+		}
+	    )
+	    this.$cancelButton.click(
+		function(evt){
+		    self._trigger('onCancel', null, {url : self.url, body : self.$body})
+		}
+	    )
+
+	    this.$modal.modal('show')
+	},
+	_setOption: function( key, value ) {
+	    if ( key === "saveButtonLabel" ) {
+		this.$saveButton.html( value );
+	    }
+	    if ( key === "cancelButtonLabel" ) {
+		this.$cancelButton.html( value );
+	    }
+	    if ( key === "applyButtonLabel" ) {
+		this.$applyButton.html( value );
+	    }
+	    if ( key === "title" ) {
+		this.$title.html( value );
+	    }
+	    if ( key === "content" ) {
+		if (value === null){
+		    this._fetchContentFromHref()
+		} else {
+		    this.$body.html(value)
+		    
+		    self._trigger('contentReady', null, this.$body)
+		}
+	    }
+	   
+	    this._super( key, value );
+	},
+	_fetchContentFromHref : function(){
+	    var html, self=this
+	    $R.get(this.url).done(
+		function(data){
+		    self.$body.html(data['html']);
+		    self._trigger('contentReady', null, self.$body)
+		}
+	    )
+	    
+	}
     }
 )
 $(document).ready(function(){
