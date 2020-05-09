@@ -373,6 +373,7 @@ $R.selectElementText= function(el, win) {
     }
 }
 
+
 $(document).ready(
     function(){
 	$R.help.instance = new $R.help.HelpSystem();
