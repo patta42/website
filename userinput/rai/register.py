@@ -6,13 +6,17 @@ import datetime
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _l
 
-from rai.actions import ListAction, CreateAction, EditAction, DetailAction
+from rai.actions import ListAction, CreateAction, EditAction, DetailAction, HistoryAction
 from rai.base import RAIModelAdmin, RAIAdminGroup
+from rai.default_views import HistoryView
 
-from userinput.models import RUBIONUser, WorkGroup, Project
+from userinput.models import RUBIONUser, WorkGroup, Project, Nuclide
 import userinput.rai.actions as actions
 from userinput.rai.views.generic import MoveToWorkgroupView
-from userinput.rai.views.rubionuser.views import RUBIONUserEditView, RUBIONUserInactivateView
+
+from userinput.rai.views.rubionuser.views import (
+    RUBIONUserEditView, RUBIONUserInactivateView, RUBIONUserHistoryView
+)
 
 from userinput.rai.permissions import MovePermission, InactivatePermission
 
@@ -46,11 +50,14 @@ class RAIUserData(RAIModelAdmin):
         actions.RUBIONUserDataEditAction,
         DetailAction,
         actions.RUBIONUserInactivateAction,
-        actions.RUBIONUserMoveAction
+        actions.RUBIONUserMoveAction,
+        HistoryAction
     ]
     editview = RUBIONUserEditView
     inactivateview = RUBIONUserInactivateView
     moveview = MoveToWorkgroupView
+    historyview = RUBIONUserHistoryView
+
 
 class RAIWorkGroups(RAIModelAdmin):
     model = WorkGroup
@@ -65,8 +72,11 @@ class RAIWorkGroups(RAIModelAdmin):
     item_actions = [
         actions.RAIWorkgroupEditAction,
         actions.RAIWorkgroupDetailAction,
-        actions.UserinputInactivateAction
+        actions.UserinputInactivateAction,
+        HistoryAction
     ]
+    
+    historyview = HistoryView
 
     
 class RAIProjects(RAIModelAdmin):
@@ -80,14 +90,49 @@ class RAIProjects(RAIModelAdmin):
         actions.RAIProjectEditAction,
         DetailAction,
         actions.UserinputInactivateAction,
-        actions.MoveToWorkgroupAction
+        actions.MoveToWorkgroupAction,
+        HistoryAction
     ]
 
     moveview =  MoveToWorkgroupView
-
+    historyview = HistoryView
     
 class RAIUserInputGroup(RAIAdminGroup):
     components = [
-        RAIUserData, RAIWorkGroups, RAIProjects
+        RAIUserData, RAIWorkGroups, RAIProjects, 
     ]
     menu_label = _l("User data")
+
+class RAIRadiationSafetyDosemeter(RAIModelAdmin):
+    model = RUBIONUser
+    identifier = 'radiation_safety'
+    sub_identifier = 'rubionuser-dosemeter'
+    menu_label = 'Dosimeter'
+    menu_icon = 'tablet-alt'
+    menu_icon_font = 'fas'
+
+class RAIRadiationSafetyKeys(RAIModelAdmin):
+    model = RUBIONUser
+    identifier = 'radiation_safety'
+    sub_identifier = 'rubionuser-keys'
+    menu_label = 'Schlüssel'
+    menu_icon = 'key'
+    menu_icon_font = 'fas'
+
+    
+class RAINuclides(RAIModelAdmin):
+    model = Nuclide
+    identifier = 'radiation_safety'
+    sub_identifier = 'nuclides'
+    menu_label = 'Nuklide'
+    menu_icon = 'radiation-alt'
+    menu_icon_font = 'fas'
+    
+class RAIRadiationSafetyGroup(RAIAdminGroup):
+    components = [
+        RAIRadiationSafetyDosemeter,
+        RAIRadiationSafetyKeys,
+        RAINuclides
+    ]
+    menu_label = 'Strahlenschutz & Labororganisation'
+
