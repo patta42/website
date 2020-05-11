@@ -13,7 +13,7 @@ from django import forms
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.formsets import DELETION_FIELD_NAME, ORDERING_FIELD_NAME
 from django.forms.models import fields_for_model
-from django.template.loader import render_to_string
+from django.template.loaderg import render_to_string
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 
@@ -26,6 +26,8 @@ from rai.forms import formfield_for_dbfield, RAIAdminModelForm, rai_modelform_fa
 
 import string
 import uuid
+
+from wagtail.admin import compare
 
 class RenderObjectFieldMixin:
     def render_as_object(self):
