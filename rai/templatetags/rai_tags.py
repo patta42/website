@@ -2,7 +2,10 @@ from pprint import pprint as pp
 
 from django import template
 from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
 
+import random
+import string
 from wagtail.core.models import Page, PageRevision
 
 register = template.Library()
@@ -36,6 +39,7 @@ def render_list_filters(context):
 
         }
     )
+
 
 @register.filter
 def to_str(val):
@@ -94,7 +98,12 @@ def render_disabled(bound_field):
 def widget_requires_label(bound_field):
     return bound_field.field.widget.requires_label or False
 
-    
+@register.simple_tag
+def rand_str():
+    return ''.join(
+        random.choice(string.ascii_uppercase + string.ascii_lowercase) for _ in range(10) 
+    )
+
 
 @register.filter
 def pprint(obj):
@@ -113,3 +122,11 @@ def show_for_instance(context, action, instance):
 
     request = context.get('request', None)
     return action['show_for_instance'](instance, request)
+
+@register.filter
+def save_htmldiff(change):
+    try:
+        return change.htmldiff()
+
+    except Exception as e:
+        return mark_safe("An dieser Stelle tritt ein Problem beim Vergleich der Werte auf. Das ist ein Fehler, der gemeldet werden sollte. Der Fehler lautete im Einzelnen:<br/><strong>{}:</strong> {}".format(type(e).__name__, str(e)))
