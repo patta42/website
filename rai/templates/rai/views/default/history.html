@@ -1,0 +1,62 @@
+{% extends 'rai/views/default/common.html' %}
+{% load rai_tags %}
+{% block pagetitle %}
+  Historie von {{object}}
+{% endblock %}
+
+{% block page_header_inner %}
+<h1 class="h4 d-inline-block mr-3">
+  <span class="d-block">
+    <span class="text-muted font-weight-lighter mb-1" style="font-size:12pt">
+      <i class="{{icon_font|default:"fas"}} fa-{{icon|default:"list-alt"}}"></i> {{ action_label|default:"Liste" }}
+    </span>
+  </span>
+  {{ title }}
+</h1>
+{% endblock %}
+
+{% block content %}
+<div class="alert alert-info">
+  <h6>Leere Änderungen</h6>
+  <hr />
+  <p>Aktuell können nicht alle Änderungen, bspw. von zugehörigen Kommentaren, automatisch erkannt werden. Solche Änderungen werden als leere Änderungen angezeigt. Diese werden der Übersichtlichkeit halber standardmäßig nicht angezeigt, können hier jedoch eingeschaltet werden.</p>
+  <div class="btn-group btn-group-toggle show-hide-controller" data-toggle="buttons" data-show-hide-elements-class="empty" data-show-hide-elements-container="#mainlist">
+    <label class="btn btn-secondary">
+      <input type="radio" name="options" value="show" autocomplete="off"> Anzeigen
+    </label>
+    <label class="btn btn-secondary  active">
+      <input type="radio" name="options" value="hide" autocomplete="off" checked> Ausblenden
+    </label>
+  </div>
+
+</div>
+<ul class="list-group history-view" id="mainlist" data-rubion-original-object-count="{{original_object_count}}">
+  {% for revision in revisions %}
+  <li class="list-group-item mb-0{% if not revision.changes %} empty{% endif %}">
+    <h6>Änderung vom {{revision.revision.created_at}} durch
+      {% if revision.revision.user %}
+      {{revision.revision.user.last_name}}, {{revision.revision.user.first_name}}
+      {% else %}
+      Nutzer nicht bekannt
+      {% endif %}
+    </h6>
+    {% if revision.changes %}
+    <dl class="list-of-changes">
+      {% for change in revision.changes %}
+      <dt>{{change.field_label}}</dt>
+      <dd>{{change|save_htmldiff}}</dd>
+      {% endfor %}
+    </dl>
+    {% else %}
+    {% if revision.remark %}
+    <p>
+      {{revision.remark}}
+    </p>
+    {% endif %}
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+
+{% endblock %}
+
