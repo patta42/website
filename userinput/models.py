@@ -29,6 +29,8 @@ from modelcluster.fields import ParentalKey, ParentalManyToManyField
 
 
 from rubauth.models import Identification
+
+#from rai.base import raiify
 #from .rubionuser import RUBIONUser
 from ugc.models import (
     UserGeneratedPage2, UGCContainer2, UGCCreatePage2,
@@ -156,6 +158,8 @@ class WorkGroup ( UserGeneratedPage2 ):
     def is_active( self ):
         return self.get_projects().filter(expire_at__gte = datetime.datetime.now()).exists()
 
+
+    
     def add_member_container( self ):
         # Generates a container for the workgroup members
 
@@ -355,7 +359,10 @@ class WorkGroup ( UserGeneratedPage2 ):
             if project.expire_at > now:
                 project._close(user = user)
         
-            
+    @classmethod
+    def active_filter(self):
+        return Q(expire_at__isnull = True) | Q(expire_at__gte = datetime.datetime.now())
+        
 
     def __str__( self ):
         if self.department:
@@ -429,22 +436,28 @@ class RUBIONUser ( UserGeneratedPage2 ):
     # This is a bit annoying, since it repeats the definitions of the 
     # normal wagtail user fields. These fields might be not necessary,
     # but I introduced them for some reasons (maybe for course users?)
+
     name_db = models.CharField(
         max_length = 32,
         blank = True, null = True,
         verbose_name = _('name')
     )
+    name_db.context_description = 'Nachname'
+    
     first_name_db = models.CharField(
         max_length = 32,
         blank = True, null = True,
         verbose_name = _('first name')
     )
+    first_name_db.context_description = 'Vorname'
+    
     email_db = models.CharField(
         max_length = 128,
         blank = True, null = True,
         verbose_name = _('email address')
     )
-
+    email_db.context_description = 'E-Mail-Adresse'
+    
     # --- Fields for additional personal data
     
     # I don't like the question in the form "What is your gender?"
@@ -465,6 +478,7 @@ class RUBIONUser ( UserGeneratedPage2 ):
         verbose_name = _('What is your gender?'),
         help_text = _('We ask this question to correctly address you in emails and letters send to you.')
     )
+    sex.context_description = 'Geschlecht'
     
     BSC = 'b'
     MSC = 'm'
@@ -489,14 +503,16 @@ class RUBIONUser ( UserGeneratedPage2 ):
         null = True,
         verbose_name = _('academic title')
     )
-
+    academic_title.context_description = 'Akademischer Titel'
+    
     phone = models.CharField(
         max_length = 24,
         verbose_name = _('Phone number'),
         blank = True,
         null = True
     )
-
+    phone.context_description = 'Telefonnummer'
+    
     linked_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         blank = True,
@@ -512,7 +528,7 @@ class RUBIONUser ( UserGeneratedPage2 ):
         blank = True,
         verbose_name = _('Preferred language for communication')
     )
-
+    preferred_language.context_description = 'Bevorzugte Sprache'
 
     # --- Fields required by radiation safety
 
@@ -522,7 +538,8 @@ class RUBIONUser ( UserGeneratedPage2 ):
         verbose_name = _('Date of birth'),
         help_text = _('Format: YYYY-MM-DD')
     )
-
+    date_of_birth.context_description = 'Geburtsdatum'
+    
     place_of_birth = models.CharField(
         max_length = 256,
         null = True,
@@ -530,7 +547,8 @@ class RUBIONUser ( UserGeneratedPage2 ):
         verbose_name = _('Place of birth'),
         help_text = _('Add the country, if not Germany')
     )
-
+    place_of_birth.context_description = 'Geburtsort'
+    
     previous_names = models.CharField(
         max_length = 512,
         null = True,
@@ -538,28 +556,34 @@ class RUBIONUser ( UserGeneratedPage2 ):
         verbose_name = _('Previous names.'),
         help_text = _('Please list your previous name (in case of marriage, for example)')
     )
+    previous_names.context_description = 'Vorheriger Name'
 
     previous_exposure = models.BooleanField(
         default = False,
         verbose_name=_('Previous exposure'),
         help_text= _('Has there been work-related previous exposure to ionizing radiation?')
     )
-    
+    previous_exposure.context_description = 'Vorherige Expositionen'
     # --- Fields for RUBION-internal use
 
     is_validated = models.BooleanField(
         default = False,
         verbose_name = _('is the user validated')
     )
+    is_validated.context_description = 'Status der Validierung'
+    
     has_agreed = models.BooleanField(
+        
         default = False,
         verbose_name = _('has agreed')
     )
-
+    has_agreed.context_description = 'Nutzungsbedingungen zugestimmt?'
+    
     is_rub = models.BooleanField(
         default = False,
         verbose_name = _('is a member of the RUB')
     )
+    is_rub.context_description = 'RUB-Mitglied?'
     
     # Safety-instructions are not yet implemented
 
@@ -580,6 +604,7 @@ class RUBIONUser ( UserGeneratedPage2 ):
         default = '',
         verbose_name = _('Key number')
     )
+    key_number.context_description = 'Schlüsselnummer'
 
     labcoat_size = models.CharField(
         max_length = 6,
@@ -598,6 +623,8 @@ class RUBIONUser ( UserGeneratedPage2 ):
         verbose_name = _('lab coat size'),
         help_text = _('The size of your lab coat.')
     )
+    labcoat_size.context_description = 'Kittelgröße'
+    
     overshoe_size = models.CharField(
         max_length = 6,
         blank = True,
@@ -610,6 +637,8 @@ class RUBIONUser ( UserGeneratedPage2 ):
         verbose_name = _('shoe size'),
         help_text = _('The size your protecting shoes should have.')
     )
+    overshoe_size.context_description = 'Größe der Überschuhe'
+    
     entrance = models.CharField(
         max_length = 6,
         blank = True,
@@ -622,6 +651,8 @@ class RUBIONUser ( UserGeneratedPage2 ):
         ),
         verbose_name = _('Preferred entrance in the lab.')
     )
+    entrance.context_description = 'Eingang ins Labor'
+    
     initially_seen = ParentalManyToManyField(
         'userdata.StaffUser',
 #        default = False,
@@ -638,7 +669,8 @@ class RUBIONUser ( UserGeneratedPage2 ):
         default = False,
         verbose_name = _('leader of the group')
     )
-
+    is_leader.context_description = 'Gruppenleiter?'
+    
     # Can be set by the group leader
 
     may_create_projects = models.BooleanField(
@@ -646,22 +678,27 @@ class RUBIONUser ( UserGeneratedPage2 ):
         verbose_name = _('may create projects')
 
     )
+    may_create_projects.context_description = 'Darf Projekte anlegen?'
+    
     may_add_members = models.BooleanField(
         default = False,
         verbose_name = _('May add members')
     )
-
+    may_add_members.context_description = 'Darf Mitglieder hinzufügen?'
+    
     needs_key =  models.BooleanField(
         default = False,
         verbose_name = _('Does this user permanently need a key?')
     )
-
+    needs_key.context_description = 'Benötigt einen Schlüssel?'
+    
     dosemeter = models.CharField(
         max_length = 1,
         choices = DOSEMETER_CHOICES,
         default = NOT_YET_DECIDED,
         verbose_name = _('Type of dosemeter')
     )
+    dosemeter.context_description = 'Benötigtes Dosimeter'
     
     admin_fields = [
         'key_number', 'is_group_leader', 'linked_user', 'title', 'title_de', 
@@ -1009,6 +1046,10 @@ class RUBIONUser ( UserGeneratedPage2 ):
             website_user.is_active = False
             website_user.save()
             
+    @classmethod
+    def active_filter(self):
+        return Q(expire_at__isnull = True) | Q(expire_at__gte = datetime.datetime.now())
+    
     # Admin content panels.
     # @TODO might require some clean-up
     content_panels = [
@@ -1639,6 +1680,10 @@ class Project ( UserGeneratedPage2 ):
         else:
             self.save_revision_and_publish()
 
+    @classmethod
+    def active_filter(self):
+        return Q(expire_at__isnull = True) | Q(expire_at__gte = datetime.datetime.now())
+
         
     # --- Successful creation of new project
 
@@ -2103,5 +2148,35 @@ class Nuclide ( models.Model ):
 
     def __str__(self):
         return "{}-{}".format(self.element, self.mass)
+
+#RAI based comment and file relations
+
+from rai.base import rai_register_decorations
+from rai.comments.models import RAICommentDecoration
+
+class RUBIONUserCommentDecoration(RAICommentDecoration):
+    decorated_model = models.ForeignKey(
+        RUBIONUser,
+        on_delete = models.CASCADE,
+        related_name = 'comments'
+    )
+
+class ProjectCommentDecoration(RAICommentDecoration):
+    decorated_model = models.ForeignKey(
+        Project,
+        on_delete = models.CASCADE,
+        related_name = 'comments'
+    )
+
+class WorkgroupCommentDecoration(RAICommentDecoration):
+    decorated_model = models.ForeignKey(
+        WorkGroup,
+        on_delete = models.CASCADE,
+        related_name = 'comments'
+    )
+
+rai_register_decorations([
+    RUBIONUserCommentDecoration, ProjectCommentDecoration, WorkgroupCommentDecoration
+])
 
 
