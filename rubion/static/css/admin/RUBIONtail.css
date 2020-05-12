@@ -627,6 +627,7 @@ fieldset.multi-field-panel legend,
 #main_form fieldset fieldset legend{
     margin-top:0;
 }
+fieldset table tbody tr td span.fake-label:before,
 .rai-comment h6.label:before,
 .inline-panel-all-options h6.label:before,
 #main_form .alert-danger:not(.confirmation):before, 
@@ -704,21 +705,167 @@ ul.inline-list li{
     border-radius:5px;
     border:thin solid rgba(0,0,0,.25);
 }
+
+
 .rai-comment .markdown-editor-preview h1,
 .rai-comment-content .markdown-widget-content h1{
     font-size:120%;
     text-transform:uppercase;
     font-weight:bold;
+    letter-spacing:.06em;
 }
 .rai-comment .markdown-editor-preview h2,
 .rai-comment-content .markdown-widget-content h2{
     font-size:100%;
     text-transform:uppercase;
     font-weight:bold;
+    letter-spacing:.06em;
 }
 .rai-comment .markdown-editor-preview h3,
 .rai-comment-content .markdown-widget-content h3{
     font-size:100%;
     text-transform:uppercase;
     font-weight:normal;
+}
+
+/* Changes for history view */
+
+.history-view li.empty{
+    display:none;
+}
+.list-of-changes dd{
+    padding-left:3rem;
+    padding-top:1rem;
+}
+
+.list-of-changes span{
+    display:block;
+}
+
+.list-of-changes span.deletion{
+    text-decoration: line-through;
+}
+.list-of-changes span.deletion:before{
+    content: 'Alter Wert: ';
+    font-weight: bold;
+    color:rgba(0,0,0,.5);
+    text-decoration:none;
+}
+.list-of-changes span.addition:before{
+    content: 'Neuer Wert: ';
+    font-weight: bold;
+    color:rgba(0,0,0,.5);
+   
+}
+
+
+/* prettify tables a bit */
+table {
+    border-bottom: 2px #003560 solid;
+}
+thead {
+    border-bottom:2px solid rgba(0,0,0,.125);
+}
+th{
+    padding:0 1.25rem .25rem 1.25rem;
+    
+    font-weight:normal;
+    text-transform:uppercase;
+    font-size:.875rem;
+    color:#003560;
+}
+
+fieldset table {
+    border-bottom: none;
+    margin-left:1rem;
+}
+
+/*  fix for custom control disabled */
+.custom-control-input:disabled{
+    opacity:0
+}
+
+/*
+  A checkbox as switch
+*/
+
+.custom-control-input.custom-control-switch input[type="checkbox"]{
+    opacity:0;
+}
+.custom-control-switch label{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    padding: .5rem;
+    border-radius: .256rem;
+    margin:0;
+}
+.custom-control-switch label.btn-primary{
+    background-color: #003560;
+    color: #fff;
+}
+.custom-control-switch label.btn-secondary{
+    background-color:rgb(108, 117, 125);
+}
+.custom-control-switch label.btn-outline-primary{
+    border:thin solid #003560;
+}
+.custom-control-switch label.btn-outline-secondary{
+    border:thin solid rgb(108, 117, 125);
+}
+.custom-control-switch input.custom-control-input[type="checkbox"] + span.lever{
+    position:relative;
+    width: 2.5em;
+    height: 1em;
+    background-color: rgba(255,255,255,.5);
+    border-radius: 0.5em;
+    border: thin solid #003560;
+    display: inline-block;
+    margin:0 .5rem;
+    
+}
+
+.custom-control-switch input.custom-control-input[type="checkbox"]:checked + span.lever:before,
+.custom-control-switch input.custom-control-input[type="checkbox"]:checked + span.lever:after,
+.custom-control-switch input.custom-control-input[type="checkbox"]+ span.lever:after,
+.custom-control-switch input.custom-control-input[type="checkbox"]+ span.lever:before{
+    content: ' ';
+    position:absolute;
+    border-radius:.75em;
+}
+
+.custom-control-switch input.custom-control-input[type="checkbox"]:checked + span.lever:before,
+.custom-control-switch input.custom-control-input[type="checkbox"] + span.lever:before
+{
+    width: calc(1.5em - 1px);
+    color: #fff;
+    top: calc(-.25em + 1px);
+    height: calc(1.5em - 2px);
+    z-index:2;
+}
+.custom-control-switch input.custom-control-input[type="checkbox"]:checked + span.lever:before{
+    left: calc(-.25em - 1px);
+    background-color: #8dae10;
+
+}
+.custom-control-switch input.custom-control-input[type="checkbox"] + span.lever:before{
+    left: calc(1.25em - 1px);
+    background-color: #cccccc;
+
+}
+.custom-control-switch input.custom-control-input[type="checkbox"]:checked + span.lever:after,
+.custom-control-switch input.custom-control-input[type="checkbox"]+ span.lever:after{
+    width: calc(1.5em + 1px);
+    color: #fff;
+    background-color: #fff;
+    top: calc(-.25em);
+
+    height: calc(1.5em);
+    z-index:1;
+}
+.custom-control-switch input.custom-control-input[type="checkbox"]:checked + span.lever:after{
+    left: calc(-.25em - 2px);
+}
+.custom-control-switch input.custom-control-input[type="checkbox"]+ span.lever:after{
+    left: calc(1.25em - 2px);
 }
