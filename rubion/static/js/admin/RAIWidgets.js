@@ -1508,7 +1508,18 @@ $.widget(
 	    }
 	    for (var count = 0; count < this.options.controlFields.length; count++){
 		var $elems = this.options.$container.find(this.options.controlFields[count])
-		$elems.prop('disabled', !tf)
+		$elems.each(
+		    function(){
+			$(this).prop('disabled', !tf)
+			var thisId = $(this).attr('id')
+			// look for labels and add/remove .disabled
+			if (!tf){
+			    $('label[for="'+thisId+'"]').addClass('disabled')
+			} else { 
+			    $('label[for="'+thisId+'"]').removeClass('disabled')
+			}
+		    }
+		)
 	    }
 	    //switches should always work
 	    this.$control.prop('disabled', false)
