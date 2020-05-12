@@ -664,7 +664,6 @@ $.widget(
 		top : '-10000px',
 		left : '-10000px'
 	    })
-	    console.log(this.$wrapper)
 	    this.$list = this._getListWrapper().insertAfter(this.$wrapper)
 	    var count = 0;
 	    $options.sort(function(a,b){
@@ -894,6 +893,14 @@ $R.Widgets = {
 	    format : 'HH:mm'
 	})
 	$('.rai-comment').commenthandlers()
+	$('.show-hide-controller').showhidecontroller()
+	$('.display-as-table').displayastable()
+	var count = 0;
+	$('.editing-controller').each(function(){
+	    $(this).editingcontroller({count:count})
+	    count ++;
+	})
+
 //	$('.rai-comment a[href$="#genericModal"').genericmodal()
     },
 
@@ -1020,7 +1027,6 @@ $R.Widgets = {
 
 	    // init initial values
 	    var evt = $.Event('click');
-	    console.log(selectedValues);
 	    for (var count = 0; count < selectedValues.length; count ++){
 		self.$components.optionSurrounder.find('li[data-type-and-select-value="'+selectedValues[count]+'"]').trigger(evt);
 		self.$components.optionSurrounder.hide()
@@ -1122,15 +1128,12 @@ $.widget('raiforms.dependingfield', {
     },
     _toggle : function($elem, values){
 	var self = this;
-	console.log('Elem val', $elem.val(), 'values', values)
 	if (values.indexOf($elem.val()) > -1){
-	    console.log('in if')
 	    self.element.find('.form-group').addClass('required')
 	    self.element.show(200);
 	    
 	    
 	} else {
-	    console.log('in else')
 	    self.element.find('.form-group').removeClass('required')
 	    self.element.hide(200);
 	}
@@ -1198,7 +1201,6 @@ $.widget(
 	_create : function(){
 	    this.$modal = $('#genericModal')
 	    this.$saveButton = $('#btnSavegenericModal')
-	    console.log(this.$saveButton)
 	    var self = this;
 	    this.$applyButton = $('#btnApplygenericModal')
 	    
@@ -1233,7 +1235,6 @@ $.widget(
 	    var self = this;
 	    this.$saveButton.click(
 		function(evt){
-		    console.log("triggering onSave")
 		    self._trigger('onSave', null, {url : self.url, body : self.$body})
 		}
 	    )
@@ -1284,6 +1285,233 @@ $.widget(
 		}
 	    )
 	    
+	}
+    }
+)
+
+$.widget(
+    'raiwidgets.showhidecontroller',
+    {
+	options : {
+	    targetContainer : null,
+	    targetClass : null,
+	    showButton : null,
+	    hideButton : null
+	},
+	_create : function(){
+	    this.options.targetClass = this.element.data('show-hide-elements-class')
+	    this.options.targetContainer = this.element.data('show-hide-elements-container')
+	    this.options.showButton = this.element.find('input[value="show"]')
+	    this.options.hideButton = this.element.find('input[value="hide"]')
+	    this.elements = $(this.options.targetContainer).find('.'+this.options.targetClass)
+
+	    var self = this
+	    this.options.showButton.change(function(){
+		if ($(this).prop('checked')){
+		    self.elements.show().css('listStyleType', 'none')
+		}
+	    })
+	    this.options.hideButton.change(function(){
+		if ($(this).prop('checked')){
+		    self.elements.hide()
+		}
+	    })
+	}
+    }
+)
+
+$.widget(
+    'raiwidget.displayastable',
+    {
+	options : {
+	    headings : ['label', '.label'],
+	    longHeading : 'h4'
+	    
+	},
+	
+	_create : function(){
+	    // rows for the table
+	    this.$rows = this.element.find('.display-as-table-row')
+	    this._setupTable()
+	    this._populateTableHead()
+	    this._populateTable()
+	    // move the remaining parts of this element to somewhere invisible.
+	    this.$storage = $('<div />').insertBefore(this.element).css({
+		position : 'relative'
+	    })
+	    this.element.css({
+		position : 'absolute',
+		width: '0',
+		height: '0',
+		top : '-10000px'
+		
+	    }).appendTo(this.$storage)
+	    // get unique fields
+	    var classes = this.element.attr('class').split(' '),
+		uniqueFields = []
+	    var self = this
+	    for (var count = 0; count < classes.length; count ++){
+		if (classes[count].startsWith('unique--')){
+		    var fieldId = classes[count].substr(8)
+		    this.$table.find('input[name$="'+fieldId+'"]').change(
+			function(evt){
+			    var idParts = $(this).attr('id').split('-')
+			    var fid = idParts[idParts.length - 1]
+			    self.$table.find('input[id$="'+fid+'"]').prop('checked', false);
+			    $(this).prop('checked', true)
+			}
+		    )
+									 
+		}
+	    }
+
+	},
+	_populateTableHead : function(){
+	    var self = this
+	    // populate head with labels from first row
+	    var first_row = this.$rows.first()
+	    first_row.children().each(
+		function(){
+		    var $th = $('<th></th>').appendTo(self.$theadrow)
+		    for (var count = 0; count < self.options.headings.length; count ++){
+			var candidates = $(this).find(self.options.headings[count])
+			if (candidates.length > 0){
+			    candidates.first().contents().appendTo($th)
+			    break
+			}
+		    }
+		    
+		}
+	    )
+	},
+	_populateTable : function(){
+	    var self = this
+	    this.$rows.each(
+		function(){
+		    var $currentRow = $('<tr />').appendTo(self.$tbody)
+		    var fieldcounter = 0;
+		    $(this).children().each(
+			function(){
+			    // check for a .form-group in the row
+			    var $fgroups = $(this).find('.form-group'),
+				$currentField = $('<td />').appendTo($currentRow)
+			    if (fieldcounter == 0){
+				$currentField.css('position', 'relative')
+				$('<span class="fake-label"></span>').appendTo($currentField)
+			    }
+			    fieldcounter++;
+			    if ($fgroups.length > 0){
+				// Assume only one form-group in the row...
+				var $fgroup = $fgroups.first()
+
+				// remove the label candidates
+				for (var count = 0; count < self.options.headings.length; count ++){
+				    $(this).find(self.options.headings[count]).each(
+					function(){
+					    if ($(this).hasClass('custom-control-label')){
+						$(this).html('')
+					    } else {
+						$(this).remove()
+					    }
+					}
+				    )
+				}
+				
+				$fgroup.appendTo($currentField)
+			    } else {
+								// remove the label candidates
+				for (var count = 0; count < self.options.headings.length; count ++){
+				    $(this).find(self.options.headings[count]).each(
+					function(){
+					    if ($(this).hasClass('custom-control-label')){
+						$(this).html('')
+					    } else {
+						$(this).remove()
+					    }
+					}
+				    )
+				}
+
+				$(this).appendTo($currentField)
+			    }
+			    $currentField.appendTo($currentRow)
+			}
+		    )
+		}
+	    )
+	    // look if this is inside a fieldset within the current form
+	    var $parent = this.element.parent(),
+		inFieldset = false
+	    while ($parent.length > 0 && $parent.prop('tagName') != 'FORM'){
+		if ($parent.prop('tagName') == 'FIELDSET'){
+		    inFieldset = true
+		    break
+		} else {
+		    $parent = $parent.parent()
+		}
+		    
+	    }
+	    if (inFieldset){
+		this.$table.insertBefore(this.element)
+	    } else {
+		var $fieldset = $('<fieldset />')
+		// look for a heading for the fieldset
+		var $headings = this.element.find(this.options['longHeading'])
+		if ($headings.length > 0){
+		    $('<legend />').html($headings.first().html()).appendTo($fieldset)
+
+		}
+		this.$table.appendTo($fieldset)
+		$fieldset.insertBefore(this.element)
+	    }
+	},
+	_setupTable : function(){
+	    // setup table
+	    this.$table = $('<table></table>')
+	    this.$thead = $('<thead></thead>').appendTo(this.$table)
+	    this.$theadrow = $('<tr></tr>').appendTo(this.$thead)
+	    this.$tbody = $('<tbody></tbody>').appendTo(this.$table)
+	}
+
+	   
+    }
+)
+
+$.widget(
+    'raiwidgets.editingcontroller',
+    {
+	options : {
+	    controlFields : ['input', 'textarea'],
+	    $container : null,
+	    inputName : 'allow_edit'
+	},
+	_create : function(){
+	    console.log('Creating editingcontroller', this.options.count)
+	    var parentContainerSelector = this.element.data('editing-controller-parent-container')
+	    if ( parentContainerSelector !== undefined)
+	    {
+		this.options.$container = this.element.parents(parentContainerSelector).first()
+	    }
+	    this.$control = this.element.find('input[name="'+this.options.inputName+'"]').first()
+	    var self = this
+	    this.$control.change(
+		function(evt){
+		    self._setEnabledState($(this).prop('checked'))
+		}
+	    )
+	    self._setEnabledState(this.$control.attr('checked') == "checked")
+	    
+	},
+	_setEnabledState : function(tf){
+	    if (typeof(tf) !== 'boolean'){
+		tf = (tf == "true");
+	    }
+	    for (var count = 0; count < this.options.controlFields.length; count++){
+		var $elems = this.options.$container.find(this.options.controlFields[count])
+		$elems.prop('disabled', !tf)
+	    }
+	    //switches should always work
+	    this.$control.prop('disabled', false)
 	}
     }
 )
