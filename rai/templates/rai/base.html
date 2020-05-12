@@ -32,6 +32,12 @@
 	{% endblock %}
       </div>
       <ul class="navbar-nav px-3">
+<!--	<li class="nav-item">
+	  <a class="nav-link" href="#"><i class="fas fa-envelope"></i></a>
+	</li>
+	<li class="nav-item">
+	  <a class="nav-link" href="#"><i class="fas fa-question-circle"></i></a>
+	</li> -->
 	<li class="nav-item text-nowrap">
 	  <a class="nav-link" href="#">Sign out</a>
 	</li>
@@ -44,7 +50,7 @@
 	<main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
 	  <div class="page-header">
 	    {% block page_header %}
-	    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+	    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3">
 	      <div class="d-inline-flex align-items-center w-75">
 		{% block page_header_inner %}
 		<h1 class="h4 d-inline-block mr-3 ">
@@ -72,6 +78,7 @@
     </div>
     {% block modals %}
     {% include 'rai/help/help_modal.html' %}
+    {% include 'rai/generic/generic-modal.html' %}
     {% endblock %} 
     {% block additional_js %}{% endblock %}
   </body>
