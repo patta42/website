@@ -869,3 +869,16 @@ fieldset table {
 .custom-control-switch input.custom-control-input[type="checkbox"]+ span.lever:after{
     left: calc(1.25em - 2px);
 }
+.alert-warning .custom-control-switch input.custom-control-input[type="checkbox"] + span.lever:before{
+    background-color:#fff3cd;
+}
+.alert-warning .custom-control-switch input.custom-control-input[type="checkbox"]:checked + span.lever:before{
+    background-color:#856404;
+}
+.alert-warning .custom-control-switch input.custom-control-input[type="checkbox"]+ span.lever:after{
+    background-color:#856404;
+}
+.alert-warning .custom-control-switch input.custom-control-input[type="checkbox"] + span.lever{
+    border-color:#856404;
+    background-color:rgba(0,0,0,.25);
+}
