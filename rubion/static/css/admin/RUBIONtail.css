@@ -800,6 +800,10 @@ fieldset table {
     border-radius: .256rem;
     margin:0;
 }
+.custom-control-switch label.disabled,
+.custom-control-switch label.btn-primary.disabled{
+    color:#6c757d;
+}
 .custom-control-switch label.btn-primary{
     background-color: #003560;
     color: #fff;
@@ -824,7 +828,9 @@ fieldset table {
     margin:0 .5rem;
     
 }
-
+.custom-control-switch label.as-input {
+    border:1px solid #ced4da;
+}
 .custom-control-switch input.custom-control-input[type="checkbox"]:checked + span.lever:before,
 .custom-control-switch input.custom-control-input[type="checkbox"]:checked + span.lever:after,
 .custom-control-switch input.custom-control-input[type="checkbox"]+ span.lever:after,
@@ -857,7 +863,7 @@ fieldset table {
 .custom-control-switch input.custom-control-input[type="checkbox"]+ span.lever:after{
     width: calc(1.5em + 1px);
     color: #fff;
-    background-color: #fff;
+    background-color: #003560;
     top: calc(-.25em);
 
     height: calc(1.5em);
@@ -881,4 +887,33 @@ fieldset table {
 .alert-warning .custom-control-switch input.custom-control-input[type="checkbox"] + span.lever{
     border-color:#856404;
     background-color:rgba(0,0,0,.25);
+}
+
+.alert p{
+    max-width:800px;
+}
+
+.custom-control-switch label.disabled input.custom-control-input[type="checkbox"] + span.lever:before{
+    background-color:#e9ecef;
+}
+.custom-control-switch label.disabled input.custom-control-input[type="checkbox"] + span.lever{
+    border: thin solid #6c757d;
+}
+.custom-control-switch label.disabled input.custom-control-input[type="checkbox"]+ span.lever:after{
+    background-color:#6c757d;
+}
+.custom-control-switch label.disabled input.custom-control-input[type="checkbox"]+ span.lever:before{
+    background-color:#e9ecef;
+}
+
+
+/* Flex poperties, required for header with searchbar */ 
+.page-header-inner-wrapper{
+    flex-grow:1;
+}
+
+/* Flex properties for inline panels within a fiedset */
+
+fieldset .inline-panel .inline-child {
+    flex-direction: row-reverse;
 }
