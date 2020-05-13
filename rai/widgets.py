@@ -230,7 +230,21 @@ class RAICheckboxInput(RequiredClassesField):
         context = self.get_context(name, value, label, attrs)
         return self._render(self.template_name, context, renderer)
 
+class RAISwitchInput(RAICheckboxInput):
+    
+    template_name = 'rai/forms/widgets/switch.html'
+    
+    def __init__(self, *args, **kwargs):
+        self.checked_label = kwargs.pop('checked_label', 'ja')
+        self.unchecked_label = kwargs.pop('unchecked_label', 'nein')
+        super().__init__(*args, **kwargs)
 
+    def get_context(self, name, value, label, attrs):
+        context = super().get_context(name, value, label, attrs)
+        context['checked_label'] = self.checked_label
+        context['unchecked_label'] = self.unchecked_label
+        return context
+        
 class RAIRadioInput(RAICheckboxInput):
     input_type = 'radio'
 
@@ -322,6 +336,17 @@ class RAISelectMultipleSelectionLists(CheckboxSelectMultiple):
         option['content_template'] = self.option_content_template
         return option
 
+class RAISelectMultipleCheckboxes(CheckboxSelectMultiple):
+    option_template_name = 'rai/forms/widgets/checkbox-option-multiple.html'
+    template_name = 'rai/forms/widgets/select-multiple-checkboxes.html'
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        attrs = option.pop('attrs', {})
+        classname = attrs.pop('class', '')
+        classname = add_css_class(classname, ['custom-control-input'])
+        attrs.update({'class' : classname})
+        option.update({'attrs' : attrs})
+        return option
 
 class RAITypeAndSelect(RAISelect):
     # the differences to a SELECT will be introduced by javascript
