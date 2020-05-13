@@ -917,3 +917,11 @@ fieldset table {
 fieldset .inline-panel .inline-child {
     flex-direction: row-reverse;
 }
+
+ul.select-multiple-checkboxes{
+    list-style-type:none;
+}
+
+ul.select-multiple-checkboxes li{
+    margin-bottom:.25rem;
+}
