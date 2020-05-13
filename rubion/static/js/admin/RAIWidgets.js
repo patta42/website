@@ -1301,18 +1301,15 @@ $.widget(
 	_create : function(){
 	    this.options.targetClass = this.element.data('show-hide-elements-class')
 	    this.options.targetContainer = this.element.data('show-hide-elements-container')
-	    this.options.showButton = this.element.find('input[value="show"]')
+	    this.options.$controller = this.element.find('.show-hide-controller-input')
 	    this.options.hideButton = this.element.find('input[value="hide"]')
 	    this.elements = $(this.options.targetContainer).find('.'+this.options.targetClass)
 
 	    var self = this
-	    this.options.showButton.change(function(){
+	    this.options.$controller.change(function(){
 		if ($(this).prop('checked')){
 		    self.elements.show().css('listStyleType', 'none')
-		}
-	    })
-	    this.options.hideButton.change(function(){
-		if ($(this).prop('checked')){
+		} else {
 		    self.elements.hide()
 		}
 	    })
