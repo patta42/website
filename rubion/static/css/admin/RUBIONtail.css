@@ -758,7 +758,20 @@ ul.inline-list li{
    
 }
 
-
+.list-of-changes .relation-changes dd.deletion{
+    text-decoration: line-through;
+}
+.list-of-changes .relation-changes dd.deletion:before,
+.list-of-changes .relation-changes dd.addition:before{
+    content:'Neu hinzugefügt: ';
+    font-weight: bold;
+    color:rgba(0,0,0,.5);
+    text-decoration:none;
+}
+.list-of-changes .relation-changes dd.deletion:before{
+    content:'gelöscht: ';
+    text-decoration:none;
+}
 /* prettify tables a bit */
 table {
     border-bottom: 2px #003560 solid;
