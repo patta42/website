@@ -20,15 +20,19 @@
   <h6>Leere Änderungen</h6>
   <hr />
   <p>Aktuell können nicht alle Änderungen, bspw. von zugehörigen Kommentaren, automatisch erkannt werden. Solche Änderungen werden als leere Änderungen angezeigt. Diese werden der Übersichtlichkeit halber standardmäßig nicht angezeigt, können hier jedoch eingeschaltet werden.</p>
-  <div class="btn-group btn-group-toggle show-hide-controller" data-toggle="buttons" data-show-hide-elements-class="empty" data-show-hide-elements-container="#mainlist">
-    <label class="btn btn-secondary">
-      <input type="radio" name="options" value="show" autocomplete="off"> Anzeigen
-    </label>
-    <label class="btn btn-secondary  active">
-      <input type="radio" name="options" value="hide" autocomplete="off" checked> Ausblenden
-    </label>
+  <div class="show-hide-controller" data-show-hide-elements-class="empty" data-show-hide-elements-container="#mainlist">
+    <div class="d-flex align-items-center">
+      <div class="mr-3">Leere Änderungen: </div>
+      <div class="custom-control-switch">
+	<label>
+	  Anzeigen
+	  <input class="custom-control-input show-hide-controller-input" type="checkbox" name="options" autocomplete="off">
+	  <span class="lever"></span>
+	  Ausblenden
+	</label>
+      </div>
+    </div>
   </div>
-
 </div>
 <ul class="list-group history-view" id="mainlist" data-rubion-original-object-count="{{original_object_count}}">
   {% for revision in revisions %}
@@ -37,14 +41,28 @@
       {% if revision.revision.user %}
       {{revision.revision.user.last_name}}, {{revision.revision.user.first_name}}
       {% else %}
-      Nutzer nicht bekannt
+      <span class="text-muted">Nutzer nicht bekannt</span>
       {% endif %}
     </h6>
     {% if revision.changes %}
     <dl class="list-of-changes">
       {% for change in revision.changes %}
       <dt>{{change.field_label}}</dt>
-      <dd>{{change|save_htmldiff}}</dd>
+      <dd>
+	{% if change.is_field %}
+	{{change|save_htmldiff}}
+	{% elif change.is_child_relation %}
+	<dl class="relation-changes">
+	  {% for child_changes in change.get_child_comparisons %}
+	  {% for field_comp in child_changes.get_field_comparisons %}
+	  <dt>{{field_comp.field_label}}</dt>
+	  <dd class="{% if child_changes.is_addition %}addition{%elif child_changes.is_deletion%}deletion{%endif%}">{{field_comp|save_htmldiff}}</dd>
+
+	  {% endfor %}
+	  {% endfor %}
+	  </dl>
+	{% endif %}
+      </dd>
       {% endfor %}
     </dl>
     {% else %}
