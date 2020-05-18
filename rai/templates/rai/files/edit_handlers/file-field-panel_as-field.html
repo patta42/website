@@ -1,0 +1,32 @@
+{% load rai_files %}
+
+{% with document=instance.doc %}
+<li class="file-field list-group-item" data-toggle="tooltip" title="">
+  <div class="file-info">
+    <span class="file-icon"><i class="{{document|file_icon}}"></i></span>
+    <div>
+      <div class="d-flex">
+	<h6 class="file-title editable-field-wrapper">
+	  <span class="editable-field" data-activated-by="#edit-button-title-{{document.pk}}" data-edit-url="{% url "rai_file_edit" document.pk %}" data-field-label="title">{{document.title}}</span>
+	  <span class="edit-button" id="edit-button-title-{{document.pk}}"><i class="fas fa-pen"></i></span>
+      </h6>
+	<p class="text-muted editable-field-wrapper">
+	  <span class="editable-field ml-2" data-activated-by="#edit-button-desc-{{document.pk}}" data-edit-url="{% url "rai_file_edit" document.pk %}" data-field-label="description">
+	    {{document.description|default:"Keine Beschreibung angegeben."}}</span>
+	  <span class="edit-button" id="edit-button-desc-{{document.pk}}"><i class="fas fa-pen"></i></span>
+	</p>
+	
+      </div>
+      <div class="extended-file-info text-muted">
+	Erstellt am {{document.created_at}}, hochgeladen von {{document.uploaded_by_user}}
+      </div>
+    </div>
+  </div>
+  <div class="file-field-menu">
+      
+    <a href="{{document.usage_url}}"><i class="fas fa-download"></i> Herunterladen</a>
+  </div>
+  
+</li>
+  
+{% endwith %}
