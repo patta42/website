@@ -2153,6 +2153,7 @@ class Nuclide ( models.Model ):
 
 from rai.base import rai_register_decorations
 from rai.comments.models import RAICommentDecoration
+from rai.files.models import RAIDocumentModelRelation
 
 class RUBIONUserCommentDecoration(RAICommentDecoration):
     decorated_model = models.ForeignKey(
@@ -2175,6 +2176,13 @@ class WorkgroupCommentDecoration(RAICommentDecoration):
         related_name = 'comments'
     )
 
+class RUBIONUserDocumentsRelation(RAIDocumentModelRelation):
+    decorated_model = ParentalKey(
+        RUBIONUser,
+        on_delete = models.CASCADE,
+        related_name = 'documents'
+    )
+    
 rai_register_decorations([
     RUBIONUserCommentDecoration, ProjectCommentDecoration, WorkgroupCommentDecoration
 ])
