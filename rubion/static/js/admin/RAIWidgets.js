@@ -595,6 +595,47 @@ $.widget('raiwidgets.templateeditor', {
 })
 
 $.widget(
+    'raiwidget.editable',
+    {
+	options : {
+	    bgColor : 'rgba(0,0,128,.25)'
+	},
+	_create: function(){
+	    this.$button = $(this.element.data('activated-by'))
+	    var self = this
+	    this.$button.click(
+		function(){
+		    self.element[0].contentEditable = true;
+		    css = self.element.css(['backgroundColor', 'cursor'])
+		    self.element.focus().css({
+			'backgroundColor': self.options['bgColor'],
+			'cursor' : 'text'
+		    })
+		    $R.selectElementText(self.element[0]);
+		    self.element.blur( function(){
+			self.element[0].contentEditable = false;
+			self.element.css(css)
+			self._save()
+		    })
+		}
+	    )
+	},
+	_save : function(){
+	    var url = this.element.data('edit-url')
+	    var field = this.element.data('field-label')
+	    
+	    $R.post(url, {
+		data : {
+		    field: field,
+		    value: this.element.html()
+		}
+	    })
+		.done()
+		.fail()
+	}
+    }
+)
+$.widget(
     'raiwidget.editablecontent',
     {
 	options : {
@@ -900,6 +941,27 @@ $R.Widgets = {
 	    $(this).editingcontroller({count:count})
 	    count ++;
 	})
+	$('.editable-field').editable()
+	$('.file-field.add-file').documentupload()
+	$('.file-delete-button').each(
+	    function(){
+		var $elem = $(this)
+		$elem.ajaxify(
+		    {
+			successCallback : function(data){
+			    if (data.status == "200"){
+				$li = $elem.parents('li').first()
+				$li.hide(200, function(){
+				    $li.remove()
+				});
+			    } else {
+				console.log(data)
+			    }
+			}
+		    }
+		)
+	    }
+	)
 
 //	$('.rai-comment a[href$="#genericModal"').genericmodal()
     },
@@ -1478,7 +1540,7 @@ $.widget(
     'raiwidgets.editingcontroller',
     {
 	options : {
-	    controlFields : ['input', 'textarea'],
+	    controlFields : ['input', 'textarea', 'select'],
 	    $container : null,
 	    inputName : 'allow_edit'
 	},
@@ -1523,6 +1585,313 @@ $.widget(
 	}
     }
 )
+
+$.widget(
+    'raiwidget.documentupload',
+    {
+	_create : function(){
+	    this.$input = this.element.find('input[type="file"]')
+	    this.$label = this.element.find('label')
+	    var self = this
+	    this.$label[0].addEventListener('dragenter', function(evt){
+		evt.stopPropagation();
+		evt.preventDefault();
+	    	self.$label.addClass('drag-enter')
+		
+	    }, false)
+	    this.$label[0].addEventListener('dragleave', function(evt){
+		evt.stopPropagation();
+		evt.preventDefault();
+	    	self.$label.removeClass('drag-enter')
+		
+	    }, false)
+	    this.$label[0].addEventListener('dragover', function(evt){
+		evt.stopPropagation();
+		evt.preventDefault();
+		
+	    }, false)
+	    this.$label[0].addEventListener('drop', function(evt){
+		evt.stopPropagation();
+		evt.preventDefault();
+		self._preview(evt.dataTransfer.files)
+		
+	    }, false)
+
+	    this.$previewList = $('<ul class="list-group add-file-list"></ul>').appendTo(this.element)
+	    var self = this
+	    this.$input.change(function(evt){
+		self._preview(evt.target.files)
+	    })
+	},
+	_preview : function(fileList){
+	    
+	    for (var count = 0; count < fileList.length; count ++){
+		this._previewItem(fileList[count])
+	    }
+	},
+	_previewItem : function( item ){
+	    var $li = $('<li class="list-group-item" />');
+	    $li.append($(
+		'<div class="d-flex justify-content-between">'+
+		    '  <h6>'+item.name+'</h6>'+
+		    '  <div>'+
+		    '    <button class="btn btn-primary">'+
+		    '      <i class="fas fa-upload"></i> Datei hochladen'+
+		    '    </button>'+
+		    '  </div>'+
+		    '</div>'+
+		    '<div class="row">'+
+		    '  <div class="document-icon col-md-1"></div>'+
+		    '    <div class="form-group col-md-3">'+
+		    '      <label for="">Dokument-Titel</label>'+
+		    '      <input class="document-title-input" id="" type="text" class="form-control" value="'+item.name+'">'+
+		    '    </div>'+
+		    '    <div class="form-group col-md-4">'+
+		    '      <label for="">Dokument-Beschreibung</label>'+
+		    '      <input class="document-description-input" id="" class="form-control" type="text" value="" placeholder="Beschreibung für das Dokument">'+
+		    '    </div>'+
+		    '  </div>'+
+		    '</div>'))
+	    this.$previewList.append($li)
+	    this._makeIcon(item, $li.find('.document-icon').first())
+	    var self = this
+	    $li.find('button').click(function(evt){
+		evt.preventDefault()
+		self._upload($(this))
+	    })
+	},
+	_upload : function($elem){
+	    var $li = $elem.parents('li').first(),
+		$iconContainer = $li.find('.document-icon').first(),
+		fd = new FormData(),
+		$progressWrapper = $('<div class="upload-progress-wrapper"/>').insertAfter($elem),
+		$progressCounter = $('<span class="upload-progress-counter">0 %</span>').appendTo($progressWrapper),
+		$progressBar = $('<span class="upload-progress-bar" />').appendTo($progressWrapper),
+		url = $elem.parents('[data-add-files-url]').first().data('add-files-url'),
+		$svg = $iconContainer.find('svg').first(),
+		iconClass = $svg.data('icon'),
+		iconPrefix = $svg.data('prefix')
+	    
+	    fd.append('title', $li.find('.document-title-input').first().val())
+	    fd.append('description', $li.find('.document-description-input').first().val())
+	    fd.append('file', $iconContainer[0].file)
+
+	    
+
+	    $elem.hide()
+	    var self = this
+	    var jqXHR = $R.post(
+		url,
+		{
+		    data : fd,
+		    processData : false,
+		    contentType : false, //'multipart/form-data',
+		    xhr : function(){
+			var xhr = $.ajaxSettings.xhr();
+			xhr.upload.addEventListener(
+			    'progress',
+			    function(e){
+				if (e.lengthComputable){
+				    var p = Math.round(100 * e.loaded/e.total) 
+				    $progressCounter.html(p)
+				    $progressBar.css('width',p+'%')
+				}
+			    },
+			    false
+			)
+			xhr.upload.addEventListener(
+			    'load',
+			    function(e){
+				$progressCounter.html('100')
+			    },
+			    false
+			)
+			return xhr
+		    }
+		}
+	    )
+		.done(function(data){
+		    if (data.status == '200'){
+			console.log('success')
+
+			$newli = $('<li />')
+			    .addClass('file-field list-group-item')
+			    .attr('data-toggle', 'tooltip')
+			    .attr(
+				'title',
+				'Erstellt am ' + data.created_at +
+				    ', hochgeladen von '+ data.uploaded_by)
+			$fileInfo = $('<div/>')
+			    .addClass('file-info')
+			    .appendTo($newli)
+			$fileIcon = $('<span />')
+			    .addClass('file-icon')
+			    .appendTo($fileInfo)
+			$icon = $('<i/>')
+			    .addClass('fa-fw')
+			    .addClass(iconPrefix)
+			    .addClass('fa-'+iconClass)
+			    .appendTo($fileIcon)
+			$wrapper = $('<div/>')
+			    .appendTo($fileInfo)
+			$h6 = $('<h6 />')
+			    .addClass('file-title editable-field-wrapper')
+			    .appendTo($wrapper)
+			$field = $('<span />')
+			    .addClass('editable-field')
+			    .attr('data-activated-by', '#edit-button-title-'+data.pk)
+			    .attr('data-field-label', 'title')
+			    .attr('data-edit-url', data.edit_url)
+			    .html(data.title)
+			    .appendTo($h6)
+			$(
+			    '<span id="edit-button-title-'+data.pk+'" class="edit-button">'
+				+'<i class="fas fa-pen"></i>'
+				+'</span>'
+			).appendTo($h6)
+			$p = $('<p />')
+			    .addClass('text-muted editable-field-wrapper')
+			    .appendTo($wrapper)
+			
+			var description = "Keine Beschreibung angegeben."
+			if (data.description != ""){
+			    description = data.description;
+			}
+			$desc = $('<span />')
+			    .addClass('editable-field')
+			    .attr('data-activated-by', '#edit-button-desc-'+data.pk)
+			    .attr('data-field-label', 'description')
+			    .attr('data-edit-url', data.edit_url)
+			    .html(description)
+			    .appendTo($p)
+			$(
+			    '<span id="edit-button-desc-'+data.pk+'" class="edit-button">'
+				+'<i class="fas fa-pen"></i>'
+				+'</span>'
+			).appendTo($p)
+			$menu = $('<div />')
+			    .addClass('file-field-menu')
+			    .appendTo($newli)
+			$delete = $('<a />')
+			    .addClass('btn file-delete-button ajaxify')
+			    .attr('href', data.delete_url)
+			    .appendTo($menu)
+			$delIcon = $('<i class="fas fa-trash-alt" />')
+			    .appendTo($delete)
+			$delLabel = $('<span>Datei löschen</span>')
+			    .addClass('ml-1')
+			    .appendTo($delete)
+
+			
+			$download = $('<a />')
+			    .addClass('btn')
+			    .appendTo($menu)
+			$downIcon = $('<i class="fas fa-download" />')
+			    .appendTo($download)
+			$downLabel = $('<span>Herunterladen</span>')
+			    .addClass('ml-1')
+			    .appendTo($download)
+			$newli.hide()
+			$newli.insertBefore(self.element)
+			$li.hide(200, function(){
+			    $li.remove()
+			    $newli.show(300)
+			    $field.editable()
+			    $desc.editable()
+			    $delete.ajaxify(
+				{
+				    successCallback : function(data){
+					var $elem = $delete.parents('li').first()
+					if (data.status == "200"){
+					    $elem.hide(200, function(){
+						$elem.remove()
+					    })
+					}
+				    }
+				}
+			    )
+			})
+			
+		    }
+		})
+		.fail(function(data){
+		    console.log('error')
+		})
+	    
+	    console.log(jqXHR)
+	},
+	_makeIcon : function(item, $container){
+	    var parts = item.type.split('/'),
+		nameParts = item.name.split('.'),
+		ending = nameParts[nameParts.length-1],
+		addIcon = true,
+		icon = 'file'
+	    
+	    switch (parts[0])
+	    {
+		case 'image':
+		switch(ending.toLowerCase())
+		{
+		    case 'jpg':
+		    case 'jpeg':
+		    case 'png':
+		    this._makeThumbnail(item, $container)
+		    addIcon = false
+		    break
+		    default:
+		    icon = 'file-image'
+		}
+		break
+		
+		case 'application':
+		switch (ending.toLowerCase())
+		{
+		    case 'pdf' :
+		    icon = 'file-pdf'
+		    break
+		    case 'doc':
+		    case 'docx':
+		    icon = 'file-word'
+		    break
+		    case 'xls':
+		    case 'xlsx':
+		    icon = 'file-excel'
+		    break
+		    case 'ppt':
+		    case 'pptx':
+		    icon = 'file-powerpoint'
+		    break
+		}
+		case 'text':
+		switch(parts[1])
+		{
+		    case 'plain':
+		    icon = 'file-alt'
+		    break
+		}
+		break
+		
+	    }
+	    if (addIcon){
+		$container.append($('<span><i class="fas fa-'+icon+'"></i></span>'))
+		$container[0].file = item
+	    }
+	},
+	_makeThumbnail : function(item, $container){
+	    var $img = $('<img>').appendTo($container),
+		img = $img[0]
+	    $container[0].file = item
+	    var reader = new FileReader()
+	    reader.onload = (
+		function(aImg){
+		    return function(e) { aImg.src = e.target.result; }; 
+		}
+	    )(img)
+	    reader.readAsDataURL(item)
+	}
+    }
+)
+
 $(document).ready(function(){
     $R.Widgets.init()
 })
