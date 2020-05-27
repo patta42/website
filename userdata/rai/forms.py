@@ -35,7 +35,7 @@ class UserSourceSelectionForm(forms.Form):
         widget = RAIRadioSelect,
         label = 'Was soll der/die neue Mitarbeiter im Verwaltungstool RUBIONtail dürfen?',
         help_text = ('Üblicherweise haben neuen Mitarbeiter/innen Zugang zu dieser '
-                     'Verwaltungssoftware und nutzen ihre) RUB-Login-ID, um sich  '
+                     'Verwaltungssoftware und nutzen ihre RUB-Login-ID, um sich  '
                      'anzumelden. Wir führen jedoch auch Mitarbeiter externer Firmen '
                      '(z.B. Reinigungspersonal) in unserer Mitarbeiter-Liste. Diese '
                      'Mitarbeiter sollten keinen Zugang zu dem Verwaltungstool haben.') 
