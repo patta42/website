@@ -800,9 +800,19 @@ class SentMail ( models.Model ):
 
     def __str__( self ):
         return _('Sent Mail from') + ' {}'.format(self.sent_at)
-
-
-
+    @classmethod
+    def from_email_message(self, msg):
+        '''
+        returns a SentMail object populated with values from the 
+        django.core.mail.EmailMessage class
+        '''
+        return SentMail(
+            to = ', '.join(msg.to),
+            sender = msg.from_email,
+            body = msg.body,
+            subject = msg.subject
+        )
+    
 @register_setting
 class ImportantPages( BaseSetting ):
     registration_page = models.ForeignKey(
