@@ -35,8 +35,12 @@ class RAIBaseCollection:
         return '.'.join(self.get_path())
 
     def get_pk(self):
+        rc = self.get_obj()
+        return rc.pk
+
+    def get_obj(self):
         rc = RAICollection.objects.get(name = self.get_id())
-        return rc.pk 
+        return rc
     
     def register(self):
         print('Registering: {}'.format(self.get_id()))
