@@ -70,7 +70,8 @@ class UserSourceSelectionForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
         login_id = self.cleaned_data.get('rub_login_id', None)
-        if cleaned_data['make_user_from'] in ['is_staff', 'is_rub']:
+        make_user_from = self.cleaned_data.get('make_user_from', None)
+        if make_user_from in ['is_staff', 'is_rub']:
             if not login_id:
                 self.add_error('rub_login_id', 'Aufgrund der obigen Auswahl muss die RUB-Login-ID angegeben werden')
     
