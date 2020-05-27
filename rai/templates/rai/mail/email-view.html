@@ -1,0 +1,153 @@
+{% extends 'rai/views/default/shared/form-view.html' %}
+
+{% block title_action %}Verfassen{% endblock %}
+{% block pagetitle %}
+E-Mail verfassen
+{% endblock %}
+{% block heading %}E-Mail an Nutzer, Nutzergruppe oder Mitarbeiter{% endblock %}
+{% block innerformcontent %}
+<h4>E-Mail an Nutzer, Nutzergruppe oder Mitarbeiter verfassen</h4>
+
+
+{# I don't like a template that uses all the form fields manually  #}
+{# but in this case, I'd like to use a slightly different layout   #}
+{# since this is an "app" and users might be more comfortable with #}
+{# email applications that do not look like the default forms in   #}
+{# RUBIONtail                                                      #}
+
+<div class="p-2 border rounded">
+  <div class="form-row">
+    <div class="form-group col-md-4 mb-0 mt-2">
+      {% if form.from_.errors %}
+  <div class="alert alert-danger">
+    <h6 class="alert-heading">Es sind folgende Fehler aufgetreten</h6>
+    <p class="text-muted">{{form.from_.errors}}</p>
+    <hr />
+{% endif %}
+
+    <label for="{{form.from_.id_for_label}}" {% if form.from_.field.required %}class="required"{%endif%}>
+      {{ form.from_.label }}
+      {% include 'rai/help/help_link.html' with path="mail:compose:from" %}
+    </label>
+      {{form.from_}}
+      {% if form.from_.errors %}
+  </div>
+{% endif %}
+
+    </div>
+
+  {% if form.pwd %}
+
+    <div class="form-group col-md-4 mb-0 mt-2 depending-field"
+	 data-depends-on='"{"from_" : ["user"]}"'>
+        {% if form.pwd.errors %}
+  <div class="alert alert-danger">
+    <h6 class="alert-heading">Es sind folgende Fehler aufgetreten</h6>
+    <p class="text-muted">{{form.pwd.errors}}</p>
+    <hr />
+    {% endif %}
+
+    <label for="{{form.pwd.id_for_label}}" {% if form.pwd.field.required %}class="required"{%endif%}>
+      {{ form.pwd.label }}{% include 'rai/help/help_link.html' with path="mail:compose:password" %}
+    </label>
+      {{form.pwd}}
+{% if form.pwd.errors %}
+  </div>
+  {% endif %}
+
+  </div>
+  {% endif %}
+
+  {% if form.copy.errors %}
+  <div class="alert alert-danger">
+    <h6 class="alert-heading">Es sind folgende Fehler aufgetreten</h6>
+    <p class="text-muted">{{form.copy.errors}}</p>
+    <hr />
+{% endif %}
+    <div class="form-group col-md-4 mb-0 mt-2">
+      <label for="{{form.copy.id_for_label}}" {% if form.copy.field.required %}class="required"{%endif%}>
+	{{ form.copy.label }}
+	{% include 'rai/help/help_link.html' with path="mail:compose:copy" %}
+      </label>
+      {{form.copy}}
+    </div>
+{% if form.copy.errors %}
+  </div>
+{% endif %}
+  
+</div> {# /form-row #}
+
+{% if form.to.errors %}
+  <div class="alert alert-danger">
+    <h6 class="alert-heading">Es sind folgende Fehler aufgetreten</h6>
+    <p class="text-muted">{{form.to.errors}}</p>
+    <hr />
+    {% endif %}
+    <div class="form-row">
+    <div class="form-group col-md-12 mb-0 mt-2">
+      <label for="{{form.to.id_for_label}}" {% if form.to.field.required %}class="required"{%endif%}>
+	{{ form.to.label }}
+	{% include 'rai/help/help_link.html' with path="mail:compose:to" %}
+      </label>
+      {{form.to}}
+    </div>
+    </div>
+{% if form.to.errors %}
+  </div>
+{% endif %}
+
+{% if form.subject.errors %}
+  <div class="alert alert-danger">
+    <h6 class="alert-heading">Es sind folgende Fehler aufgetreten</h6>
+    <p class="text-muted">{{form.subject.errors}}</p>
+    <hr />
+    {% endif %}
+    <div class="form-row">
+      <div class="form-group col-md-12 mb-0 mt-2">
+	<label for="{{form.subject.id_for_label}}" {% if form.subject.field.required %}class="required"{%endif%}>
+	  {{ form.subject.label }}
+	  {% include 'rai/help/help_link.html' with path="mail:compose:subject" %}
+	</label>
+      {{form.subject}}
+    </div>
+    </div>
+{% if form.subject.errors %}
+  </div>
+{% endif %}
+{% if form.body.errors %}
+  <div class="alert alert-danger">
+    <h6 class="alert-heading">Es sind folgende Fehler aufgetreten</h6>
+    <p class="text-muted">{{form.body.errors}}</p>
+    <hr />
+    {% endif %}
+    <div class="form-row">
+      <div class="form-group col-md-12 mb-0 mt-2">
+	<label for="{{form.body.id_for_label}}" {% if form.body.field.required %}class="required"{%endif%}>
+	  {{ form.body.label }}
+	  {% include 'rai/help/help_link.html' with path="mail:compose:body" %}
+	</label>
+
+      {{form.body}}
+    </div>
+    </div>
+{% if form.body.errors %}
+  </div>
+{% endif %}
+{% if form.attachements.errors %}
+  <div class="alert alert-danger">
+    <h6 class="alert-heading">Es sind folgende Fehler aufgetreten</h6>
+    <p class="text-muted">{{form.attachements.errors}}</p>
+    <hr />
+    {% endif %}
+    <div class="form-row">
+    <div class="form-group col-md-12 mb-0 mt-2">
+      {{form.attachements.label_tag}}
+      {{form.attachements}}
+    </div>
+    </div>
+{% if form.attachements.errors %}
+  </div>
+{% endif %}
+</div>
+  
+{% endblock %}
