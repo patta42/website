@@ -1,0 +1,25 @@
+{% extends 'rai/views/default/common.html' %}
+{% block pagetitle %}E-Mail versendet{% endblock %}
+{% block heading %}E-Mail versendet{% endblock %}
+{% block content %}
+<h4>Folgende Mail wurde verschickt:</h4>
+<dl>
+  <dt>Von:</dt>
+  <dd>{{from_display}}</dd>
+  <dt>An (die E-Mail wurde einzeln an jede Adresse geschickt):</dt>
+  {% for receiver in receivers %}
+  <dd>{{receiver}}</dd>
+  {% endfor %}
+  <dt>Betreff:</dt>
+  <dd>{{form.subject.value}}</dd>
+  <dt>E-Mail-Text:</dt>
+  <dd>{{form.body.value}}</dd>
+  {% if attachements %}
+  <dt>Datei-Anhänge</dt>
+  {% for att in attachements %}
+  <dd>{{att.title}}</dd>
+  {% endfor %}
+  {% endif %}
+</dl>
+
+{% endblock %}
