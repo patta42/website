@@ -962,7 +962,8 @@ $R.Widgets = {
 		)
 	    }
 	)
-
+	$('.tree-view-select').treeviewselect()
+	bsCustomFileInput.init()
 //	$('.rai-comment a[href$="#genericModal"').genericmodal()
     },
 
@@ -1181,22 +1182,25 @@ $.widget('raiforms.dependingfield', {
 		self._toggle($(this), dependsObj[item])
 	    }).each(
 		function(){
-		    if($(this).prop('checked')){
-			self._toggle($(this), dependsObj[item])
-		    }
+		    self._toggle($(this), dependsObj[item])
 		}
 	    )
 	}
     },
     _toggle : function($elem, values){
-	var self = this;
-	if (values.indexOf($elem.val()) > -1){
-	    self.element.find('.form-group').addClass('required')
-	    self.element.show(200);
-	    
-	    
+	var self = this, $fg;
+	if (self.element.hasClass('form-group')){
+	    $fg = self.element;
 	} else {
-	    self.element.find('.form-group').removeClass('required')
+	    $fg = self.element.find('.form-group')
+	}
+	console.log(values)
+	if (values.indexOf($elem.val()) > -1){
+	    
+	    $fg.addClass('required')
+	    self.element.show(200);
+	} else {
+	    $fg.removeClass('required')
 	    self.element.hide(200);
 	}
     }
@@ -1892,6 +1896,472 @@ $.widget(
     }
 )
 
+$.widget(
+    'raiwidgets.treeviewselect',
+    {
+	_create : function(){
+
+	    var self = this
+	    
+	    this.idCounter = 0
+	    this.fetchUrl = this.element.data('fetch-mail-url')
+	    this.$list = this.element.find('dl').first()
+	    this.$list.addClass('tree-view')
+	    this.$selectedList = this.element.find('ul.selected-email-to-list').first()
+	    this.$mainWrapper = this.element.find('.main-wrapper')
+	    this.$input = this.element.find('input').first().focus(
+		function(){
+		    self.$mainWrapper.addClass('focus')
+		}
+	    ).blur(
+		function(){
+		    self.$mainWrapper.removeClass('focus')
+		}
+	    )
+	    
+	    
+	    this.fieldname = this.$input.attr('name')
+	    this.$input.attr('name', '').keyup(function(evt){
+		self._search(evt)
+	    }).attr('placeholder', 'Nutzer oder Gruppe suchen')
+	    
+	    this.$iGroup = this.$input.parents('.input-group')
+	    this.$list.css('top', this.$list.position().top + 'px')
+	    this.hiddenExplorerCss = this.$list.css(['maxHeight', 'borderWidth', 'overflow', 'top','bottom'])
+	    this.$selectedValuesContainer = $('<div>').css({
+		position: 'absolute',
+		top: '-10000px',
+		left:'-10000px',
+		height:'0px',
+		width:'0px'
+	    })
+		.appendTo(this.element)
+	    
+
+	    
+	    this.$exploreBtn = this.element.find('.explore-button').first().click(
+		function(){
+		    self._toggleExplorer()
+		}
+	    )
+	    this.$list.find('dt').addClass('closed').click(
+		function(evt){
+		    if(evt.originalEvent.ctrlKey){
+			var $next = $(this).next('dd'), data = []
+			
+			$next.find('[data-select-value]').each(function(){
+			    data.push($(this).data('select-value'))
+			})
+			var $elem = $(this)
+			$(this).unmark({
+			    done : function(){
+				self._addAll($elem.html(), data)
+			    }
+			})
+			
+		    } else {
+			if ($(this).hasClass('closed')){
+			    $(this)
+				.removeClass('closed')
+				.addClass('open')
+			} else {
+			    $(this)
+				.removeClass('open')
+				.addClass('closed')
+			}
+		    }
+		}
+	    )
+
+	    this.$list.find('dd[data-select-value]').click(
+		function(){
+		    self._addToSelected($(this).data('select-value'))
+		}
+	    )
+	    this.$list.find('dd[data-fetch-value]').click(
+		function(){
+		    self._fetchAndAdd($(this))
+		}
+	    )
+
+	    this._parseInput()
+	},
+	/* we might receive some values in the input (from a non-valid form, for example)*/
+	_parseInput : function(){
+	    // entries either look like a mail address or are appended with __<groupname>
+
+	    if (this.$input.val().trim() == '')
+		return
+	    var rawValues = this.$input.val().split(','),
+		tmp
+
+	    // clear field
+	    this.$input.val('')
+	    var entries = {}, order = []
+	    
+	    for (var count = 0; count < rawValues.length; count++){
+		tmp = rawValues[count].split('__')
+		if (tmp.length == 2){
+		    if (entries[tmp[1]] == undefined){
+			entries[tmp[1]] = []
+			order.push(tmp[1])
+		    }
+		    entries[tmp[1]].push(tmp[0].trim())
+		} else {
+		    entries[count] = tmp[0].trim()
+		    order.push(count)
+		}
+	    }
+	    var key
+	    for (count = 0; count < order.length; count++){
+		key = order[count]
+		if(Array.isArray(entries[key])){
+		    this._addAll(key, entries[key])
+		} else {
+		    this._addToSelected(entries[key])
+		}
+	    }
+	    
+	},
+	_search : function(evt){
+	    var val = this.$input.val().trim(),
+		$matches
+
+	    if (val == ''){
+		this.$list.find('[data-fetch-value], [data-select-value], dt').unmark()
+		this._hideExplorer()
+	    } else {
+		this._showExplorer()
+		this.$list.find('dt,dd').hide()
+		this.$list.find('[data-fetch-value], [data-select-value], dt').each(
+		    function(){
+			var $elem = $(this)
+			$elem.unmark(
+			    {
+				done : function(){
+				    $elem.mark(val)
+				}
+			    }
+			)
+		    }
+		)
+		$matches = this.$list.find('mark')
+		$matches.parents('dd,dt').show().prev('dt').show().addClass('open')
+	    }
+	    
+	},
+	_addToSelected : function(address){
+	    var $item = this._makeSelectedListItem(address).insertBefore(this.$input)
+	    this._addToList($item)
+	    this._hideExplorer()
+	},
+	_fetchAndAdd : function($item){
+	    var self = this
+	    $item.unmark(
+		{
+		    done : function(){
+			$R.post(
+			    self.fetchUrl,
+			    {
+				data : {
+				    'pk' : $item.data('fetch-obj-pk'),
+				    'id' : $item.data('fetch-collection-id')
+				}
+			    }
+			)
+			    .done(
+				function(data){
+				    var $newitem = self._makeSelectedListItem($item.html(), data.mails).insertBefore(self.$input)
+				    self._addToList($newitem, $item.html())
+				    self._hideExplorer()
+				}
+			    )
+			    .fail(
+			    )
+			self._hideExplorer()
+		    }
+		}
+	    )
+	},
+	_addAll : function(name, values){
+	    var $item = this._makeSelectedListItem(name, values).insertBefore(this.$input)
+	    this._addToList($item, name)
+	    this._hideExplorer()
+	},
+	_constructCheckbox : function(value, group){
+	    var re = /\(.*\)/
+	    if (group === undefined){
+		group = ''
+	    } else {
+		group= '__'+group.replace(re,'').trim()
+	    }
+	    var $check = $('<input type="checkbox" name="'+this.fieldname+'" checked>')
+		.attr('id', 'tree_select_item_'+this.idCounter)
+		.appendTo(this.$selectedValuesContainer)
+		.data('for-id', this.idCounter)
+		.val(value+group)
+	    this.idCounter++;
+	    return this.idCounter - 1; 
+	},
+
+	_removeFromList : function($elem){
+	    var $par = $elem.parents('.selected-mail-container').first(),
+		isInGroup = $par.prop('tagName').toUpperCase() == 'LI',
+		count, $grandpar
+	    
+	    if ($par.attr('data-for-checkbox-id') !== undefined){
+		$('#tree_select_item_'+$par.data('for-checkbox-id')).remove()
+	    }
+	    $par.find('[data-for-checkbox-id]').each(
+		function(){
+		    console.log($(this))
+		    $('#tree_select_item_'+$(this).data('for-checkbox-id')).remove()
+		}
+	    )
+	    $par.hide(200, function(){
+		if(isInGroup){
+		    // reduce by one since the current item will be deleted
+		    count = $par.parents('ul').first().find('li').length - 1
+		    $grandpar = $par.parents('.selected-mail-container').first()
+		    $grandpar.find('.group-counter').first()
+			.text('('+count+')')
+		}
+		$par.remove()
+		if (count == 0){
+		    $grandpar.hide(200, function(){
+			$grandpar.remove()
+		    })
+		}
+	    })	    
+	},
+	_addToList : function($elem, name){
+	    var self = this, id
+	    
+	    if ($elem.attr('data-email-address') !== undefined){
+		id = this._constructCheckbox($elem.data('email-address'))
+		$elem.attr('data-for-checkbox-id', id)
+	    }
+	    $elem.find('[data-email-address]').each(function(){
+		id = self._constructCheckbox($(this).data('email-address'), name)
+		$(this).attr('data-for-checkbox-id', id)
+	    })
+	    this.$input.val('')
+	    this.$input.focus()
+	},
+	/*
+	  make an item suitable for showing in the list of selected accounts
+	  Options:
+	  name: is the name displayed
+	  values (optional): if the item is for a group, these are the single values
+	  
+	  the formatting of values should be "Some string <mail@address.com>"
+
+	  if values is omitted, `name` should follow this formatting, too 
+	 */
+	_makeSelectedListItem : function(name, values){
+	    var $removeBtn = $('<span><i class="fas fa-times-circle fa-fw"></i></span>')
+		.addClass("remove-button inline-button"),
+		$expandBtn = $('<span><i class="fas fa-ellipsis-v fa-fw"></i></span>')
+		.addClass("expand-button inline-button"),
+		$showBtn = $('<span><i class="fas fa-list-alt fa-fw"></i></span>')
+		.addClass("show-button inline-button"),
+		$span = $('<span class="selected-mail-container" />'),
+		re = /<.*>/,
+		re2 = /\(.*\)/,
+		single = false,
+		self = this,
+		$li, $btn
+	    name = name.replace(re2,'').trim()
+	    
+	    if (values === undefined){
+		$span.attr('data-email-address', name).text(name.replace(re,'').trim())
+		single = true
+	    } else {
+		var $ul = $('<ul />')
+		for (var count = 0; count < values.length; count ++){
+		    
+		    $li = $('<li class="selected-mail-container">'+values[count].replace(re,'').trim()+'</li>')
+			.attr('data-email-address', values[count])
+			.appendTo($ul)
+		    $btn = $removeBtn.clone().click(function(){
+			self._removeFromList($(this))
+		    }).appendTo($li)
+		}
+		$span.append($('<span class="group-name">'+name+'</span>'))
+		$span.append('<span class="group-counter">('+values.length+')</span>').append($ul)
+	    }
+	    $span.append($removeBtn)
+
+	    $removeBtn.click(function(){
+		self._removeFromList($(this))
+	    })
+	    if (!single){
+		$span.append($showBtn).append($expandBtn)
+		$expandBtn.click(function(){
+		    var $par = $(this).parents('.selected-mail-container').first()
+		    if ($par.hasClass('expanded')){
+			$par.removeClass('expanded')
+		    } else {
+			$par.addClass('expanded')
+		    }
+		})
+		$showBtn.click(function(){
+		    self._showGroup($(this))
+		})
+	    }
+
+	    
+		
+	    return $span
+	},
+	_showGroup : function($elem){
+	    // shows the group in a modal
+	    var $genericModal = $('#genericModal'),
+		$modalSaveBtn = $('#btnSavegenericModal').text('Übernehmen'),
+		$modalBody = $genericModal.find('.modal-body').first().html(''),
+		$modalTitle = $('#genericModalTitle'),
+		$list = $('<ul class="list-group group-selection-modal" />'),
+		$par = $elem.parents('.selected-mail-container').first(),
+		$items = $par.find('[data-email-address]'),
+		groupName = $par.find('.group-name').first().text(),
+		$listItem, address, name, mail, $wrapper, $btn,
+		$input = $('<input type="text" placeholder="Gruppe durchsuchen" class="search-field form-control"/>'),
+		$inputWrapper = $('<div class="mb-2">').append($input),
+		$counter = $('<span>').text('('+$items.length+')'),
+		self = this
+	    
+	    
+	    $modalTitle.text(groupName).append($counter)
+	    $items.sort(function(a,b){
+		var $a = $(a),
+		    $b = $(b)
+		return $a.data('email-address') < $b.data('email-address') ? -1 :
+		    $a.data('email-address') > $b.data('email-address') ? 1 : 0
+		    
+	    }).each(function(){
+		address = $(this).data('email-address').split('<')
+		name = address[0]
+		mail = '&lt;'+address[1].replace('>','&gt;')
+		
+		$listItem = $('<li class="list-group-item mb-0" />').addClass('d-flex justify-content-between')
+		$listItem[0].origItem = $(this)
+		$wrapper = $('<div />')
+		$wrapper.append($('<div>'+name+'</div>').append('<div class="text-muted">'+mail+'</div>'))
+		$listItem.append($wrapper)
+		$wrapper = $('<div />')
+		$btn = $('<span class="restore-btn"><i class="fas fa-plus-circle"></i></span><span class="delete-btn"><i class="fas fa-times-circle"></i></span>').appendTo($wrapper)
+		$btn.css('cursor', 'pointer').click(function(){
+		    var $item = $(this).parents('li').first()
+		    if ($item.hasClass('deleted')){
+			$item.removeClass('deleted')
+		    } else {
+			$item.addClass('deleted')
+		    }
+		    $counter.text('('+$list.find('li').not('li.deleted').length+')')
+		})
+		$wrapper.appendTo($listItem)
+		$list.append($listItem)
+	    })
+	    $modalBody.append($inputWrapper).append($list)
+	    $genericModal.on('shown.bs.modal', function(){
+		var $content = $genericModal.find('.modal-content').first(),
+		    margin = 50,
+		    vpHeight = $(window).height(),
+		    listHeight = $list.height(),
+		    offset = $content.height() - listHeight
+		$list.css(
+		    {
+			'height': (vpHeight - margin - offset)+'px',
+			'overflow': 'auto'
+		    }
+		)
+	    })
+	    $genericModal.on('hidden.bs.modal', function(){
+		// clean up
+		$modalSaveBtn.off('click')
+		$modalBody.html('')
+		$modalTitle.html('')
+		$genericModal.off('shown.bs.modal').off('hidden.bs.modal')
+		
+	    })
+	    $input.keyup(function(){
+		var val = $input.val()
+		if (val == ''){
+		    $list.unmark({
+			done : function(){$list.find('li').addClass('d-flex').show()}
+		    })
+		} else {
+		    $list.unmark({
+			done : function(){
+			    $list.mark(val, {
+				done : function(){
+				    $list.find('li').removeClass('d-flex').hide()
+				    $list.find('mark').parents('li').addClass('d-flex').show()
+				}
+			    })
+			}
+		    })
+		}
+	    })
+	    $modalSaveBtn.click(function(){
+		var $deleted = $list.find('li.deleted')
+		$deleted.each(function(){
+		    // remove from lists expects something from within the <li> tag,
+		    // but this.origItem is the li tag. Pass a child. Usually it's the button. 
+		    self._removeFromList(this.origItem.find('.remove-button').first())
+		})
+		
+		$genericModal.modal('hide')
+	    })
+	    
+	    $genericModal.modal('show').modal('handleUpdate')
+	    
+	    
+	},
+	_toggleExplorer : function(){
+	    if (this.$exploreBtn.hasClass('closed')){
+		this._showExplorer()
+	    } else {
+		this._hideExplorer()
+	    }
+	},
+	_showExplorer : function(){
+	    this.$exploreBtn.addClass('opened').removeClass('closed')
+	    var vpHeight = $(window).height(),
+		borderOffset = 5,
+		scrollTop = $(window).scrollTop(),
+		yPos = this.$list.offset().top,
+		heightToBottom = vpHeight-yPos+scrollTop,
+		pageOffset = $('.page-header').first().offset().top + $('.page-header').first().height(),
+		heightToTop = this.$input.offset().top-scrollTop-pageOffset,
+		height, top, bottom
+
+	    if ((heightToBottom < 100) && (heightToTop > heightToBottom)){
+		height = heightToTop
+		bottom = this.$iGroup.height()
+		top = 'auto'
+	    } else {
+		height = heightToBottom
+		top = this.$list.position().top
+		bottom = 'auto'
+	    }
+	    this.$list.css({
+		'maxHeight': (height-borderOffset) + 'px',
+		'borderWidth' : '2px',
+		'overflow' : 'auto',
+		'top' : top,
+		'bottom': bottom
+	    })
+	},
+	_hideExplorer : function(){
+	    // clean up elements from search
+	    this.$list.find('[style]').removeAttr('style')
+	    this.$list.find('dt.open').removeClass('open').addClass('closed')
+	    this.$exploreBtn.addClass('closed').removeClass('opened')
+	    this.$list.css(this.hiddenExplorerCss)
+	}
+    }
+)
 $(document).ready(function(){
     $R.Widgets.init()
 })
