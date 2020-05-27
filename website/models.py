@@ -757,7 +757,7 @@ class EMailText ( models.Model ):
             to
         )
         if reply_to is not None:
-            email.replay_to = replay_to
+            email.replay_to = reply_to
         for attachment in attachements:
             email.attach_file(attachment)
 
