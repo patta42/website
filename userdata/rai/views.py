@@ -1,6 +1,3 @@
-from pprint import pprint
-
-
 from django.contrib.auth import get_user_model
 from django.template.response import TemplateResponse
 from django.urls import reverse, resolve
@@ -50,7 +47,6 @@ class StaffUserCreateView(MultiFormCreateView):
                         self.form = self.formclass(initial = initial)
                     
     def finalize(self, request):
-        pprint (self.session_store)
         parent_page = Page.objects.get(pk = self.session_store['parent']['form']['parent_page'])
         user_data = self.session_store['staffuser_data']['form']
         staff_user = StaffUser()
@@ -75,7 +71,7 @@ class StaffUserCreateView(MultiFormCreateView):
 
         # make StaffUser
         user_data.update(self.session_store['staffuser_contract']['form'])
-        print(staff_user)
+
         del(user_data['multiform_step_counter'])
         for field, value in user_data.items():
             setattr(staff_user, field, value)
@@ -87,7 +83,6 @@ class StaffUserCreateView(MultiFormCreateView):
         revision.publish()
         # staff_user is saved now, should have a pk
         staff_user = revision.as_page_object().specific
-        pprint(self.session_store)
         for formset_data in self.session_store['staffuser_contract']['formsets']['roles']:
             rel = StaffUser2RoleRelation(
                 role = formset_data['role'], roles = staff_user
