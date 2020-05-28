@@ -427,6 +427,19 @@ class StaffUser ( TranslatedPage ):
                 self.user.is_active = False
                 self.user.save()
 
+    def activate(self, user = None, activate_website_user = True):
+        self.expire_at = None
+        self.live = True
+        self.locked = False
+        self.locked_by = None
+        self.locked_at = None
+        self.save()
+        self.save_revision(user = user)
+        if activate_website_user:
+            if self.user:
+                self.user.is_active = True
+                self.user.save()
+
     class Meta:
         verbose_name = _('staff member')
         verbose_name_plural = _('staff members')
