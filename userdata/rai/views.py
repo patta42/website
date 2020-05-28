@@ -243,6 +243,12 @@ class BeiratPositionReplaceView(EditView):
                 ):
                     obj.delete()
             self.obj.member.save_revision(user = request.user)
+            self.success_message('Die Beiratsposition wurde gespeichert.')
+            
+    def save_no_user(self, request, form):
+        self.remove_old_member(request)
+        self.obj.member = None
+        self.obj.save()
             
     def save_new_user(self, request, form):
         self.remove_old_member(request)
@@ -266,7 +272,7 @@ class BeiratPositionReplaceView(EditView):
         revision.publish()
         self.obj.member = member
         self.obj.save()
-        self.success_message('Das beiratsmitglied wurde gespeichert.')
+        self.success_message('Das Beiratsmitglied wurde gespeichert.')
 
     def save_existent_user(self, request, form):
         beirat_labels = StaffRoles.objects.filter(is_beirat = True)
@@ -281,12 +287,25 @@ class BeiratPositionReplaceView(EditView):
                 self.remove_old_member(request)
 
         new_user = Page.objects.get(pk = user_pk).specific
+        if isinstance(new_user, RUBIONUser):
+            # make sure there is no existing (and maybe inactivated) StaffUSer for the RUBIONUser. 
+            # Otherwise, use the staff user
+            try:
+                new_user = StaffUser.objects.get(user = new_user.linked_user)
+                if new_user.locked:
+                    new_user.activate(user = request.user, activate_website_user = False)
+            except StaffUser.DoesNotExist:
+                pass
+            
+
+        
         if isinstance(new_user, StaffUser):
             self.obj.member = new_user
             for label in beirat_labels:
                 rel = StaffUser2RoleRelation(roles = new_user, role = label)
                 rel.save()
         elif isinstance(new_user, RUBIONUser):
+            
             member = StaffUser(
                 first_name = new_user.first_name,
                 last_name = new_user.last_name,
@@ -306,7 +325,7 @@ class BeiratPositionReplaceView(EditView):
             revision = member.save_revision(user = request.user)
             revision.publish()
             self.obj.member = member
-        self.success_message('Das beiratsmitglied wurde gespeichert.')
+        self.success_message('Das Beiratsmitglied wurde gespeichert.')
         self.obj.save()
 
         
@@ -316,3 +335,5 @@ class BeiratPositionReplaceView(EditView):
             self.save_new_user(request, form)
         elif form.cleaned_data['source'] == 'existent_user':
             self.save_existent_user(request, form)
+        elif form.cleaned_data['source'] == 'no_user':
+            self.save_no_user(request, form)
