@@ -964,6 +964,7 @@ $R.Widgets = {
 	)
 	$('.tree-view-select').treeviewselect()
 	bsCustomFileInput.init()
+	$('a.ajaxify').ajaxify()
 //	$('.rai-comment a[href$="#genericModal"').genericmodal()
     },
 
@@ -1182,7 +1183,7 @@ $.widget('raiforms.dependingfield', {
 		self._toggle($(this), dependsObj[item])
 	    }).each(
 		function(){
-		    self._toggle($(this), dependsObj[item])
+		    self._toggle($item, dependsObj[item])
 		}
 	    )
 	}
@@ -1211,16 +1212,37 @@ $.widget(
     {
 	options : {
 	    successCallback : undefined,
-	    failCallback : undefined
+	    failCallback : undefined,
+	    method : 'POST',
+	    updateIcon : undefined
 	},
 	_create : function(){
 	    if (this.element.data('ajaxify-container') !== undefined){
-
+		this.$container = $(this.element.data('ajaxify-container'))
+	    } else {
+		this.$container = this.element
 	    }
+	    if (this.element.data('ajaxify-method') !== undefined){
+		this.options['method'] = this.element.data('ajaxify-method')
+	    }
+	    if (this.element.data('ajaxify-update-icon') !== undefined){
+		this.options['updateIcon'] = $(this.element.data('ajaxify-update-icon'))
+	    }
+	    this.$icon = $('<i class="fas fa-cog fa-spin"></i>')
 	    var self = this;
 	    this.element.click(function(evt){
 		evt.preventDefault();
-		$R.post(
+		var fnc
+		if (self.options['updateIcon'] !== undefined){
+		    self.options['updateIcon'].html('').append(self.$icon)
+		}
+		
+		if (self.options.method == 'GET'){
+		    fnc = $R.get
+		} else {
+		    fnc = $R.post
+		}
+		fnc(
 		    self.element.attr('href'),
 		    self._collectData()
 		).fail(
@@ -1234,6 +1256,8 @@ $.widget(
 		    function(data){
 			if (self.options.successCallback !== undefined){
 			    self.options.successCallback(data)
+			} else {
+			    self._replaceContent(data)
 			}
 		    }
 		
@@ -1242,6 +1266,11 @@ $.widget(
 	},
 	_collectData : function(){
 	    return {}
+	},
+	_replaceContent : function(data){
+	    var $content = $(data['content'])
+	    $content.insertBefore(this.$container)
+	    this.$container.remove()
 	}
 	
     }
