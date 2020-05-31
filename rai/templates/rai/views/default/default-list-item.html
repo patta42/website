@@ -1,12 +1,13 @@
 {% load rai_tags %}
 <li class="list-group-item mb-0" id="pk-{{object.pk}}">
   <div class="d-flex w-100 justify-content-between">
-    <h5 class"mb-1" data-rubion-searchable="true" data-rubion-sortable="{% block title_sortname %}Title{% endblock %}">
+    <h5 class="mb-1" data-rubion-searchable="true" data-rubion-sortable="{% block title_sortname %}Title{% endblock %}" data-rubion-searchable-title="{% block search_header_title%}Name, Vorname{%endblock%}">
       {% block title %}{{object}}{% endblock %}
     </h5>
     <div class="btn-group" role="group" aria-label="item actions">
       {% for action in item_actions %}
-      {% if action|show_for_instance:object %}
+      {% show_for_instance action object as show %}
+      {% if show %}
       <a href="{% url action.urlname object.pk %}" class="btn btn-sm btn-outline-secondary">
 	<i class="{{action.icon_font}} fa-{{action.icon}}"></i>
 	{{action.label}}
