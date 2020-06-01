@@ -1,21 +1,82 @@
 {% load static rai_tags rai_help %}
-<html>
+<!DOCTYPE html>
+<html lang="de">
   <head>
     <title>RUBIONtail - {% block pagetitle %}{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/admin/fontspec.css' %}">
-    <link rel="stylesheet" href="{% static 'third-party/bootstrap-4.4.1-dist/css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'css/admin/RUB-bootstrap-theme.css' %}">
-    <link rel="stylesheet" href="{% static 'css/admin/RUBIONtail.css' %}">
-    <script src="{% static 'js/admin/third-party/jq-3.4.1/jquery-3.4.1.min.js' %}"></script>
-    <script src="{% static 'third-party/bootstrap-4.4.1-dist/js/bootstrap.bundle.min.js' %}"></script>
-    <script src="{% static 'icons/fontawesome/js/all.js' %}" defer></script>
-    <script src="{% static 'js/admin/RUBIONtail.js' %}"></script>
+    <script>
+    window.setLoadStatus = function(status, callback){
+	console.log('Settings status to', status)
+        var statusEl = document.getElementById('loadscreen_status')
+        statusEl.innerText = status;
+        if (callback !== undefined){
+          callback()
+        }
+      }
+window._scriptsToAdd = [];
+window._scriptsToAddCounter = 0;
+
+window.addScript = function(status, url, type){
+    window._scriptsToAdd.push({status:status, url: url, type: type})
+}
+</script>
     {% block additional_css %}{% endblock %}
+<script>
+window.addScript('Lade icons', '{% static 'icons/fontawesome/js/all.js' %}', 'js')
+
+window.addScript('Lade bootstrap', '{% static 'third-party/bootstrap-4.4.1-dist/js/bootstrap.bundle.min.js' %}', 'js')
+window.addScript('Lade RUBIONtail', '{% static 'js/admin/RUBIONtail.js' %}', 'js')
+window.addScript('Lade Schriften', '{% static 'css/admin/fontspec.css' %}', 'css')
+window.addScript('Lade Style', '{% static 'third-party/bootstrap-4.4.1-dist/css/bootstrap.min.css' %}', 'css')
+window.addScript('Lade Style-Apassungen', '{% static 'css/admin/RUB-bootstrap-theme.css' %}', 'css')
+window.addScript('Lade RUBIONtail-Style-Apassungen', '{% static 'css/admin/RUBIONtail.css' %}', 'css')
+window.addScript('Lade jquery UI Style-Apassungen', '{% static 'js/admin/third-party/jquery-ui-1.12.1.custom/jquery-ui.min.css' %}', 'css')
+window.addScript('Lade jquery UI', '{% static '/js/admin/third-party/jquery-ui-1.12.1.custom/jquery-ui.min.js' %}', 'js')
+
+window.addScript('Lade RAI Widgets', '{% static  'js/admin/RAIWidgets.js'  %}', 'js')
+window.addScript('Lade Such- und Markierungs-Plugin', '{% static 'js/admin/third-party/mark.js-8.11.1/jquery.mark.min.js' %}', 'js')
+window.addScript('Lade Spracherweiterungen', '{% static 'js/admin/third-party/moment/moment.min.js' %}', 'js')
+window.addScript('Lade Anpassung für Datumseingabe', '{% static 'js/admin/third-party/tempus-dominus/tempusdominus-bootstrap-4-fa5-fix.js' %}', 'js')
+window.addScript('Lade Editor-Erweiterungen', '{% static 'js/admin/third-party/bsCustomFileInput.js' %}', 'js')
+window.addScript('Lade Erweiterungen für Auflistungen', '{% static 'js/admin/views/list.js' %}', 'js')
+window.addScript('Lade Editor-Erweiterungen', '{% static 'js/admin/RUBIONeditor.js' %}', 'js')
+    </script>
+
+    
+    <style>
+      @keyframes loader-spin{
+        0% {-webkit-transform:rotate(0);transform:rotate(0)}
+        100% {-webkit-transform:rotate(360deg);transform:rotate(360deg)}
+      }
+      #loadscreen_icon{
+        position:relative;
+      }
+      #loadscreen_icon_svg{
+        animation: loader-spin linear infinite 2s;
+        display:inline-block;
+        overflow:visible;
+      }
+      </style>
+    
+
   </head>
   <body data-rai-help-uri="{% help_uri %}" data-rai-user_pk="{{user_pk}}">
+    <div class="" style="position:fixed; top:0; height:100vh; width:100vw; background-color:rgba(0,0,0,.75); z-index:2000" id="loadscreen">
+      <div style="position:absolute; top:33%; left:50%; color:rgba(255,255,255,.75); transform:translate(-50%, -50%); padding:2rem;">
+	<div id="loadscreen_icon" style="text-align:center; font-size:2.5rem"><!--<i class="fas fa-cog fa-spin"></i>-->
+	  <svg id="loadscreen_icon_svg" aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="40" height="40">
+	    <path fill="currentColor" d="M487.4 315.7l-42.6-24.6c4.3-23.2 4.3-47 0-70.2l42.6-24.6c4.9-2.8 7.1-8.6 5.5-14-11.1-35.6-30-67.8-54.7-94.6-3.8-4.1-10-5.1-14.8-2.3L380.8 110c-17.9-15.4-38.5-27.3-60.8-35.1V25.8c0-5.6-3.9-10.5-9.4-11.7-36.7-8.2-74.3-7.8-109.2 0-5.5 1.2-9.4 6.1-9.4 11.7V75c-22.2 7.9-42.8 19.8-60.8 35.1L88.7 85.5c-4.9-2.8-11-1.9-14.8 2.3-24.7 26.7-43.6 58.9-54.7 94.6-1.7 5.4.6 11.2 5.5 14L67.3 221c-4.3 23.2-4.3 47 0 70.2l-42.6 24.6c-4.9 2.8-7.1 8.6-5.5 14 11.1 35.6 30 67.8 54.7 94.6 3.8 4.1 10 5.1 14.8 2.3l42.6-24.6c17.9 15.4 38.5 27.3 60.8 35.1v49.2c0 5.6 3.9 10.5 9.4 11.7 36.7 8.2 74.3 7.8 109.2 0 5.5-1.2 9.4-6.1 9.4-11.7v-49.2c22.2-7.9 42.8-19.8 60.8-35.1l42.6 24.6c4.9 2.8 11 1.9 14.8-2.3 24.7-26.7 43.6-58.9 54.7-94.6 1.5-5.5-.7-11.3-5.6-14.1zM256 336c-44.1 0-80-35.9-80-80s35.9-80 80-80 80 35.9 80 80-35.9 80-80 80z"></path>
+	  </svg>
+	</div>
+	<div id="loadscreen_status">Lade Komponenten...</div>
+      </div>
+    </div>
+    
+    <script>
+      setLoadStatus('Rendere Seiteninhalt')
+    </script>
     <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
       <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">{% include 'rai/sidebar/rubionlogo.html' %}</a>
-      <div class="w-100 alert-container" id="alertContainer">
+      <div class="alert-container" id="alertContainer">
 	{% block messages %}
 	{% if messages %}
 	{% for message in messages %}
@@ -31,13 +92,23 @@
 	{% endif %}
 	{% endblock %}
       </div>
-      <ul class="navbar-nav px-3">
-<!--	<li class="nav-item">
-	  <a class="nav-link" href="#"><i class="fas fa-envelope"></i></a>
+      <ul class="navbar-nav px-3 app-nav">
+	<li class="nav-item icon">
+	  <a class="nav-link" href="{% url "rai_mail_compose" %}"><i class="fas fa-envelope"></i></a>
 	</li>
-	<li class="nav-item">
+	<li class="nav-item icon">
 	  <a class="nav-link" href="#"><i class="fas fa-question-circle"></i></a>
-	</li> -->
+	</li>
+	<li class="nav-item icon">
+	  <a class="nav-link" href="#"><i class="fas fa-comments"></i></a>
+	</li>
+	<li class="nav-item icon">
+	  <a class="nav-link" href="#"><i class="fas fa-user-cog"></i></a>
+	</li> 
+	<li class="nav-item icon">
+	  <a class="nav-link" href="#"><i class="fas fa-ambulance"></i></a>
+	</li> 
+
 	<li class="nav-item text-nowrap">
 	  <a class="nav-link" href="#">Sign out</a>
 	</li>
@@ -51,7 +122,7 @@
 	  <div class="page-header">
 	    {% block page_header %}
 	    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3">
-	      <div class="d-inline-flex align-items-center w-75">
+	      <div class="d-inline-flex align-items-center page-header-inner-wrapper">
 		{% block page_header_inner %}
 		<h1 class="h4 d-inline-block mr-3 ">
 		  <span class="d-block">
@@ -76,10 +147,63 @@
 	</main>
       </div>
     </div>
-    {% block modals %}
-    {% include 'rai/help/help_modal.html' %}
-    {% include 'rai/generic/generic-modal.html' %}
-    {% endblock %} 
-    {% block additional_js %}{% endblock %}
+{#    {% block additional_js %}{% endblock %}#}
+<script src="{% static 'js/admin/third-party/jq-3.4.1/jquery-3.4.1.min.js' %}"></script>
+    <script>
+
+	window._addNextScript = function(){
+            var el, current = window._scriptsToAdd[window._scriptsToAddCounter];
+	    if (current['type'] == 'js'){
+		el = document.createElement('script')
+		el.setAttribute('src', window._scriptsToAdd[window._scriptsToAddCounter]['url'])
+	    } else if (current['type'] == 'css') {
+		el = document.createElement('link')
+		el.setAttribute('href', window._scriptsToAdd[window._scriptsToAddCounter]['url'])
+		el.setAttribute('rel', 'stylesheet')
+	    } else {
+		console.log('unknown type', current['type'])
+	    }
+	    
+	    if (window._scriptsToAddCounter < window._scriptsToAdd.length - 1){
+		el.onload = function(){
+		    window._scriptsToAddCounter++;
+		    window._addNextScript()
+		}
+	    } else {
+		el.onload = function(){
+		    window._everything_loaded = true
+		}
+	    }
+	    setLoadStatus(window._scriptsToAdd[window._scriptsToAddCounter]['status'])
+	    document.head.appendChild(el)
+	}
+console.log(window._scriptsToAdd)
+	if (window._scriptsToAdd.length > 0){
+	    window._addNextScript()
+	}
+
+		       
+    
+</script>
+
+{% block modals %}
+{% include 'rai/help/help_modal.html' %} 
+{% include 'rai/generic/generic-modal.html' %}
+{% endblock %}
+    <script>
+      $(document).ready(
+          function(){
+	      window._checkIntervalId = window.setInterval(
+		  function(){
+		      if (window._everything_loaded === true){
+			  window.clearInterval(window._checkIntervalId)
+			  $(document).trigger('rubiontail.baseloaded')
+		      } 
+		  }, 100
+	      )
+          }
+      )
+window.addScript('Lade initialisierungscode', '{% static 'js/admin/init.js' %}', 'js')
+    </script>
   </body>
 </html>
