@@ -1,5 +1,7 @@
 from pprint import pprint
 
+from collections import OrderedDict
+
 from django.contrib import messages
 from django.urls import resolve, reverse
 from django.http import QueryDict, HttpResponseForbidden
@@ -8,7 +10,7 @@ from django.views.generic import TemplateView
 
 import json
 
-from rai.settings.models import ListFilterSettings, AdminMenuSettings 
+from rai.settings.models import ListFilterSettings, AdminMenuSettings, ListViewSettings
 from rai.markdown.widgets import RAIMarkdownWidget
 import re
 
@@ -23,16 +25,18 @@ class RAIView(TemplateView):
         'css' : [
             'css/admin/edit_handlers.css',
             'js/admin/third-party/jquery-ui-1.12.1.custom/jquery-ui.min.css',
-            'js/admin/third-party/tempus-dominus/tempusdominus-bootstrap-4.min.css'
+            'js/admin/third-party/tempus-dominus/tempusdominus-bootstrap-4.min.css',
         ],
         'js' : [
-            'js/admin/third-party/jquery-ui-1.12.1.custom/jquery-ui.min.js',
-            'js/admin/RUBIONeditor.js',
-            'js/admin/RAIWidgets.js',
-            'js/admin/third-party/mark.js-8.11.1/jquery.mark.min.js',
-            'js/admin/third-party/moment/moment.min.js',
-            'js/admin/third-party/tempus-dominus/tempusdominus-bootstrap-4.min.js',
-            'js/admin/views/list.js',
+            # 'js/admin/third-party/jquery-ui-1.12.1.custom/jquery-ui.min.js',
+            # 'js/admin/RUBIONeditor.js',
+            # 'js/admin/RAIWidgets.js',
+            # 'js/admin/third-party/mark.js-8.11.1/jquery.mark.min.js',
+            # 'js/admin/third-party/moment/moment.min.js',
+            # 'js/admin/third-party/tempus-dominus/tempusdominus-bootstrap-4-fa5-fix.js',
+            # 'js/admin/third-party/bsCustomFileInput.js',
+            # 'js/admin/views/list.js',
+            
             
             
         ]
@@ -144,7 +148,6 @@ class RAIView(TemplateView):
         return context
 
 
-
 class RAIAdminView(RAIView):
     """
     A view which requires a RAIAdmin definition and an active RAIAction object
@@ -155,9 +158,6 @@ class RAIAdminView(RAIView):
     
     raiadmin = None
     active_action = None
-
-
-
 
 
 class FilterSettingsView(RAIAdminView):
@@ -350,6 +350,102 @@ class FilterSettingsView(RAIAdminView):
         return qs
 
 
+class ListViewSetting:
+    '''
+    A class that defines a setting. Provides a general get() method to 
+    get the corresponding value
+    '''
+
+    def get(self, obj):
+        pass
+    
+class ViewSettingsFilterSettingsView(FilterSettingsView):
+    '''
+    Adds user-configurable items to the list and and an appropriate Form
+    '''
+    list_settings_form_template = 'rai/views/default/forms/list-settings-form.html'
+    #
+    # overridden methods
+    #
+    def post(self, request):
+        # the settings form sends action=update_view_settings,
+        # while the FilterForm does not send any action
+        action = request.POST.get('action', None)
+        if not action:
+            # call parent
+            return super().post(request)
+        else:
+            if action == 'update_view_settings':
+                self.update_view_settings(request)
+                self.success_message('Die Einstellungen wurden geändert.')
+            return redirect(request.path_info)
+
+    def get(self, request):
+        # before calling super().get(), get the current view settings.
+        self.get_settings(request)
+        
+        return super().get(request)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['settings_form'] = self.get_settings_form()
+        return context
+
+    #
+    # additional methods
+    #
+
+    def update_view_settings(self, request):
+        pass
+
+    def get_settings(self, request):
+        # get default settings from active action
+        raw_settings = getattr(self.active_action, 'item_provides', None)
+
+    def get_settings_form(self):
+        # make an item with
+        # - label
+        # - descripton
+        # for each settings that is not a group. for groups, make the same for children 
+        raw_settings = getattr(self.active_action, 'item_provides', None)
+        settings = OrderedDict()
+        group_items = OrderedDict()
+        if raw_settings:
+            # we will need to loop twice through the dict. First, create groups and settings,
+            # second, populate groups. Well, second time, the dict is smaller...
+
+            for key, rs in raw_settings.items():
+                group  = rs.get('group', None)
+                if not group: # item does not belong to a group
+                    settings[key] = {
+                        'label': rs['label'],
+                        'desc': rs['desc'],
+                        'selected' : rs.get('selected', True),
+                        'children' : [], # even if it's not a group, it does
+                                         # not hurt to implement this,
+                        'selected_children_count' : 0,
+                        'unselected_children_count' : 0,
+                    }
+                else:
+                    group_items[key] = rs
+            for key, rs in group_items.items():
+                group  = rs.get('group', None)
+                # cannot be None due to the above loop
+                settings[group]['children'].append({
+                    'label' : rs['label'],
+                    'desc': rs['desc'],
+                    'selected' : rs.get('selected', True),
+                    'key' : key
+                })
+                if rs.get('selected', True):
+                    settings[group]['selected_children_count'] += 1
+                else:
+                    settings[group]['unselected_children_count'] += 1
+                    
+        ordered_settings = settings
+        return render_to_string(self.list_settings_form_template, {'settings' : ordered_settings})
+        
+                
 class SingleObjectMixin:
     def get_object(self):
         qs = self.raiadmin.model._default_manager.get_queryset()
@@ -362,6 +458,7 @@ class SingleObjectMixin:
 class PageMenuMixin:
     save_button = False
     save_button_label = 'Save'
+    save_button_icon = None
     proceed_button = False
     proceed_button_label = 'Proceed'
     sort_button = False
@@ -418,6 +515,7 @@ class PageMenuMixin:
                 'filter_button' : self.filter_button,
                 'save_button': self.save_button,
                 'save_button_label' : self.save_button_label,
+                'save_button_icon' : self.save_button_icon,
                 'proceed_button': self.proceed_button,
                 'proceed_button_label' : self.proceed_button_label,
                 'icons_only' : self.icons_only,
@@ -426,46 +524,3 @@ class PageMenuMixin:
             }
         )
 
-        
-# class RAIAjaxModelView(RAIAdminView, SingleObjectMixin):
-#     """
-#     A view that responds differently to GET and POST in case of ajax or non ajax requests.
-
-#     If we answer to an ajax request, the value of  get_ajax or post_ajax are returned, if it is 
-#     a normal request, the return values of get or post are returned. 
-
-#     Furthermore, it can respond to two situations: if the view receives a pk argument and 
-#     therefore an object is known to the view, or without pk argument.
-
-#     In the case of a pk-argument:
-#       GET: the view should behave like an edit or detail view,
-#       POST: the view should behave like an update (edit.POST) view
-#     In the case of no pk argument:
-#       GET: the view should behave like a list view,
-#       POST: the view should behave like a creat view
-    
-
-#     """
-#     def dispatch(self, request, *args, **kwargs):
-#         self.has_object = False
-#         if 'pk' in kwargs.keys():
-#             self.obj = self.get_object()
-#             self.has_object = True
-#         super().dispatch(request, *args, **kwargs)
-#         if request.method == 'POST':
-#             if request.is_ajax():
-#                 return self.post_ajax(request, *args, **kwargs)
-#             else:
-#                 return self.post(request, *args, **kwargs)
-#         elif request.method == 'GET':
-#             if request.is_ajax():
-#                 return self.get_ajax(request, *args, **kwargs)
-#             else:
-#                 return self.get(request, *args, **kwargs)
-            
-#     def get_ajax(self, request, *args, **kwargs):
-#         pass
-    
-#     def post_ajax(self, request, *args, **kwargs):
-#         pass
-    
