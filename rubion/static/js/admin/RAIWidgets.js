@@ -2391,6 +2391,6 @@ $.widget(
 	}
     }
 )
-$(document).ready(function(){
-    $R.Widgets.init()
+$(document).on('rubiontail.baseloaded', function(){
+    setLoadStatus('aktiviere Widgets', function(){$R.Widgets.init()})
 })
