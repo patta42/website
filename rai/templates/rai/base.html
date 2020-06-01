@@ -5,7 +5,6 @@
     <title>RUBIONtail - {% block pagetitle %}{% endblock %}</title>
     <script>
     window.setLoadStatus = function(status, callback){
-	console.log('Settings status to', status)
         var statusEl = document.getElementById('loadscreen_status')
         statusEl.innerText = status;
         if (callback !== undefined){
