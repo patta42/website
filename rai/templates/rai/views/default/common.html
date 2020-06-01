@@ -1,0 +1,28 @@
+{% extends 'rai/base.html' %}
+{% load static %}
+{% block additional_css %}
+<script>
+{% for file in media.css %}
+
+    window.addScript('Lade zusätzliche Styles', '{% static file %}','css')
+{% endfor %}
+</script>
+  {% for css in inline_media.css %}
+    <style>
+      {{css}}
+    </style>
+  {% endfor %}   
+{% endblock %}
+{% block additional_js %}
+  {% for file in media.js %}
+    <script>
+      window.addScript('Lade zusätzliche JS-Bibliothek', '{% static file %}', 'js')
+    </script>
+    
+  {% endfor %}
+  {% for js in inline_media.js %}
+    <script>
+      {{js}}
+    </script>
+  {% endfor %}   
+{% endblock %}
