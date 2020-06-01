@@ -491,12 +491,13 @@ $R.editing = {
 	    var cls = function($elem){
 		var self = this;
 		self.identifier = 'markdown-editor'
-		var $d = (id) => (self.identifier+'-'+id);
-		var $c = (id) => ($('.'+self.identifier+'-'+id));
-		var $textarea = $($elem.data($d('controls')));
+		var $d = (id) => self.identifier+'-'+id;
+		var $c = (id) => $elem.find('.'+self.identifier+'-'+id);
+		var $textarea = $elem.find($elem.data($d('controls')));
+		console.log($textarea)
 		self.url = $elem.data($d('process'));
 		self.element_id = $textarea.attr('id');
-		var $$ = (id) => ($('#'+self.element_id+id));
+		var $$ = (id) => ($elem.find('#'+self.element_id+id));
 		// set up components
 		self.$components = {
 		    'textarea' : $textarea,
@@ -573,7 +574,11 @@ $R.editing = {
 			data : {'markdown': self.$components.textarea.val()}
 		    }).done(
 			function( data ) {
-			    self.$components.previewContainer.html(data.content);
+			    if (data.content != 'None'){
+				self.$components.previewContainer.html(data.content);
+			    } else {
+				self.$components.previewContainer.html('');
+			    }
 			    self.hideSpinner();
 			}
 		    ).fail(
@@ -617,17 +622,22 @@ $R.editing = {
 }
 
 var me = {}
-$(document).ready(
+$(document).on('rubion.baseloaded',
     function(){
+	setLoadStatus(
+	    'initiiere erweiterte Editiermöglichkeiten',
 	
-	$('.inline-panel').each( function() {
-	    me.foo = new $R.editing.RAIInlinePanel($(this));
-	});
-	$('.multiple-input-selection-list').each( function() {
-	    me.bar = new $R.editing.RAIMultipleSelectListBoxesWidget($(this));
-	});
-	$('.markdown-editor').each(function(){
-	    me.baz = new $R.editing.RAIMarkdownEditor($(this));
-	})
+	    function(){
+		$('.inline-panel').each( function() {
+		    me.foo = new $R.editing.RAIInlinePanel($(this));
+		});
+		$('.multiple-input-selection-list').each( function() {
+		    me.bar = new $R.editing.RAIMultipleSelectListBoxesWidget($(this));
+		});
+		$('.markdown-editor').each(function(){
+		    me.baz = new $R.editing.RAIMarkdownEditor($(this));
+		})
+	    }
+	)
     }
 )
