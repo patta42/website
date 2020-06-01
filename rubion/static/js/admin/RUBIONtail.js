@@ -241,7 +241,8 @@ $R.help = {
 	    self.showContent = function(content, show = true, callback = undefined){
 		// show the content
 		self.$cComponents.content.html(content.content_html);
-		self.$eComponents.editor.val(content.content_markdown);
+		console.log(self.$eComponents.editor)
+		self.$eComponents.textarea.val(content.content_markdown);
 		if (content.editable === true){
 		    self.$cComponents.editBtn.click(
 			function(){
@@ -374,34 +375,45 @@ $R.selectElementText= function(el, win) {
 }
 
 
-$(document).ready(
+$(document).on(
+    'rubiontail.baseloaded',
     function(){
-	$R.help.instance = new $R.help.HelpSystem();
-	$('.sidebar-sticky').sortable({
-	    handle : '.sortable-grip',
-	    items: '.rai-main-menu-container',
-	    axis : 'y',
-	    update : function(evt, ui){
-	     	var count = 0, data = {}, group_order = [];
-		var widget = ui.item.parents('.sidebar-sticky').first()
-		var url = widget.data('admin-menu-settings-url')
-	     	widget.find('.rai-main-menu-container').each(function(){
-	     	    group_order.push($(this).data('admin-menu-container-name'))
-	     	})
-		data['group_order'] = JSON.stringify(group_order)
-		data['user'] = $('body').first().data('rai-user_pk')
-	    	$R.post(url, {
-		    data : data
-		}).done(
-		    function(data){
-			console.log(data)
-		    }
-		)
-		    
-							
+	window.setLoadStatus(
+	    'Initiiere Hilfesystem', 
+	    function(){
+		$R.help.instance = new $R.help.HelpSystem();
 	    }
-	})
-	$('.user-editable').editablecontent()
-
+	)
+	window.setLoadStatus(
+	    'Initiiere bearbeitbares Menu',
+	    function(){
+		$('.sidebar-sticky').sortable({
+		    handle : '.sortable-grip',
+		    items: '.rai-main-menu-container',
+		    axis : 'y',
+		    update : function(evt, ui){
+	     		var count = 0, data = {}, group_order = [];
+			var widget = ui.item.parents('.sidebar-sticky').first()
+			var url = widget.data('admin-menu-settings-url')
+	     		widget.find('.rai-main-menu-container').each(function(){
+	     		    group_order.push($(this).data('admin-menu-container-name'))
+	     		})
+			data['group_order'] = JSON.stringify(group_order)
+			data['user'] = $('body').first().data('rai-user_pk')
+	    		$R.post(url, {
+			    data : data
+			}).done(
+			    function(data){
+				console.log(data)
+			    }
+			)
+			
+			
+		    }
+		})
+		$('.user-editable').editablecontent()
+		
+	    }
+	)
     }
 )
