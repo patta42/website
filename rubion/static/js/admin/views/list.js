@@ -167,18 +167,38 @@ $R.listView = {
 };
 
 
-$(document).ready(
+$(document).on('rubiontail.baseloaded', 
     function(){
-	$R.listView.addFilterCount();
-	var $searchField = $('#searchlist-input');
-	var Searcher = new $R.listView.SearchList()
-	Searcher.attachTo($searchField);
-	var q = $R.urlParam('q');
-	if (q){
-	    $searchField.val(q);
-	    Searcher.doSearch(q);
-	}
-	var Sorter = new $R.listView.SortList();
-	var formModals = new $R.generic.ModalFormHandling(); 
+	setLoadStatus(
+	    'initiiere Filter',
+	    function(){
+		$R.listView.addFilterCount();
+	    }
+	)
+	setLoadStatus(
+	    'initiiere Suchfeld',
+	    function(){
+		var $searchField = $('#searchlist-input');
+		var Searcher = new $R.listView.SearchList()
+		Searcher.attachTo($searchField);
+		var q = $R.urlParam('q');
+		if (q){
+		    $searchField.val(q);
+		    Searcher.doSearch(q);
+		}
+	    }
+	)
+	setLoadStatus(
+	    'sortiere Liste',
+	    function(){
+		var Sorter = new $R.listView.SortList();
+	    }
+	)
+	setLoadStatus(
+	    'initiiere Einstellungsfenster',
+	    function(){
+		var formModals = new $R.generic.ModalFormHandling();
+	    }
+	)
     }
 )
