@@ -171,6 +171,7 @@ class WorkGroup ( UserGeneratedPage2 ):
             mc.title_de = title_de
             mc.slug = "members"
             self.add_child( instance = mc )
+        return mc
 
     def add_project_container( self ):
         # Generate a container for Projects
@@ -183,7 +184,8 @@ class WorkGroup ( UserGeneratedPage2 ):
             pc.title_de = title_de
             pc.slug = "project"
             self.add_child( instance = pc )
-
+        return pc
+    
     def after_create_hook( self, request ):
 
         # Auto-generate child containers        
@@ -2153,7 +2155,11 @@ class Nuclide ( models.Model ):
 
 from rai.base import rai_register_decorations
 from rai.comments.models import RAICommentDecoration
-from rai.files.models import RAIDocumentModelRelation
+
+
+from rai.files.models import RAIDocumentModelRelation, RAIOnDemandDocumentModelRelation
+
+
 
 class RUBIONUserCommentDecoration(RAICommentDecoration):
     decorated_model = models.ForeignKey(
@@ -2182,9 +2188,16 @@ class RUBIONUserDocumentsRelation(RAIDocumentModelRelation):
         on_delete = models.CASCADE,
         related_name = 'documents'
     )
+class RUBIONUserOnDemandDocumentRelation(RAIOnDemandDocumentModelRelation):
+    decorated_model = ParentalKey(
+        RUBIONUser,
+        on_delete = models.CASCADE,
+        related_name = 'automatic_documents'
+    )
     
 rai_register_decorations([
     RUBIONUserCommentDecoration, ProjectCommentDecoration, WorkgroupCommentDecoration
 ])
+
 
 
