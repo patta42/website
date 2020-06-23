@@ -1,0 +1,18 @@
+{% extends 'rai/views/default/default-list-item.html' %}
+{% load rai_courses %}
+{% block outertitle %}
+<h5 class="mb-1">
+<div><small class="text-primary"><span data-rubion-searchable="true" data-rubion-searchable-title="Startdatum" data-rubion-sortable="Startdatum" data-rubion-sortable-value="{{object.start|date:"Ymd"}}">{{object.start}}<span> bis <span data-rubion-searchable="true" data-rubion-searchable-title="Enddatum">{{object.end}}</span></small></div>
+<span data-rubion-groupby="Kurstyp" data-rubion-group-title="{{object.get_parent.specific.title_de}}" data-rubion-sortable="Kurstyp" data-rubion-searchable="true" data-rubion-searchable-title="Kurstyp">{{object.get_parent.specific.title_de}}</span>
+</h5>
+{% endblock %}
+{% block additional_content %}
+{% get_n_attendees object as n_attendees %}
+{% get_n_waitlist object as n_waitlist %}
+{% if n_attendees > 0 %}
+Teilnehmer: {{n_attendees}}
+{% endif %}
+{% if n_waitlist > 0 %}
+Warteliste: {{n_waitlist}}
+{% endif %}
+{% endblock %}
