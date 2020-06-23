@@ -99,7 +99,6 @@ $R.listView = {
 	    self.getSortableText = function(txt){
 		if (typeof txt === 'number')
 		    txt = txt.toString()
-		console.log('text', typeof txt)
 		return txt.
 		    replace('ß','s').toUpperCase()
 		    .replace('Ä','A')
