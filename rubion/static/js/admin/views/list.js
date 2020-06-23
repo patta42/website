@@ -97,6 +97,9 @@ $R.listView = {
 		    .appendTo(self.dropdownContainer);
 	    },
 	    self.getSortableText = function(txt){
+		if (typeof txt === 'number')
+		    txt = txt.toString()
+		console.log('text', typeof txt)
 		return txt.
 		    replace('ß','s').toUpperCase()
 		    .replace('Ä','A')
@@ -104,15 +107,23 @@ $R.listView = {
 		    .replace('Ü','U')
 	    },
 	    self.compareFcn = function(a,b, attribute){
-		var a_txt = self.getSortableText(
-		    $(a).find('[data-rubion-sortable="'+attribute+'"]').text()
-		);
+		var $a = $(a).find('[data-rubion-sortable="'+attribute+'"]').first()
+		if ($a.is('[data-rubion-sortable-value]')){
+		    a_txt = $a.data('rubion-sortable-value')
+		} else {
+		    a_txt = $a.text()
+		}
+		var $b = $(b).find('[data-rubion-sortable="'+attribute+'"]').first()
+		if ($b.is('[data-rubion-sortable-value]')){
+		    b_txt = $b.data('rubion-sortable-value')
+		} else {
+		    b_txt = $b.text()
+		}    
+		var a_txt = self.getSortableText(a_txt)
 		var a_fallback = self.getSortableText(
 		    $(a).find('h5').first().text()
 		);
-		var b_txt = self.getSortableText(
-		    $(b).find('[data-rubion-sortable="'+attribute+'"]').text()
-		);
+		var b_txt = self.getSortableText(b_txt)
 		var b_fallback = self.getSortableText(
 		    $(b).find('h5').first().text()
 		);  
