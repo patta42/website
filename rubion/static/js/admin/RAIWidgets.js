@@ -1,3 +1,6 @@
+
+
+
 $.widget(
     'raiwidgetsSelectionPanel.permissionSelectionPanelListHeader',
     // The header component in the selection list is a plugin on its own
@@ -965,6 +968,22 @@ $R.Widgets = {
 	$('.tree-view-select').treeviewselect()
 	bsCustomFileInput.init()
 	$('a.ajaxify').ajaxify()
+	$('.panel-grid-wrapper').panelgrid()
+
+	$('.dropdown [data-toggle="dropdown"]').on('click', function(e) {
+            $(this).dropdown('toggle');
+            e.stopPropagation();
+	});
+	$('.dropdown').on('hide.bs.dropdown', function(e) {
+            if ($(this).is('.has-child-dropdown-show')) {
+		$(this).removeClass('has-child-dropdown-show');
+		e.preventDefault();
+            }
+            e.stopPropagation();
+	});
+
+	$('input[type="checkbox"].check-all').checkall()
+	$('table thead th.select-shown-rows').selectshownrows()
 //	$('.rai-comment a[href$="#genericModal"').genericmodal()
     },
 
@@ -1009,7 +1028,7 @@ $R.Widgets = {
 		    $(this).attr('selected', false);
 		    var txt = $(this).text().split('|')
 		    var subline = txt.length > 1 ? '<span class="text-muted">'+txt[1]+'</span>' : ''
-		    if ($(this).val() != '' && $(this).val() !== undefined){ 
+		    if ($(this).val() !== undefined){ 
 			self.$components.optionSurrounder.append(
 			    $('<li class="list-group-item d-flex align-items-center" data-type-and-select-value="'
 			      + $(this).val()+'">'+
@@ -1170,12 +1189,12 @@ $.widget(
 $.widget('raiforms.dependingfield', {
     _create : function(){
 	// this is a weird mutli-protected json string. let's put it into a parsable form
-	var dataString = this.element.data('depends-on')
-	    .replace(/\\/g,'')
-	    .replace(/\"\"/g, '')
-	    .replace(/\"/g, '"')
-	    .slice(1,-1);
-	var dependsObj = JSON.parse(dataString);
+	var dependsObj = this.element.data('depends-on')
+// %	    .replace(/\\/g,'')
+// 	    .replace(/\"\"/g, '')
+// 	    .replace(/\"/g, '"')
+// 	    .slice(1,-1);
+//	var dependsObj = JSON.parse(dataString);
 	var self = this;
 	for (item in dependsObj) {
 	    var $item = $('[name='+item+']')
@@ -2388,6 +2407,547 @@ $.widget(
 	    this.$list.find('dt.open').removeClass('open').addClass('closed')
 	    this.$exploreBtn.addClass('closed').removeClass('opened')
 	    this.$list.css(this.hiddenExplorerCss)
+	}
+    }
+)
+$.widget(
+    /* implements a single panel of the panel grind on the home-page
+     * of RUBIONtail
+     */ 
+    'raiwidgets.panelgridpanel',
+    {
+	_create : function(parent){
+	    this.parent = parent
+	    // set options from data
+	    if (this.element.data('grid-position') !== undefined)
+		this.options['position'] = this.element.data('grid-position')
+	    if (this.element.data('grid-max-width') !== undefined)
+		this.options['maxCols'] = this.element.data('grid-max-width')
+	    if (this.element.data('grid-min-width') !== undefined)
+		this.options['minCols'] = this.element.data('grid-min-width')
+	    if (this.element.data('grid-max-height') !== undefined)
+		this.options['maxRows'] = this.element.data('grid-max-height')
+	    if (this.element.data('grid-min-width') !== undefined)
+		this.options['minRows'] = this.element.data('grid-min-height')
+	    if (this.element.data('grid-width') !== undefined)
+		this.options['colSpan'] = this.element.data('grid-width')
+	    if (this.element.data('grid-height') !== undefined)
+		this.options['rowSpan'] = this.element.data('grid-height')
+
+	    this.$parentRow = this.element.parents('.row').first()
+	    if(this.$parentRow.data('grid-columns') !== undefined){
+		this.options['colsAvailable'] = this.$parentRow.data('grid-columns')
+	    }
+	    this.$menu = this.element.find('.panel-menu').first()
+
+	    
+	},
+	isResizable : function(){
+	    return this.options['maxRows'] != this.options['minRows'] || this.options['maxCols'] != this.options['minCols']
+	},
+	isDraggable : function(){
+	    return self.options['position'] != -1
+	},
+	setDataPosition : function(row, col){
+	    this.element.data('grid-col', col)
+	    this.element.data('grid-row', row)
+	    this._addMenu()
+	},
+	_changeSize : function(rs, cs){
+	    console.log('in _changeSize', rs, cs)
+	    this.element.data('grid-width', cs)
+	    this.element.data('grid-height', rs)
+	    this.options['colSpan'] = cs
+	    this.options['rowSpan'] = rs
+	    this._trigger('sizeChanged')
+	},
+	_addMenu : function(){
+	    var self = this
+	    if (this.isResizable()){
+		// since this is called every time the layout is rendered
+		// clear menu first
+
+		this.$menu.find('*').remove()
+
+		// Built container
+		var $dropdown = $('<div />')
+		    .addClass('dropdown-menu')
+		    .attr('aria-labelled-by', 'btn_dd_'+this.uuid)
+
+		// size sub-menu-header
+		var $szHeader = $('<h6">Größe ändern</h6>')
+		    .addClass('dropdown-header')
+		    .appendTo($dropdown)
+		
+		
+		for (var rs = this.options['minRows']; rs <= this.options['maxRows']; rs++){
+		    for (var cs = this.options['minCols']; cs <= this.options['maxCols']; cs++){
+			$btn = $('<button>'+rs+'×'+cs+'</button>')
+			    .appendTo($dropdown)
+			    .attr('type','button')
+			    .data('grid-rs', rs)
+			    .data('grid-cs', cs)
+			    .addClass('dropdown-item')
+			if (
+			    this.options['colSpan'] == cs
+				&& this.options['rowSpan'] == rs
+			){
+			    $btn.addClass('disabled')
+				.attr('aria-disabled', true)
+				.attr('tabindex',-1)
+			} else {
+			    $btn.click(function(evt){
+				evt.preventDefault()
+				self._changeSize($(this).data('grid-rs'), $(this).data('grid-cs'))
+			    })
+			}
+		    }
+		}
+
+		// make menu button
+		var $menuBtn = $('<button type="button" />')
+		    .attr('id', 'btn_dd_'+this.uuid)
+		    .attr('data-toggle', 'dropdown')
+		    .attr('aria-haspopup','true')
+		    .attr('aria-expanded','false')
+		    .addClass('btn btn-xs')
+		var $iconContainer = $('<span />')
+		    .appendTo($menuBtn)
+		var $menuIcon = $('<i />')
+		    .addClass(this.options['menuIconFont'])
+		    .addClass(this.options['menuIcon'])
+		    .appendTo($iconContainer)
+	   
+	
+		this.$menu.append($menuBtn)
+		this.$menu.append($dropdown)
+
+		
+	    }
+	}
+    }
+)
+$.raiwidgets.panelgridpanel.prototype.options = {
+    rowSpan : 1,
+    colSpan : 1,
+    position : 0,
+    maxRows: 1,
+    minRows : 1,
+    maxCols : 1,
+    minCols : 1,
+    colsAvailable : 3,
+    menuIconFont:'fas',
+    menuIcon : 'fa-ellipsis-h'
+}
+
+
+$.widget(
+    /* implements the additional functionality of the "add-panel" panel
+     */
+    'raiwidgets.addpanelpanel',
+    {
+	_create : function(parent){
+	    this.parent = parent;
+	    // find checkboxes
+	    var self = this
+	    this.element.find('input[type=checkbox]').change(
+		function (evt){
+		    self._trigger('panelAdded', evt, {
+			panelKey : $(this).attr('name')
+		    })
+		}
+	    )
+	}
+    }
+)
+$.widget(
+    /* This implements the panels on the home-page of RUBIONtail
+     * 
+     * Data for sizing is included as data attributes on the single panels (aka cards)
+     */
+    'raiwidgets.panelgrid',
+    {
+	_addChild : function(child){
+	    var self = this
+	    if (child.data('raiwidgets-panelgridpanel') === undefined){
+		child.panelgridpanel({
+		    'sizeChanged' : function(){
+			self._layout()
+		    }
+		})
+	    } 
+	    var instance = child.panelgridpanel('instance')
+
+	    if (instance.options.position < 0){
+		this.appendedChildren.push(instance)
+	    } else {
+		this.children.push(instance)
+	    }
+	},
+	_sortChildren : function(){
+	    this.children.sort(
+		function(a,b) {
+		    return a.option('position') - b.option('position')
+		}
+	    )
+	},
+	_layout : function(){
+	    // clear the current grid
+	    this.element.children().remove()
+	    this._sortChildren()
+	    var row, col, r, c, grid = [],
+		childCounter = 0,
+		children = this.children.concat(this.appendedChildren),
+		rowSpans = [ 1 ],
+		area = 0
+
+	    for (var cnt = 0; cnt < children.length; cnt ++){
+		area += children[cnt].options['rowSpan'] * children[cnt].options['colSpan']
+	    }
+	    for (cnt = 0; cnt < Math.ceil(area/3); cnt ++){
+		grid.push([null, null, null])
+	    }
+	    console.log(grid, children)
+	    for (row = 0; row < grid.length && childCounter < children.length; row++){
+		for (col = 0;
+		     col < grid[row].length && childCounter < children.length;
+		     col ++){
+		    console.log('row', row, 'col', col, 'grid[row][col]', grid[row][col])
+		    if (grid[row][col] === null){
+			rowSpans[row] = Math.max(rowSpans[row], children[childCounter].options['rowSpan'])
+			for (r = 0; r < children[childCounter].options['rowSpan']; r++){
+			    // expand grid if necessary
+			    if ( r + row > grid.length - 1){
+				grid.push([null, null, null])
+				rowSpans.push(1)
+			    }
+			    // We don't check for cols that do not match...
+			    // maybe we should...
+			    for (c = 0; c < children[childCounter].options['colSpan']; c++) {
+				grid[row + r][col + c] = childCounter
+			    }
+			}
+			childCounter ++
+		    }
+		}
+	    }
+
+
+	    // inline-functions are not very nice, but anyway...
+	    
+	    var getRowSpan = function(rowIdx, colIdx, colSpan){
+//		console.log('getRowSpan with rowIdx', rowIdx, 'colIdx', colIdx, 'colSpan', colSpan, 'grid (global)', grid)
+		var span = 1
+		if (rowIdx + 1 < grid.length){
+		    var ext = true
+		    var rowCnt = rowIdx + 1
+		    
+		    while (rowCnt < grid.length && ext){
+			ext = false
+			
+			for (var colCnt = colIdx; colCnt < colIdx + colSpan; colCnt ++){
+			    if (grid[rowCnt][colCnt] == grid[rowCnt-1][colCnt]){
+				console.log('grid', rowCnt, colCnt, 'equals', rowCnt, colCnt-1)
+				console.log(grid[rowCnt][colCnt],grid[rowCnt][colCnt-1])
+				ext = true
+				span++
+				break
+			    }
+			}
+			
+			rowCnt++
+			
+		    }
+		    
+		}
+//		console.log('getRowSpan returns', span)
+		return span
+	    }
+
+	    var getColSpan = function(rowIdx, colIdx, rowSpan){
+//		console.log('getColSpan with rowIdx', rowIdx, 'colIdx', colIdx, 'rowSpan', rowSpan, 'grid (global)', grid)
+		var span = 1
+		if (colIdx < 2){
+		    var ext = true
+		    var colCnt = colIdx + 1
+		    while (colCnt < 3 && ext){
+			ext = false
+			for (var rowCnt = rowIdx; rowCnt < rowIdx + rowSpan; rowCnt++){
+			    if (grid[rowCnt][colCnt] == grid[rowCnt][colCnt-1]){
+				ext = true
+				span++
+				break
+			    }
+			}
+			colCnt ++
+			
+		    }
+		}
+//		console.log('getColSpan returns', span)
+		return span
+	    }
+
+	    function renderRow(row, col, colSpan, inner){
+
+		if (inner === undefined)
+		    inner = false
+//		console.log('renderRow with row', row, 'col', col,'colSpan', colSpan,'inner', inner)
+		var rowSpan = getRowSpan(row, col, colSpan),
+
+		    $row = $('<div />')
+		    .addClass('row panel-grid-row')
+		    .attr('data-grid-rowspan', rowSpan)
+		    .attr('data-grid-colspan', colSpan),
+		    
+		    colCnt = 0,
+		    
+		    $col
+		
+		while (colCnt < colSpan){
+		    $col = renderCol(row, col+colCnt, rowSpan, colSpan, inner)
+		    $row.append($col)
+		    colCnt += parseInt($col.data('grid-colspan'))
+		}
+		return $row
+	    }
+
+	    function renderCol(row, col, rowSpan, outerColSpan, inner){
+		// for renderCol, inner is set
+		// outerColSpan is required for the column width only
+
+//		console.log('renderCol with row', row, 'col', col,'rowSpan', rowSpan, 'outerColSpan', outerColSpan, 'inner', inner)
+		
+		var colSpan = getColSpan(row, col, rowSpan),
+
+		    $col = $('<div />')
+		    .addClass('panel-grid-col')
+		    .attr('data-grid-rowspan', rowSpan)
+		    .attr('data-grid-colspan', colSpan)
+		    .addClass('col-md-'+12/outerColSpan  * colSpan),
+		
+		    rowCnt = 0,
+
+		    $row
+		if (inner){
+		    // 
+		    
+		    // console.log('Adding panel at position',row, col)
+		    // console.log('panel number is', grid[row][col])
+		    var panel = children[grid[row][col]]
+//		    console.log('panel is ', panel)
+		    if (panel !== undefined){
+			$col.append(panel.element)
+			panel.setDataPosition(row, col)
+		    }
+		    
+		} else {
+		    while (rowCnt < rowSpan){
+			// call renderRow with inner = true
+			$row = renderRow(row+rowCnt, col, colSpan, true)
+			$col.append($row)
+			rowCnt += parseInt($row.data('grid-rowspan'))
+		    }
+		}
+		return $col
+	    }
+
+	    // loop through the grid
+	    var rowCounter = 0, $outerRow
+	    while (rowCounter < grid.length){
+		$outerRow = renderRow(rowCounter, 0, 3)
+		this.element.append($outerRow)
+		rowCounter += parseInt($outerRow.data('grid-rowspan'))
+	    }
+	},
+	_addPanel : function(evt, data){
+	    var self = this
+	    $R.post(
+		this.options['addPanelURL'],
+		{
+		    data : { panelId : data['panelKey'] }
+		}
+	    ).done(function(data){
+		var panel = $(data['html']).panelgridpanel({
+		    position : self.children.length,
+		    sizeChanged : function(){
+			self._layout()
+			self._initAddPanel()
+		    }
+		})
+		self._addChild(panel)
+		self._layout()
+		self._initAddPanel()
+	    })
+	},
+	_initAddPanel : function(){
+	    var self = this
+	    this.$addPanel = this.element.find(
+		self.options['addPanelSelector'])
+		.first()
+		.addpanelpanel({
+		    'panelAdded' : function(evt, data){ self._addPanel(evt, data) }
+		})
+	    console.log('Add panel is', this.$addPanel)
+	},
+
+	_create : function(){
+	    var self = this
+	    
+	    this.$children = this.element.find(this.options['childrenSelector'])
+	    this.children = []
+	    this.appendedChildren = []
+	    this.$children.each(
+		function(){ self._addChild($(this)) }
+	    )
+
+	    this._layout()
+	    this._initAddPanel()
+	    
+	    this.options['addPanelURL'] = this.element.data('add-panel-url')
+
+	},
+
+    }
+)
+$.raiwidgets.panelgrid.prototype.options = {
+    
+    childrenSelector : '.grid-panel',
+    addPanelSelector : '.add-panel-panel',
+    addPanelURL : ''
+}
+
+$.widget(
+    'raiwidgets.checkall',
+    {
+	_create : function(){
+	    this.selector = this.element.data('check-all-name')
+	    this.$inputs = $('[name="'+this.selector+'"]')
+	    var self = this
+	    console.log('check all on ',this.element)
+	    this.element.change(function(){
+		self.$inputs.prop('checked', $(this).prop('checked'))
+	    })
+
+	    this.$inputs.change(function(){
+		var state
+		var oldState = null
+		self.$inputs.each(function(){
+		    if (oldState == null){
+			oldState = $(this).prop('checked')
+		    }
+		    state = $(this).prop('checked')
+		    if (state != oldState){
+			self.element.prop('indeterminate', true)
+			state = null
+			return false
+		    }
+		    oldState = state
+		})
+		if (state != null){
+		    self.element.prop('indeterminate', false)
+		    self.element.prop('checked', state)
+		}	
+	    })
+	    
+	}
+    }
+)
+
+$.widget(
+    'raiwidgets.selectshownrows',
+    {
+	_create : function(){
+	    var wn = 'select-shown-rows',
+		self = this
+	    
+	    this.id = this.element.data(wn+'-id')
+	    this.$table = this.element.parents('table').first()
+	    this.choices = []
+	    
+	    this.$elements = this.$table.find('tbody td[data-'+wn+'-id="'+this.id+'"]').each(
+		function(){
+		    var txt = $(this).text(),
+			idx = self.choices.indexOf(txt)
+		    
+		    $(this).attr('data-'+wn+'-value', txt)
+		    if (idx == -1)
+			self.choices.push(txt)
+		}
+		
+	    )
+
+	    this.$dropdown = $('<div class="btn-group" />')
+	    this.$btn = $('<button type="button" class="btn">'+this.element.text()+'</button>')
+		.attr('data-toggle', 'dropdown')
+		.attr('aria-haspopup', true)
+		.attr('aria-expanded', false)
+		.addClass('dropdown-toggle')
+		.appendTo(this.$dropdown)
+	    this.$ddMenu = $('<div class="dropdown-menu" />').appendTo(this.$dropdown)
+	    this.$form = $('<form class="py-1 px-2"/>').appendTo(this.$ddMenu)
+
+	    var $wrapper, $label, $input, c
+	    
+	    for (c=0; c < this.choices.length; c++){
+		
+		$wrapper = $('<div class="custom-control custom-checkbox mb-1">').appendTo(this.$form)
+		$input = $('<input type="checkbox" class="custom-control-input" />')
+		    .attr('id', wn+'_'+this.uuid+'_'+c)
+		    .attr('value', this.choices[c])
+		    .prop('checked', true)
+		    .appendTo($wrapper)
+		    .change(
+			function(evt){
+			    evt.preventDefault()
+			    var $elems = self.$elements.filter('[data-'+wn+'-value="'+$(this).val()+'"]')
+			    if ($(this).prop('checked')){
+				$elems.each(function(){
+				    $(this).parents('tr').first().show(
+					200,
+					function(){self._adjustBgColor()}
+				    )
+				})
+			    } else {
+				$elems.each(function(){
+				    $(this).parents('tr').first().hide(
+					200,
+					function(){self._adjustBgColor()}
+				    )
+				})
+			    }
+			    
+			}
+		    )
+		$label = $('<label class="custom-control-label">'+this.choices[c]+'</label>')
+		    .attr('for', wn+'_'+this.uuid+'_'+c)
+		    .css({'font-size':'.875rem','text-transform':'none'})
+		    .appendTo($wrapper)
+	    }
+	    this.element.html('')
+	    this.element.append(this.$dropdown)
+	    this.$btn.css(
+		this.element.css([
+		    'font-size', 'font-weight', 'text-transform', 'color',
+		    'font-color'
+		])
+	    )
+	},
+	_adjustBgColor : function(){
+	    var c = 0
+	    this.$elements.each(
+		function(){
+		    var $tr = $(this).parents('tr').first()
+		    if ($tr.is(':visible')){
+			if (c%2==0){
+			    $tr.css('background-color', '#fff')
+			} else {
+			    $tr.css('background-color', '#f2f2f2')
+			}
+			
+			c++;
+		    }
+		}
+	    )
 	}
     }
 )
