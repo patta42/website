@@ -958,6 +958,19 @@ class CourseAttendee ( models.Model ):
 
         return title_format+"{} {}".format(self.first_name, self.last_name)
 
+
+    @property
+    def specific(self):
+        '''
+        return the related specific AttendeeType
+        '''
+        for ro in self._meta.related_objects:
+            if ro.one_to_one:
+                attr = getattr(self, ro.name, None)
+                if attr:
+                    return attr
+
+        return self
     def __str__( self ):
         try:
             return "{} ({} am {})".format(
