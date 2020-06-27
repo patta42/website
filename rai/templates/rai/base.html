@@ -74,7 +74,7 @@ window.addScript('Lade Editor-Erweiterungen', '{% static 'js/admin/RUBIONeditor.
       setLoadStatus('Rendere Seiteninhalt')
     </script>
     <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
-      <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">{% include 'rai/sidebar/rubionlogo.html' %}</a>
+      <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="{% url "rai_home" %}">{% include 'rai/sidebar/rubionlogo.html' %}</a>
       <div class="alert-container" id="alertContainer">
 	{% block messages %}
 	{% if messages %}
@@ -91,25 +91,25 @@ window.addScript('Lade Editor-Erweiterungen', '{% static 'js/admin/RUBIONeditor.
 	{% endif %}
 	{% endblock %}
       </div>
-      <ul class="navbar-nav px-3 app-nav">
+      <ul class="navbar-nav px-3 app-nav align-items-center">
 	<li class="nav-item icon">
 	  <a class="nav-link" href="{% url "rai_mail_compose" %}"><i class="fas fa-envelope"></i></a>
 	</li>
 	<li class="nav-item icon">
 	  <a class="nav-link" href="#"><i class="fas fa-question-circle"></i></a>
 	</li>
-	<li class="nav-item icon">
-	  <a class="nav-link" href="#"><i class="fas fa-comments"></i></a>
-	</li>
+	<!-- <li class="nav-item icon"> -->
+	<!--   <a class="nav-link" href="#"><i class="fas fa-comments"></i></a> -->
+	<!-- </li> -->
 	<li class="nav-item icon">
 	  <a class="nav-link" href="#"><i class="fas fa-user-cog"></i></a>
 	</li> 
 	<li class="nav-item icon">
-	  <a class="nav-link" href="#"><i class="fas fa-ambulance"></i></a>
+	  <a class="nav-link" href="#"><i class="fas fa-exclamation-circle"></i></a>
 	</li> 
 
 	<li class="nav-item text-nowrap">
-	  <a class="nav-link" href="#">Sign out</a>
+	  <a class="nav-link" href="#">Ausloggen</a>
 	</li>
       </ul>
     </nav>
@@ -186,8 +186,10 @@ console.log(window._scriptsToAdd)
 </script>
 
 {% block modals %}
-{% include 'rai/help/help_modal.html' %} 
-{% include 'rai/generic/generic-modal.html' %}
+    {% include 'rai/help/help_modal.html' %} 
+    {% include 'rai/generic/generic-modal.html' %}
+    {% include 'rai/generic/dialog-modal.html' %}
+
 {% endblock %}
     <script>
       $(document).ready(
