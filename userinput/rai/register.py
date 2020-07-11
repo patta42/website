@@ -10,13 +10,30 @@ from rai.actions import ListAction, CreateAction, EditAction, DetailAction, Hist
 from rai.base import RAIModelAdmin, RAIAdminGroup
 from rai.default_views import HistoryView
 
+from rai.files.base import (
+    register_collection, RAIDocumentCollection,
+    RAIDocumentOnDemand, rai_register_documents_on_demand
+)
+from rai.mail.base import register_mail_collection, RAIModelAddressCollection
+from rai.panels.base import register_panels
+
 from userinput.models import RUBIONUser, WorkGroup, Project, Nuclide
+
 import userinput.rai.actions as actions
+
+from userinput.rai.documents import RubionUserBadgeDocument
+from userinput.rai.panels import (
+    WorkgroupApplicationPanel, ProjectApplicationPanel, UserStatsPanel
+)
+
 from userinput.rai.views.generic import MoveToWorkgroupView
 
 from userinput.rai.views.rubionuser.views import (
-    RUBIONUserEditView, RUBIONUserInactivateView, RUBIONUserHistoryView
+    RUBIONUserEditView, RUBIONUserInactivateView, RUBIONUserHistoryView,
+    RUBIONUserCreateBadgeView
 )
+
+from userinput.rai.views.workgroup.views import WorkgroupCreateView
 
 from userinput.rai.permissions import MovePermission, InactivatePermission
 
@@ -35,7 +52,7 @@ def permissions_fur_projects():
 def permissions_fur_workgroups():
     return ('userinput', 'workgroup', [InactivatePermission])
 
-
+    
 class RAIUserData(RAIModelAdmin):
     model = RUBIONUser
     menu_label = 'Nutzer'
@@ -64,6 +81,7 @@ class RAIWorkGroups(RAIModelAdmin):
     menu_label = _l('Workgroups')
     menu_icon_font = 'fas'
     menu_icon = 'users'
+    createview = WorkgroupCreateView
     group_actions = [
         actions.RAIWorkgroupListAction,
         actions.RAIWorkgroupCreateAction
@@ -136,3 +154,50 @@ class RAIRadiationSafetyGroup(RAIAdminGroup):
     ]
     menu_label = 'Strahlenschutz & Labororganisation'
 
+class RAIWorkgroupMailCollection(RAIModelAddressCollection):
+    label = 'aktive Nutzer nach Arbeitsgruppen'
+    model = WorkGroup
+    multiple_for_instance = True
+    
+    def get_for_instance(self, instance):
+        title = '{} ({})'.format(instance.title_de, instance.get_head())
+#        title = '{}'.format(instance.title_de)#, instance.get_head())
+        return {
+            'title':title,
+            'pk' : instance.pk,
+            'id' : self.__class__.__name__
+        }
+
+    def get_all_for_pk(self, pk):
+        wg = WorkGroup.objects.get(pk = pk)
+        mails = []
+        for member in wg.get_members():
+            mails.append(self.format_as_mail_string(member))
+
+        return mails
+
+    
+class RAIUserMailCollection(RAIModelAddressCollection):
+    label = 'alle aktiven Nutzer'
+    model = RUBIONUser
+    multiple_for_instance = False
+
+    def get_for_instance(self, instance):
+        return self.format_as_mail_string(instance)
+    def get_objects(self):
+        return self.model.objects.active()
+
+    
+class RAIInactiveUserMailCollection(RAIUserMailCollection):
+    label = 'alle inaktiven Nutzer'
+    def get_objects(self):
+        return self.model.objects.inactive()
+    
+
+register_mail_collection(RAIWorkgroupMailCollection)
+register_mail_collection(RAIUserMailCollection)
+register_mail_collection(RAIInactiveUserMailCollection)
+
+    
+rai_register_documents_on_demand([RubionUserBadgeDocument])
+register_panels([WorkgroupApplicationPanel, ProjectApplicationPanel, UserStatsPanel])
