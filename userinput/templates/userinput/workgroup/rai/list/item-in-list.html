@@ -1,0 +1,49 @@
+{% extends 'rai/views/default/default-list-item.html' %}
+{% load i18n userinput_rai_tags %}
+
+{% block title %}
+{{object.title_trans}}
+{% endblock %}
+{% block sortfields %}{%trans "Workgroup"%}{% endblock %}
+{% block title_sortname %}{% trans "Workgroup" %}{% endblock %}
+{% block search_header_title %}{% trans "Workgroup" %}{% endblock %}
+{% comment %}{% block additional_content %}
+
+  {% include 'userinput/workgroup/rai/list/wg_head-in-list.html' with head=object.get_head %}
+  {% if object.university %}
+  <p class="mb-1" data-rubion-searchable="true">
+    {{object.university}}
+    {% include 'rai/tools/controls/hideshow-button.html' with container_id="collapseAddress" pk=object.pk size="sm" label_show="Adresse anzeigen" label_hide="Adresse verbergen"%}
+   </p>
+  {% endif %}
+  {% include 'rai/tools/controls/hideshow-body-open.html' with container_id="collapseAddress" pk=object.pk %}
+  {% if object.department %}
+  <p class="mb-1" data-rubion-searchable="true">
+    {{object.department}}
+  </p>
+  {% endif %}
+  {% if object.institute %}
+  <p class="mb-1" data-rubion-searchable="true">
+    {{object.institute}}
+  </p>
+  {% endif %}
+  {% if object.homepage %}
+  <p class="mb-1" data-rubion-searchable="true">
+    <i class="fas fa-home"></i> <a href="{{object.homepage}}" target="_blank">{{object.homepage}}</a>
+  </p>
+  {% endif %}
+  {% include 'rai/tools/controls/hideshow-body-close.html' %}
+  <div class="badge-row">
+    <span class="badge badge-info">Aktive Mitglieder: {{ object.get_members.active.count }}</span>
+    <span class="badge badge-info">Aktive Projekte: {{ object.get_projects.active.count }}</span>
+  </div>
+  {% if last_revision %}
+  <small class="text-muted">
+    {% trans "Last update:" %}
+    {{last_revision.created_at}}
+    {% trans "by" %}
+    {{ last_revision.user.last_name }}, {{ last_revision.user.first_name }}
+  </small>
+  {% endif %}
+{% endblock %}
+{% endcomment %}
