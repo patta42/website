@@ -563,6 +563,7 @@ $.widget('raiwidgets.templateeditor', {
 	this.$template.val(pre+insert+post)
 	textarea.selectionStart = start + insert.length
 	textarea.selectionStart = start + insert.length
+	this._setPreviewInvalid()
     },
     _getPreview : function(){
 	var data = {}
@@ -984,6 +985,7 @@ $R.Widgets = {
 
 	$('input[type="checkbox"].check-all').checkall()
 	$('table thead th.select-shown-rows').selectshownrows()
+	$('.attendee-list').attendeelist()
 //	$('.rai-comment a[href$="#genericModal"').genericmodal()
     },
 
@@ -2864,7 +2866,7 @@ $.widget(
 	    this.$table = this.element.parents('table').first()
 	    this.choices = []
 	    
-	    this.$elements = this.$table.find('tbody td[data-'+wn+'-id="'+this.id+'"]').each(
+	    this.$elements = this.$table.find('tbody [data-'+wn+'-id="'+this.id+'"]').each(
 		function(){
 		    var txt = $(this).text(),
 			idx = self.choices.indexOf(txt)
@@ -2877,13 +2879,14 @@ $.widget(
 	    )
 
 	    this.$dropdown = $('<div class="btn-group" />')
-	    this.$btn = $('<button type="button" class="btn">'+this.element.text()+'</button>')
+	    this.$btn = $('<button type="button" class="btn pl-0">'+this.element.text()+'</button>')
 		.attr('data-toggle', 'dropdown')
 		.attr('aria-haspopup', true)
 		.attr('aria-expanded', false)
 		.addClass('dropdown-toggle')
 		.appendTo(this.$dropdown)
 	    this.$ddMenu = $('<div class="dropdown-menu" />').appendTo(this.$dropdown)
+	    $('<h6 class="dropdown-header">Angezeigte Elemente</h6>').appendTo(this.$ddMenu)
 	    this.$form = $('<form class="py-1 px-2"/>').appendTo(this.$ddMenu)
 
 	    var $wrapper, $label, $input, c
@@ -2948,6 +2951,111 @@ $.widget(
 		    }
 		}
 	    )
+	}
+    }
+)
+
+
+/**
+ *  A collection of functionalities used for the attendee-list-view of Courses. 
+ *  Might not be very re-usable.
+ */
+$.widget(
+    'raiwidgets.attendeelist',
+    {
+	_create : function(){
+	    // called on the table
+	    this.$tbody = this.element.find('tbody').first()
+	    this.$thead = this.element.find('thead').first()
+	    this.$rows = this.$tbody.find('tr')
+	    this.$menu = this.$thead.find('.checkbox-menu').first()
+	    this.$invisContainer = $('<div />').css({
+		position: 'absolute',
+		left : '-10000px',
+		top : '-10000px',
+		width : '1px',
+		height : '1px'
+	    }).insertBefore(this.element)
+
+	    var self = this
+	    this.$menu.find('button[data-action="post_form"]').each(
+		function(){
+		    var $btn = $(this)
+		    $btn.click(function(){self._postForm($btn)})
+		}
+	    )
+	    this.$tbody.find('input.row-check').each(
+		function(){
+		    $(this).change(function(){
+			if ($(this).prop('checked')){
+			    $(this).parents('tr').first().attr('data-checked', true)
+			} else {
+			    $(this).parents('tr').first().attr('data-checked', false)
+			}
+		    })
+		    if ($(this).prop('checked')){
+			$(this).parents('tr').first().attr('data-checked', true)
+		    } else {
+			$(this).parents('tr').first().attr('data-checked', false)
+		    }
+		}
+	    )
+	},
+	_postForm : function($elem){
+	    var $rows = this._getCheckedRows()
+	    // clean up old content from invis container
+
+	    this.$invisContainer.children().remove()
+	    
+	    if ($rows.length == 0){
+		$R.infoDialog(
+		    'Bitte Einträge auswählen',
+		    $('<div><strong>Es sind keine Einträge ausgewählt.</strong><p>Bitte nutze die Kästchen auf der Seite der Tabelle um Einträge auszuwählen.</p></div>')
+		)
+		return
+	    }
+	    var fieldValues = JSON.parse($elem.data('field-values').replace(/'/g,'"')),
+		formFieldNames = JSON.parse($elem.data('form-field-names').replace(/'/g,'"')),
+		$form = $('<form method="POST" />')
+		.appendTo(this.$invisContainer)
+	    if ($elem.data('add-next') == true){
+
+		var $path = $elem.data('add-next-value') ? $elem.data('add-next-value') : window.location.pathname
+		$form.attr('action', $elem.data('form-url')+encodeURI('?next='+$path))
+	    } else {
+		$form.attr('action', $elem.data('form-url'))
+	    }
+	    
+	    $rows.each(
+		function(){
+		    for (var c = 0; c < fieldValues.length; c++){
+			var $row = $(this),
+			    value = $row.find('[data-field-name="'+fieldValues[c]+'"]').first().data('field-value'),
+			    $input = $('<input type="checkbox" checked />')
+			    .attr('name', formFieldNames[c])
+			    .val(value)
+			    .appendTo($form)
+			
+		    }
+		}
+	    )
+	    $('<input type="hidden" name="csrfmiddlewaretoken" value="'+$R.getCookie('csrftoken')+'" />').appendTo($form)
+	    $($elem.find('.additional-form-data').first().html()).appendTo($form)
+	    $form.attr('enctype','multipart/form-data')
+	    $form.submit()
+	},
+	_getCheckedRows : function(){
+	    // we cannot simply look for [data-checked=true ] since the checked status of the
+	    // input might have been set via JS, which does not trigger the click function.
+	    
+	    this.$rows.filter(':visible').each(
+		function(){
+		    var $input = $(this).find('input.row-check').first()
+		    $(this).attr('data-checked', $input.prop('checked'))
+		}
+	    )
+
+	    return this.$rows.filter(':visible').filter('[data-checked="true"]')
 	}
     }
 )
