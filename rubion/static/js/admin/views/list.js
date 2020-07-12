@@ -8,6 +8,7 @@ $R.listView = {
 	    }
 	    self.items = $(this.base + ' *[data-rubion-searchable="true"]');
 
+	    self.$noResultsMessage = $('<div class="alert alert-info">Foo</div>').insertAfter($(self.base)).hide()
 	    var searchTitles = [],
 		title;
 
@@ -20,6 +21,7 @@ $R.listView = {
 	    })
 	    
 	    self.doSearch = function(input){
+		self.$noResultsMessage.hide()
 		if (input.length < 3) {
 		    $(self.base + ' li').removeClass('pseudofirst').show().unmark();
 		    return;
@@ -41,6 +43,9 @@ $R.listView = {
 		// show all which contain a match
 		$('.highlighted').parents('li').show();
 		$(self.base+' li:visible').first().addClass('pseudofirst');
+		if ($('.highlighted').length == 0){
+		    self.$noResultsMessage.html('Der Suchbegriff <strong>'+input+'</strong> wurde nicht gefunden.').show()
+		} 
 	    }
 	    this.attachTo = function( elements ){
 		elements.each( function() {
