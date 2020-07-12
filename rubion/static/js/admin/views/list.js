@@ -51,11 +51,22 @@ $R.listView = {
 		elements.each( function() {
 		    $(this).attr('placeholder', searchTitles.join(', '));
 		    $(this).keyup( function(){
+			if ($(this).val().length < 3 && $(this).val().length > 0){
+			    $(this).popover('show')
+			} else {
+			    $(this).popover('hide')
+			}
 			self.doSearch($(this).val());
 		    });
 		    $(this).change( function(){
+			if ($(this).val().length < 3 && $(this).val().length > 0){
+			    $(this).popover('show')
+			} else {
+			    $(this).popover('hide')
+			}
 			self.doSearch($(this).val());
 		    });
+		    $(this).popover()
 		})
 	    }
 	    
