@@ -66,7 +66,7 @@ $R.listView = {
 			}
 			self.doSearch($(this).val());
 		    });
-		    $(this).popover()
+		    $(this).popover({trigger:'manual'})
 		})
 	    }
 	    
