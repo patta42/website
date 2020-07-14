@@ -1,3 +1,9 @@
+
+from .definitions import RUBIONUserInfoPanel, WorkgroupInformationPanel
+from .forms import (
+    GroupLeaderForm,  WorkgroupStatusForm, RUBIONUserSourceForm,
+    RUBIONUserWorkgroupForm
+)
 from userinput.models import RUBIONUser, Project
 
 import rai.edit_handlers as eh
@@ -8,7 +14,14 @@ from rai.widgets import (
     RAISelectMultipleCheckboxes
 )
 from rai.comments.edit_handlers import CommentPanel
-from rai.files.edit_handlers import FileListPanel
+
+from rai.edit_handlers.extended import RAIDependingFieldPanel
+from rai.edit_handlers.multiform import (
+    RAIMultiFormEditHandler, RAISubFormEditHandler, RAIModelMultiFormEditHandler
+)
+
+
+from rai.files.edit_handlers import FileListPanel, OnDemandFileListPanel
 
 from userinput.rai.collections import RUBIONUserDocumentCollection
 
@@ -95,6 +108,7 @@ def get_projects(wg):
     return Project.objects.active().descendant_of(wg)
 
 workgroup_edit_handler = eh.RAIPillsPanel([
+    WorkgroupInformationPanel(heading = 'Übersicht'), 
     eh.RAIUserDataPanel([
         eh.RAITranslatedContentPanel(
             {'de':'german', 'en':'english'},
@@ -131,11 +145,85 @@ workgroup_edit_handler = eh.RAIPillsPanel([
     )
 ])
 
+workgroup_create_edit_handler = RAIMultiFormEditHandler([
+    
+    RAIModelMultiFormEditHandler('workgroup_data_de',[
+        eh.RAICollectionPanel([
+            eh.RAIMultiFieldPanel(
+                [
+                    eh.RAIFieldPanel(
+                        'title_de',
+                        label="Name der Arbeitsgruppe"
+                    ),
+                    eh.RAIFieldPanel('department_de', label="Abteilung"),
+                    eh.RAIFieldPanel('institute_de',label="Institut"),
+                    eh.RAIFieldPanel('university_de', label="Universität"),
+                ],
+                heading = "Name und Adresse in deutscher Sprache",
+                classname ="input-language input-language-german"
+            ),
+            eh.RAIFieldPanel(
+                'homepage',
+                heading ="Homepage der Arbeitsgruppe",
+                
+            )
+        ])
+    ], heading = "Angaben zur neuen Arbeitsgruppe in deutscher Sprache"),
+    
+    RAIModelMultiFormEditHandler('workgroup_data_en',[
+        eh.RAICollectionPanel([
+            eh.RAIMultiFieldPanel(
+                [
+                    eh.RAIFieldPanel('title', label="Name der Arbeitsgruppe", help_text=None),
+                    eh.RAIFieldPanel('department_en'),
+                    eh.RAIFieldPanel('institute_en'),
+                    eh.RAIFieldPanel('university_en'),
+                ],
+                heading = "Name und Adresse in englischer Sprache",
+                classname ="input-language input-language-english"
+            )
+        ])
+    ], heading = "Angaben zur neuen Arbeitsgruppe in englischer Sprache"),
+    
+    RAISubFormEditHandler(
+        'group_leader', [
+            eh.RAIFieldPanel('leader_source'),
+            RAIDependingFieldPanel('rub_id', depends_on = {
+                'leader_source': ['new_rub_user']
+            }),
+            RAIDependingFieldPanel('rubion_user', depends_on = {
+                'leader_source': ['rubion_user']
+            }),
+            RAIDependingFieldPanel('staff_user', depends_on = {
+                'leader_source': ['staff_user']
+            }),
+            eh.RAICollectionPanel([
+                eh.RAIFieldRowPanel([
+                    eh.RAIFieldPanel('new_user_first_name', classname="col-md-6"),
+                    eh.RAIFieldPanel('new_user_last_name', classname="col-md-6"),
+                    eh.RAIFieldPanel('new_user_email', classname="col-md-6"),
+                    eh.RAIFieldPanel('new_user_salutation', classname="col-md-3"),
+                    eh.RAIFieldPanel('new_user_academic_title', classname="col-md-3"),
+                ], heading = "Angaben zum neu anzulegenden Nutzer")
+            ], depends_on = {
+                'leader_source': ['new_external_user']
+            })
+        ],
+        heading = "Angaben zum Leiter der Arbeitsgruppe",
+        formclass = GroupLeaderForm
+    ),
+    RAISubFormEditHandler('workgroup_status', [
+        eh.RAIFieldPanel('status')
+    ], formclass = WorkgroupStatusForm, heading ="Status der neuen Arbeitsgruppe")                          
+])
+
+
 def get_sent_mail(ruser):
     q = SentMail.objects.filter(to__icontains = ruser.email).order_by('-sent_at')
     return q
 
 rubionuser_edit_handler = eh.RAIPillsPanel([
+    RUBIONUserInfoPanel(heading = 'Übersicht'), 
     eh.RAIObjectList([
         eh.RAICollapsablePanel([
             eh.RAIFieldRowPanel([
@@ -174,8 +262,96 @@ rubionuser_edit_handler = eh.RAIPillsPanel([
         ], heading = 'Persönliche Nutzerdaten')
         
     ], heading = 'Daten'),
-    FileListPanel('documents', collection = RUBIONUserDocumentCollection, heading = 'Dateien'),
+    eh.RAIObjectList([
+        OnDemandFileListPanel('automatic_documents', heading = 'Automatsch erzeugte Dateien'), 
+        FileListPanel('documents', collection = RUBIONUserDocumentCollection, heading = 'Verknüpfte Dateien'),
+    ], heading = 'Dateien'),
+        
     SentMailPanel('sent_mail', get_sent_mail, heading = 'E-Mails'),
     CommentPanel(heading = 'Kommentare')
+    
+])
+rubionuser_create_handler = RAIMultiFormEditHandler([
+    RAISubFormEditHandler(
+        'workgroup',
+        [
+            eh.RAIFieldPanel('workgroup'),
+        ],
+        heading = 'Arbeitsgruppe auswählen',
+        formclass = RUBIONUserWorkgroupForm
+    ),
+    RAISubFormEditHandler(
+        'new_user_src', [
+            eh.RAIFieldPanel('source'),
+            RAIDependingFieldPanel('rub_id', depends_on = {
+                'source': ['rub']
+            }),
+            eh.RAICollectionPanel(
+                [
+                    eh.RAIFieldRowPanel(
+                        [
+                            eh.RAIFieldPanel('ext_last_name', classname="col-md-6"),
+                            eh.RAIFieldPanel('ext_first_name', classname="col-md-6"),
+                            eh.RAIFieldPanel('ext_email'),
+                        ],
+                        heading = "Angaben zum externen Nutzer"
+                    )
+                ],
+                depends_on = {
+                    'source': ['ext']
+                }
+            ),
+        ],
+        heading = "Angaben zum neuen Nutzer",
+        formclass = RUBIONUserSourceForm
+    ),
+    RAIModelMultiFormEditHandler(
+        'contact_data',
+        [
+            eh.RAICollectionPanel([
+                eh.RAIFieldRowPanel(
+                    [
+                        eh.RAIFieldPanel('academic_title', classname="col-md-4", widget=RAISelect),
+                        eh.RAIFieldPanel(
+                            'sex',
+                            classname="col-md-4",
+                            widget=RAISelect,
+                            label="Geschlecht",
+                            help_text='Wird für die korrekte Anrede in E-Mails benötigt.'
+                        ),
+                        eh.RAIFieldPanel('phone', classname="col-md-4")
+                    ]
+                )
+            ])
+        ],
+        heading = "Optionale Kontaktdaten"
+    ),
+    RAIModelMultiFormEditHandler(
+        'safety_information',
+        [
+            eh.RAICollectionPanel([
+                eh.RAIFieldPanel('dosemeter', widget = RAISelect),
+                eh.RAIFieldPanel('needs_safety_instructions', widget=RAISelectMultipleCheckboxes),
+                
+            ])
+        ],
+        heading = "Angaben zum Strahlenschutz"
+    ),
+    RAIModelMultiFormEditHandler(
+        'lab_organization',
+        [
+            eh.RAICollectionPanel([
+                eh.RAIFieldRowPanel([
+                    eh.RAIFieldPanel('labcoat_size', classname = 'col-md-6', widget=RAISelect),
+                    eh.RAIFieldPanel('overshoe_size', classname = 'col-md-6', widget=RAISelect),
+                    eh.RAIFieldPanel('entrance', classname = 'col-md-12', widget=RAISelect),
+                ]),
+                eh.RAIFieldPanel('needs_key'),
+                eh.RAIFieldPanel('key_number')
+                
+            ])
+        ],
+        heading = 'Labor-Organisation'
+    )
     
 ])
