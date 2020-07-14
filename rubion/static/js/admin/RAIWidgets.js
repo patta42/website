@@ -1216,7 +1216,7 @@ $.widget('raiforms.dependingfield', {
 	} else {
 	    $fg = self.element.find('.form-group')
 	}
-	console.log(values)
+	$elem = $elem.filter(':checked')
 	if (values.indexOf($elem.val()) > -1){
 	    
 	    $fg.addClass('required')
