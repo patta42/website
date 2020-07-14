@@ -67,7 +67,10 @@ def fetch_user_info( username ):
             search_filter='(uid={})'.format(username),
             attributes=['sn', 'givenName', 'mail', 'matrikelnr' ]
         )
-        attr =  connection.response[0]['attributes']
+        try:
+            attr =  connection.response[0]['attributes']
+        except IndexError:
+            return None
         info = {
             'last_name'  : attr['sn'][0],
             'first_name' : attr['givenName'][0],
