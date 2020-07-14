@@ -4,11 +4,11 @@
 <h6>{{fl.label}}</h6>
 <small class="text-muted">{{fl.help_text}}</small>
 {% for opt in fl.options %}
-<div class="form-check ml-3">
-  <input class="form-check-input" type="{{fl.type}}"
+<div class="ml-3 custom-control custom-{{fl.type}}">
+  <input type="{{fl.type}}"
 	 name="filter{{forloop.parentloop.counter0}}__{{fl.filter_id}}"
-	 id="{{fl.filter_id}}{{forloop.counter0}}" value="{{opt.value}}"{% if opt.value|to_str in fl.value %} checked{% endif %}>
-  <label class="form-check-label ml-1" for="{{fl.filter_id}}{{forloop.counter0}}">
+	 id="{{fl.filter_id}}{{forloop.counter0}}" value="{{opt.value}}"{% if opt.value|to_str in fl.value %} checked{% endif %} class="custom-control-input">
+  <label class="ml-1 custom-control-label" for="{{fl.filter_id}}{{forloop.counter0}}">
     {{opt.label}} <small class="text-muted ml-2">{{opt.help_text}}</small>
   </label>
 </div>
