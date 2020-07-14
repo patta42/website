@@ -1,22 +1,59 @@
+from pprint import pprint
+
 from .forms import (
     UserAndStaffInactivationForm, WorkgroupInactivationForm,
 )
 
 import datetime
 
+from django.core.files.base import ContentFile
+from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.forms import formset_factory
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import redirect
 from django.utils.functional import cached_property
+from django.utils.text import slugify
+from django.views.generic.detail import BaseDetailView
 
-from rai.default_views import EditView, InactivateView
+from rai.comments.models import RAIComment
+from rai.default_views import EditView, InactivateView, HistoryView
+from rai.default_views.multiform_create import  MultiFormCreateView
+from rai.files.models import RAIDocument
 
-from userdata.models import StaffUser
-from userinput.models import RUBIONUser, WorkGroup, Project
+from rubauth.auth import fetch_user_info
 
+from userdata.models import StaffUser, SafetyInstructionsSnippet
+from userinput.models import (
+    RUBIONUser, WorkGroup, Project, RUBIONUserCommentDecoration,
+    RUBIONUserOnDemandDocumentRelation, MemberContainer
+)
+
+from userinput.pdfhandling import RUBIONBadge
 from wagtail.core.models import Page
 
 class RUBIONUserEditView(EditView):
     template_name = 'userinput/rubionuser/rai/edit/edit.html'
+
+    def save_post_hook(self, request, form):
+        saved_something = super().save_post_hook(request, form, add_messages = False)
+        comment = request.POST.get('comment', None)
+        if comment and comment != "" and comment != "None":
+            new_comment = RAIComment(
+                owner = request.user,
+                comment = comment
+            )
+            new_comment.save()
+            decoration = RUBIONUserCommentDecoration(
+                decorated_model = self.obj,
+                rai_model = new_comment
+            )
+            decoration.save()
+            saved_something = True
+        if saved_something:
+            self.success_message('Die Daten wurden gespeichert')
+        else:
+            self.info_message('Die Daten enthielten keine Änderung und wurden daher nicht gespeichert')
 
 
 class ExtendedRUBIONUserInformationMixin:
@@ -106,6 +143,68 @@ class ExtendedRUBIONUserInformationMixin:
         )
 
 
+class RUBIONUserCreateView(MultiFormCreateView):
+    def prepare_cleaned_data(self, data, prefix):
+        if prefix == 'safety_information':
+            qs = data['needs_safety_instructions']
+            data_pks = []
+            for si in qs:
+                data_pks.append(si.pk)
+            data.update({'needs_safety_instructions' : data_pks})
+            return data
+        else:
+            return super().prepare_cleaned_data(data, prefix)
+
+    def make_user(self):
+        user = get_user_model()(is_staff = False)
+        if self.session_store['new_user_src']['form'].get('source') == 'rub':
+            userinfo = fetch_user_info(self.session_store['new_user_src']['form'].get('rub_id'))
+            user.username = self.session_store['new_user_src']['form'].get('rub_id')
+            user.first_name = userinfo['last_name']
+            user.last_name = userinfo['first_name']
+            user.email = userinfo['email']
+
+        elif self.session_store['new_user_src']['form'].get('source') == 'ext':
+            user.username = self.session_store['new_user_src']['form'].get('ext_email')
+            user.first_name = self.session_store['new_user_src']['form'].get('ext_first_name')
+            user.last_name = self.session_store['new_user_src']['form'].get('ext_last_name')
+            user.email = self.session_store['new_user_src']['form'].get('ext_email')
+        user.set_unusable_password()    
+        user.save()
+        return user
+            
+        
+    def finalize(self, request):
+        user = self.make_user()
+        ruser = RUBIONUser(
+            linked_user = user,
+            name_db = user.last_name,
+            first_name_db = user.first_name,
+            email_db = user.email,
+            slug = slugify('{} {}'.format(user.first_name, user.last_name)),
+            title = '{} {}'.format(user.first_name, user.last_name),
+            title_de = '{} {}'.format(user.first_name, user.last_name)
+        )
+        for key, val in self.session_store['lab_organization']['form'].items():
+            setattr(ruser, key, val)
+        for key, val in self.session_store['contact_data']['form'].items():
+            setattr(ruser, key, val)
+
+        sidata = self.session_store['safety_information']['form']
+        ruser.dosemeter = sidata['dosemeter']
+        sisnippets = []
+        for sipk in sidata['needs_safety_instructions']:
+            sisnippets.append(SafetyInstructionsSnippet.objects.get(pk = sipk))
+
+        ruser.needs_safety_instructions = sisnippets
+        workgroup = WorkGroup.objects.get(pk = self.session_store['workgroup']['form'].get('workgroup'))
+        mc = MemberContainer.objects.child_of(workgroup).first()
+
+        mc.add_child(instance = ruser)
+        ruser.save_revision(user = request.user)
+        self.success_message('Der neue Nutzer wurde erstellt.')
+        return redirect('rai_userinput_rubionuser_edit', pk= ruser.pk)
+    
 
 class RUBIONUserInactivateView(InactivateView, ExtendedRUBIONUserInformationMixin):
     template_name = 'userinput/rubionuser/rai/views/inactivate.html'
@@ -207,3 +306,86 @@ class RUBIONUserInactivateView(InactivateView, ExtendedRUBIONUserInformationMixi
                     
             return self.redirect_to_default()
                     
+
+class RUBIONUserHistoryView(HistoryView):
+    pass
+
+
+class RUBIONUserCreateBadgeView( BaseDetailView ):
+
+    def dispatch(self, request, pk):
+        if not request.is_ajax():
+            return HttpResponse(status = 500)
+        else:
+            try:
+                self.instance = RUBIONUser.objects.get(pk = pk)
+            except RUBIONUser.DoesNotExist:
+                return HttpResponse(status = 404)
+            return super().dispatch(request)
+
+    def create_badge(self):
+        if self.instance.academic_title:
+            title = self.instance.get_academic_title_display()
+        else:
+            title = None
+
+        if self.instance.labcoat_size:
+            labcoat_size = self.instance.get_labcoat_size_display()
+        else:
+            labcoat_size = None
+
+        if self.instance.overshoe_size:
+            overshoe_size = self.instance.get_overshoe_size_display()
+        else:
+            overshoe_size = None
+
+        if self.instance.entrance:
+            entrance = self.instance.get_entrance_display()
+        else:
+            entrance = None
+
+        return RUBIONBadge(
+            self.instance.first_name, 
+            self.instance.last_name,
+            self.instance.get_workgroup(),
+            title,
+            labcoat_size,
+            overshoe_size,
+            entrance
+        )
+
+        
+    def get( self, request ):
+#        response = HttpResponse(content_type='application/pdf')
+#        response['Content-Disposition'] = 'attachement; filename="badge-{}.pdf"'.format(self.instance.name)
+        badge = self.create_badge()
+        
+        from userinput.rai.documents import RubionUserBadgeDocument
+            
+        filename='badge-{}.pdf'.format(self.instance.name)
+        collection = RubionUserBadgeDocument.collection().get_obj()
+        title = RubionUserBadgeDocument.title
+        description = RubionUserBadgeDocument.description
+        key = RubionUserBadgeDocument.identifier
+        
+        file = ContentFile(badge.for_content_file())
+        doc = RAIDocument(
+            title = title,
+            collection = collection,
+            description = description,
+            uploaded_by_user = request.user,
+        )
+        doc.file.save(filename, file)
+        rel = RubionUserBadgeDocument.relation(
+            key = key,
+            doc = doc,
+            decorated_model = self.instance
+        )
+        rel.save()
+        return JsonResponse({
+            'status' : 200,
+            'content': '<a class="btn" href="{}"><span><i class="fas fa-download"></i> Dokument herunterladen</span></a>'.format(doc.file.url)
+        })
+        # return badge.get_in_responseresponse)
+
+
