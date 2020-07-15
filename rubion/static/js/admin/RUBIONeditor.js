@@ -48,6 +48,9 @@ $R.editing = {
 	    self.hasValue = function(){
 		return !(self.$inputs.ID.val().trim() === "");
 	    }
+	    self.getDelete = function(){
+		return self.$inputs.DELETE.val();
+	    }
 	    self.setDelete = function(tf){
 		if (tf === undefined){
 		    tf = true;
@@ -55,7 +58,7 @@ $R.editing = {
 		if (tf){
 		    tf = "1";
 		} else {
-		    tf = "0";
+		    tf = "";
 		}
 		self.$inputs.DELETE.val(tf);
 	    }
@@ -151,7 +154,8 @@ $R.editing = {
 		    }
 		}
 	    );
-	    
+	    // avoid auto-fill by browser
+	    self.setDelete(false)
 	}
 	return cls
     })(),
@@ -178,6 +182,7 @@ $R.editing = {
 		)
 	    }
 	    var setTotalForms = function(val){
+		console.log('Setting total forms to', val)
 		self.$config[cfg.suffixes.TOTAL_FORMS].val(val)
 	    }
 
@@ -192,7 +197,7 @@ $R.editing = {
 	    setTotalForms(self.getInitialForms());
 	    self.getNextId = function(){
 		var id = self.getTotalForms();
-		self.incTotalForms();
+//		self.incTotalForms();
 		return id;
 	    }
 	    
@@ -246,7 +251,6 @@ $R.editing = {
 		'moveUpCallback' : self.onChildMovedUp,
 		'moveDownCallback' : self.onChildMovedDown
 	    }
-
 	    
 	    self.adjustButtonState = function(){
 		var mayDelete = self.children.length > self.getMinNumForms();
@@ -272,22 +276,25 @@ $R.editing = {
 	    }
 
 	    self.add = function(){
-		// add a new sub-form 
+		// add a new sub-form
+		console.log(1)
 		var $new_elem = $(
 		    self.$config.EMPTY_FORM_TEMPLATE.html().replace(
 			    /__prefix__/g,
 			self.getNextId()
 		    )
 		).hide();
+		console.log(2)
 		self.$config.FORMS.append($new_elem);
 		// order is 1-based, thus it's a good idea to increase the total number here
+		console.log('In Add, before increasing total forms, total forms is', self.getTotalForms())
+		
 		self.incTotalForms();
 		var opts = self.inlinePanelOpts;
 		opts['order'] = self.getTotalForms();
 		self.children.push(new $R.editing.RAIInlinePanelItem( $new_elem, self.id, opts ));
 		$new_elem.show(400);
 		self.adjustButtonState();
-
 	    }
 
 
@@ -305,7 +312,10 @@ $R.editing = {
 	    // Add callback to add button
 	    $$(cfg.buttons.ADD).click(function(){
 		if (!$(this).hasClass('disabled')){
+		    console.log('add was clicked')
+		    console.log('calling add')
 		    self.add();
+		    console.log('add finished')
 		}
 	    });
 
@@ -618,11 +628,19 @@ $R.editing = {
 
 	    }
 	    return cls;
-    })(),
+	})(),
+    PillsPanelErrors : (
+	function(){
+	    var cls = function($elem){
+		
+	    }
+	    return cls;
+	}
+    )(),
 }
 
 var me = {}
-$(document).on('rubion.baseloaded',
+$(document).on('rubiontail.baseloaded',
     function(){
 	setLoadStatus(
 	    'initiiere erweiterte Editiermöglichkeiten',
@@ -636,6 +654,9 @@ $(document).on('rubion.baseloaded',
 		});
 		$('.markdown-editor').each(function(){
 		    me.baz = new $R.editing.RAIMarkdownEditor($(this));
+		})
+		$('pills-panel').each(function(){
+		    new $r.editing.PillsPanelErrors($(this))
 		})
 	    }
 	)
