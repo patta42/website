@@ -1214,8 +1214,6 @@ $.widget('raiforms.dependingfield', {
 	}
 	$elem = $elem.filter(':checked')
 	var checked = $elem.prop('checked') ? ':checked' : ':unchecked'
-	console.log('$elem', $elem, 'values', values, 'checked', checked)
-
 	if (values.indexOf($elem.val()) > -1 || values.indexOf(checked) > -1 ){
 	    
 	    $fg.addClass('required')
@@ -1622,7 +1620,7 @@ $.widget(
 		var $elems = this.options.$container.find(this.options.controlFields[count])
 		$elems.each(
 		    function(){
-			$(this).prop('disabled', !tf)
+			$(this).prop('readonly', !tf)
 			var thisId = $(this).attr('id')
 			// look for labels and add/remove .disabled
 			if (!tf){
