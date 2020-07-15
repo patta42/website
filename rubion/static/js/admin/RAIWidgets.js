@@ -1190,17 +1190,13 @@ $.widget(
 )
 $.widget('raiforms.dependingfield', {
     _create : function(){
-	// this is a weird mutli-protected json string. let's put it into a parsable form
 	var dependsObj = this.element.data('depends-on')
-// %	    .replace(/\\/g,'')
-// 	    .replace(/\"\"/g, '')
-// 	    .replace(/\"/g, '"')
-// 	    .slice(1,-1);
-//	var dependsObj = JSON.parse(dataString);
+	
 	var self = this;
-	for (item in dependsObj) {
+	for (var item in dependsObj) {
 	    var $item = $('[name='+item+']')
 	    $item.change(function(evt){
+		console.log(dependsObj, item)	
 		self._toggle($(this), dependsObj[item])
 	    }).each(
 		function(){
