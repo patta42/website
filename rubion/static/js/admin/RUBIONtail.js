@@ -1,3 +1,5 @@
+
+
 $R = {
     urlParam : function(name){
 	var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
@@ -7,6 +9,13 @@ $R = {
 	return decodeURI(results[1]) || 0;
     }
 };
+
+['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp'].forEach( 
+    function(name) { 
+        $R['is' + name] = function(obj) {
+              return toString.call(obj) == '[object ' + name + ']';
+    }; 
+});
 
 $R.generic = {
     Modal : (function(elem){
@@ -359,7 +368,7 @@ $R.help = {
 }
 
 $R.selectElementText= function(el, win) {
-    win = win || window;
+    var win = win || window;
     var doc = win.document, sel, range;
     if (win.getSelection && doc.createRange) {
         sel = win.getSelection();
@@ -375,9 +384,195 @@ $R.selectElementText= function(el, win) {
 }
 
 
+// A generic function to show a dialog
+$R.dialog = function(opts){
+    var defaults = {
+	title : 'Just a modal',
+	titleIcon : 'fas fa-info-circle',
+	titleFontColor : 'text-primary',
+	content : 'Some foo with bar',
+	saveButton : true,
+	cancelButton : true,
+	applyButton : true,
+	canCancel : true,
+	saveButtonLabel : 'Save',
+	cancelButtonLabel : 'Cancel',
+	applyButtonLabel : 'Apply',
+	onCancel : null,
+	onApply : null,
+	onSave : null
+    }
+
+    var settings = $.extend({}, defaults, opts)
+    var $dm = $('#dialogModal'),
+	$title = $('#dialogModalTitle'),
+	$header = $dm.find('.modal-header').first(),
+	$body = $dm.find('.modal-body').first(),
+	$footer = $dm.find('.modal-footer').first(),
+	$applyBtn = $('#btnApplydialogModal'),
+	$saveBtn =  $('#btnSavedialogModal'),
+	$cancelBtn = $footer.find('button[data-dismiss="modal"]').first(),
+	$closeBtn = $header.find('button[data-dismiss="modal"]').first()
+
+    // destroy any previous modal instances
+
+    if($dm.data('bs.modal') !== undefined){
+	$dm.modal('dispose')
+    }
+
+    // build content
+
+    var makeContent = function(setting, $parent){
+	if (settings[setting] != null){
+	    if ($R.isString(settings[setting])){
+		$parent.append($('<span>'+settings[setting]+'</span>'))
+	    } else {
+		$parent.append(settings[setting])
+	    }
+	}
+    }
+
+    
+    // Icon 
+    
+    if (settings['titleIcon'] != null){
+	$title.append($('<span class="mr-2"><i class="'+settings['titleIcon']+'"></i></span>'))
+    } else {
+	$title.append(settings['titleIcon'])
+    }
+    
+
+    // title
+    makeContent('title', $title)
+    makeContent('content', $body)
+    makeContent('saveButtonLabel', $saveBtn.html(''))
+    makeContent('cancelButtonLabel', $cancelBtn.html(''))
+    makeContent('applyButtonLabel', $applyBtn.html(''))
+
+    settings['saveButton'] ? $saveBtn.show() : $saveBtn.hide()
+    settings['applyButton'] ? $applyBtn.show() : $applyBtn.hide()
+    settings['cancelButton'] ? $cancelBtn.show() : $cancelBtn.hide()
+    if (settings['canCancel'] === false){
+	$cancelBtn.hide()
+	$closeBtn.hide()
+    }
+
+    $saveBtn.click(
+	function(){
+	    $dm.modal('hide')
+	    if (settings['onSave'] != null){
+		settings['onSave']()
+	    }
+	}
+    )
+    $applyBtn.click(
+	function(){
+	    $dm.modal('hide')
+	    if (settings['onApply'] != null){
+		settings['onApply']()
+	    }
+	}
+    )
+    $cancelBtn.click(
+	function(){
+	    $dm.modal('hide')
+	    if (settings['onCancel'] != null){
+		settings['onCancel']()
+	    }
+	}
+    )
+    $closeBtn.click(
+	function(){
+	    $dm.modal('hide')
+	    if (settings['onCancel'] != null){
+		settings['onCancel']()
+	    }
+	}
+    )
+    if (settings['titleFontColor']){
+	$title.removeClass('text-primary').addClass(settings['titleFontColor'])
+    }
+    
+    $dm.modal()
+}
+
+$R.infoDialog = function(title, content){
+    $R.dialog({
+	canCancel : false,
+	title : title,
+	content : content,
+	saveButton : false,
+	applyButtonLabel : 'OK'
+    })
+}
+$R.errorDialog = function(title, content){
+    $R.dialog({
+	canCancel : false,
+	title : title,
+	content : content,
+	saveButton : false,
+	applyButtonLabel : 'OK',
+	titleFontColor : 'text-danger',
+	titleIcon : 'fas fa-exclamation-triangle'
+    })
+}
+
+$R.okCancelDialog = function(title, content, onOK, onCancel){
+    $R.dialog({
+	title:title,
+	content:content,
+	onApply: onOK,
+	onCancel : onCancel,
+	titleIcon: 'fas fa-question-circle',
+	applyButtonLabel : 'OK',
+	cancelButtonLabel : 'Abbrechen',
+	saveButton: false
+    })
+}
+$R.observeDOM = (function(){
+  var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+
+  return function( obj, callback ){
+    if( !obj || obj.nodeType !== 1 ) return; // validation
+
+    if( MutationObserver ){
+      // define a new observer
+      var obs = new MutationObserver(function(mutations, observer){
+          callback(mutations);
+      })
+      // have the observer observe foo for changes in children
+      obs.observe( obj, { childList:true, subtree:true });
+    }
+    
+    else if( window.addEventListener ){
+      obj.addEventListener('DOMNodeInserted', callback, false);
+      obj.addEventListener('DOMNodeRemoved', callback, false);
+    }
+  }
+})();
+
+$R._domInsertionCallbacks = [];
+
+$R.addDomInsertionCallback = function(fnc){
+    $R._domInsertionCallbacks.push(fnc)
+}
 $(document).on(
     'rubiontail.baseloaded',
     function(){
+	var bodyChanged = function(m){ 
+	    var addedNodes = [], removedNodes = [];
+
+	    m.forEach(record => record.addedNodes.length & addedNodes.push(...record.addedNodes))
+	    for (var count = 0; count < $R._domInsertionCallbacks.length; count++){
+		addedNodes.forEach( elem => $R._domInsertionCallbacks[count](elem))
+	    }
+	    //m.forEach(record => record.removedNodes.length & removedNodes.push(...record.removedNodes))
+	    
+//	    console.clear();
+//	    console.log('Added:', addedNodes, 'Removed:', removedNodes);
+	}
+	var body = document.getElementById('body')
+	$R.observeDOM(body, bodyChanged)
 	window.setLoadStatus(
 	    'Initiiere Hilfesystem', 
 	    function(){
