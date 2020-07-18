@@ -19,6 +19,10 @@ body {
     --list-border-color:var(--gray125);
     
     --input-border-color:#ced4da;
+    --danger-color:#dc3545;
+    --danger-background-color:#f8d7da;
+    --danger-border-color:#f5c6cb;
+		       
 }
 
 .feather {
@@ -673,6 +677,9 @@ fieldset fieldset.form-group legend{
 #main_form fieldset fieldset legend{
     margin-top:0;
 }
+
+/* triangles on left side of fieldset fields */ 
+
 fieldset table tbody tr td span.fake-label:before,
 .rai-comment h6.label:before,
 .inline-panel-all-options h6.label:before,
@@ -700,6 +707,9 @@ fieldset fieldset.form-group legend:before
     margin-left:-1px;
     top:15px;
 }
+
+/* switch off triangles for these */
+#main_form .form-row-wrapper.errors-True .form-row .alert.alert-danger:before,
 .inline-panel-all-options .form-group label:not(.custom-control-label):before,
 .alert-danger .form-group label:not(.custom-control-label):before,
 .alert-danger .form-group.required label:not(.custom-control-label):before,
@@ -983,6 +993,29 @@ fieldset .inline-panel .inline-child {
     flex-direction: row-reverse;
 }
 
+/* paddings and margins for inline-panel */
+#main_form .pt-2 fieldset.inline-panel{
+    margin-left: 0rem;
+}
+#main_form .pt-2 fieldset.inline-panel div.add{
+    margin-left:1.25rem;
+}
+#main_form .pt-2 fieldset.inline-panel .inline-panel-form-content .form-row-wrapper{
+    margin-top:0;
+}
+
+/* errors in fieldrow-panel are indicated by its heading */
+
+.form-row-wrapper.errors-True h6.label{
+    color:var(--danger-color);
+}
+.form-row-wrapper.errors-True h6.label:before{
+    border-left-color:var(--danger-color);
+}
+
+#main_form .form-row-wrapper.errors-True .alert-danger{
+    margin-left:0;
+}
 ul.select-multiple-checkboxes{
     list-style-type:none;
 }
@@ -1394,4 +1427,35 @@ input[type="text"].input-language-german
 input[type="text"].input-language-english,
 input[type="text"].input-language-englisch{
     background: url("data:image/svg+xml, %3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2060%2030%22%20width%3D%221200%22%20height%3D%22600%22%3E%0A%3CclipPath%20id%3D%22s%22%3E%0A%09%3Cpath%20d%3D%22M0%2C0%20v30%20h60%20v-30%20z%22%2F%3E%0A%3C%2FclipPath%3E%0A%3CclipPath%20id%3D%22t%22%3E%0A%09%3Cpath%20d%3D%22M30%2C15%20h30%20v15%20z%20v15%20h-30%20z%20h-30%20v-15%20z%20v-15%20h30%20z%22%2F%3E%0A%3C%2FclipPath%3E%0A%3Cg%20clip-path%3D%22url%28%23s%29%22%3E%0A%09%3Cpath%20d%3D%22M0%2C0%20v30%20h60%20v-30%20z%22%20fill%3D%22%23012169%22%2F%3E%0A%09%3Cpath%20d%3D%22M0%2C0%20L60%2C30%20M60%2C0%20L0%2C30%22%20stroke%3D%22%23fff%22%20stroke-width%3D%226%22%2F%3E%0A%09%3Cpath%20d%3D%22M0%2C0%20L60%2C30%20M60%2C0%20L0%2C30%22%20clip-path%3D%22url%28%23t%29%22%20stroke%3D%22%23C8102E%22%20stroke-width%3D%224%22%2F%3E%0A%09%3Cpath%20d%3D%22M30%2C0%20v30%20M0%2C15%20h60%22%20stroke%3D%22%23fff%22%20stroke-width%3D%2210%22%2F%3E%0A%09%3Cpath%20d%3D%22M30%2C0%20v30%20M0%2C15%20h60%22%20stroke%3D%22%23C8102E%22%20stroke-width%3D%226%22%2F%3E%0A%3C%2Fg%3E%0A%3C%2Fsvg%3E") no-repeat left .75rem center/1.25rem 1.25rem;
+}
+
+.panel-grid-wrapper .row{
+    min-height:14rem;
+    margin-bottom:2rem;
+}
+
+.btn-xs{
+    padding:.0125rem .025rem;
+    font-size:.875rem;
+    line-height:1.5;
+    border-radius:.2rem;
+}
+.grid-panel .card-header .panel-menu button.btn{
+    color:inherit;
+}
+
+table.attendee-list tbody td{
+    padding: .5rem 0;
+}
+
+table.attendee-list tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+table.attendee-list tbody td h6{
+    margin-bottom:.125rem
+}
+
+button .additional-form-data{
+    display:none;
 }
