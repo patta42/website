@@ -73,15 +73,18 @@ class RAIFieldRowPanel(RAIBaseFormEditHandler):
     object_template = "rai/edit_handlers/field-row-panel_as-object.html"
     field_template = "rai/edit_handlers/field-row-panel_as-field.html"
 
-    def render_as_object(self):
-        return self._render(self.object_template)
-    def render_as_field(self):
+    def check_for_errors(self):
         self.children_have_errors = False
         for child in self.children:
             if child.bound_field.errors:
                 self.children_have_errors = True
                 break
-            
+        
+    def render_as_object(self):
+        self.check_for_errors()
+        return self._render(self.object_template)
+    def render_as_field(self):
+        self.check_for_errors()
         return self._render(self.field_template)
     
 class RAICollapsablePanel(RAIBaseFormEditHandler):
