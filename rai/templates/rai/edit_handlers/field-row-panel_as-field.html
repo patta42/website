@@ -1,0 +1,8 @@
+<div class="form-row-wrapper errors-{{self.children_have_errors}}" data-rubion-render-info-field-type="{{self.panel_type}}">
+  <h6 class="label">{{self.heading}}</h6>
+  <div class="form-row">
+    {% for child in self.children %}
+    {{ child.render_as_field }}
+    {% endfor %}
+  </div>
+</div>
