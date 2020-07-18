@@ -56,6 +56,14 @@ class MultiFormCreateView(CreateView):
             'page_menu' : self.get_page_menu()
         }
         return context
+
+    def prepare_cleaned_data(self, data, prefix):
+        # Use this to change the form.cleaned_data if it cannot be serialized
+        return data
+
+    def prepare_formsets(self, formsets, prefix):
+        # use this to prepare the formsets for serialization
+        return formsets
     
     def post(self, request, *args, **kwargs):
         session_key = 'multiform_create_{}'.format(request.user.pk)
@@ -79,11 +87,13 @@ class MultiFormCreateView(CreateView):
             if hasattr(form, 'formsets'):
                 for key, formset in form.formsets.items():
                     formsets[key] = [subform.cleaned_data for subform in formset.forms]
+
+            current_prefix = self.edit_handler.get_current_prefix()
             self.session_store.update({
                 'expires': expires,
-                self.edit_handler.get_current_prefix(): {
-                    'form' : form.cleaned_data,
-                    'formsets' : formsets
+                current_prefix : {
+                    'form' : self.prepare_cleaned_data(form.cleaned_data, current_prefix),
+                    'formsets' : self.prepare_formsets(formsets, current_prefix)
                 }
                 
             })
