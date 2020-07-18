@@ -13,7 +13,7 @@ from django import forms
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.formsets import DELETION_FIELD_NAME, ORDERING_FIELD_NAME
 from django.forms.models import fields_for_model
-from django.template.loaderg import render_to_string
+from django.template.loader import render_to_string
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 
@@ -21,6 +21,7 @@ import functools
 
 #from .utils import extract_panel_definitions_from_model_class
 
+import json
 import random
 from rai.forms import formfield_for_dbfield, RAIAdminModelForm, rai_modelform_factory
 
@@ -75,6 +76,12 @@ class RAIFieldRowPanel(RAIBaseFormEditHandler):
     def render_as_object(self):
         return self._render(self.object_template)
     def render_as_field(self):
+        self.children_have_errors = False
+        for child in self.children:
+            if child.bound_field.errors:
+                self.children_have_errors = True
+                break
+            
         return self._render(self.field_template)
     
 class RAICollapsablePanel(RAIBaseFormEditHandler):
@@ -117,8 +124,33 @@ class RAICollectionPanel(RAIBaseFormEditHandler):
     """
     A collection panel is a panel without any sorrounding HTML introduced by 
     the panel. Children are rendered as fields.
+
+    Exception is if "depends on" is set. Then, a <div> surrounds the content 
+    which can be hidden by JS.   
     """
+
     template = 'rai/edit_handlers/collection-panel.html'
+    
+    def __init__(self, *args, **kwargs):
+        self.depends_on = kwargs.pop('depends_on', None)
+        super().__init__(*args, **kwargs)
+
+    def clone_kwargs(self):
+        kwargs = super().clone_kwargs()
+        kwargs['depends_on'] = self.depends_on
+        return kwargs
+
+    def render(self):
+        return render_to_string(
+            self.template,
+            {
+                'self' : self,
+                'depends_on' : json.dumps(self.depends_on) if self.depends_on else None
+            }
+        )
+
+    
+    
     
 
 class RAIPillsPanel(RAIBaseFormEditHandler):
@@ -218,8 +250,10 @@ class RAIMultiFieldPanel(RAIBaseCompositeEditHandler):
 
 class RAIInlinePanel(RAIEditHandler):
     is_collapsable = True
-    def __init__(self, relation_name, panels=None, heading='', label='',
-                 min_num=None, max_num=None, show_all_options = False, *args, **kwargs):
+    def __init__(
+            self, relation_name, panels=None, heading='', label='',
+            min_num=None, max_num=None, show_all_options = False,
+            add_button_label = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.relation_name = relation_name
         self.panels = panels
@@ -228,7 +262,7 @@ class RAIInlinePanel(RAIEditHandler):
         self.min_num = min_num
         self.max_num = max_num
         self.show_all_options = show_all_options
-
+        self.add_button_label = add_button_label
     def clone_kwargs(self):
         kwargs = super().clone_kwargs()
         kwargs.update(
@@ -237,7 +271,8 @@ class RAIInlinePanel(RAIEditHandler):
             label=self.label,
             min_num=self.min_num,
             max_num=self.max_num,
-            show_all_options = self.show_all_options
+            show_all_options = self.show_all_options,
+            add_button_label = self.add_button_label 
         )
         return kwargs
 
@@ -334,6 +369,7 @@ class RAIInlinePanel(RAIEditHandler):
         formset = render_to_string(self.template, {
             'self': self,
             'can_order': self.formset.can_order,
+            'can_delete' : True
         })
         return formset
 
@@ -356,6 +392,7 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
         self.name = name
         self.query_callback = query_callback
         self.panels = panels
+        self.long_heading = kwargs.pop('long_heading', None)
         self.can_order = kwargs.pop('can_order', False)
         self.allow_add = kwargs.pop('allow_add', None)
         self.can_delete = kwargs.pop('can_delete', False)
@@ -544,7 +581,11 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
     def clone_kwargs(self):
         kwargs = super().clone_kwargs()
         kwargs.update(self.get_formset_kwargs())
-        kwargs.update({'allow_add' : self.allow_add})
+        kwargs.update({
+            'allow_add' : self.allow_add,
+            'long_heading' : self.long_heading
+        })
+        
         return kwargs
 
     def get_formset_kwargs(self):
