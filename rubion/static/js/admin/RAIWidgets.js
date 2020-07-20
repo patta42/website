@@ -701,7 +701,10 @@ $.widget(
 	    this.$initialForms = $$('-INITIAL_FORMS')
 	    var $template = $(this.$formTemplate.html()),
 		$options = $template.find('select').first().find('option'),
-		$addBtn = $$('-add').parent().hide()
+		$addBtn = $$('-add').parent().hide(),
+		fieldName = $template.find('select').first().attr('name')
+	    
+	    
 	    
 	    this._totalForms(this.$initialForms.val())
 	    this.$wrapper = $$('-FORMS').css({
@@ -724,7 +727,23 @@ $.widget(
 		$(this).data('options-count', count)
 		count += 1;
 	    })
-	    
+	    var totalForms = this._totalForms()
+	    for (count = 0; count < totalForms; count++){
+		var $select = $('#id_'+fieldName.replace(/__prefix__/g, count)),
+		    $input = this.$list.find('input[value="'+$select.val()+'"]').first(),
+		    $li = $input.parents('li').first(),
+		    $selPar = $select.parents('.form-group'),
+		    $siblings = $selPar.siblings('.form-group')
+		$input.prop('checked', true).data('was-initial', count)
+		// display additional values
+		if ($siblings.length > 0){
+		    var $addInp = $('<div />')
+			.addClass('additional-inputs')
+			.appendTo($li)
+		    $siblings.appendTo($addInp)
+		    
+		}
+	    }
 	},
 	
 	_totalForms : function(val){
@@ -747,6 +766,7 @@ $.widget(
 	},
 	_addOption: function(elem, count){
 	    var self = this
+
 	    $elem = $(elem);
 	    this.$list.append(
 		$('<li />')
@@ -756,9 +776,12 @@ $.widget(
 		    	$('<div>')
 		    	    .addClass('custom-control custom-checkbox checked-indicator mr-2')
 		    	    .append(
-		    		$('<input type="checkbox" />')
+		    		$(
+				    '<input type="checkbox" />'
+				)
 		    		    .addClass('custom-control-input')
 				    .data('options-count', count)
+				    .data('was-initial', -1)
 		    		    .attr('id', 'cbfor_'+self.id+'_'+$elem.val())
 				    .val($elem.val())
 		    		    .change(
@@ -766,8 +789,7 @@ $.widget(
 		    			    self._toggle($(this))
 		    			}
 		    		    )
-				    
-		    	    )
+			    )
 		    	    .append(
 		    		$('<label />')
 		    		    .addClass('custom-control-label')
@@ -782,36 +804,91 @@ $.widget(
 	    
 	},
 	_toggle : function($elem){
-	    if ($elem.prop('checked')){
-		// add new form
-		var $form = $(
-		    this.$formTemplate.html().replace(/__prefix__/g, this._totalForms())
-		),
-		    $li = $elem.parents('.list-group-item').first(),
-		    // move first select to invisible wrapper
-		    $select = $form
-		    .find('select')
-		    .first()
-		    .parents('.form-group')
-		    .appendTo(this.$wrapper),
-		    $additionalInputs = $('<div />').addClass('additional-inputs').hide(),
-		    $children = $form.find('.form-group').appendTo($additionalInputs)
-
-				    
-		$select.find('option[value="'+$elem.val()+'"]').prop('selected', true)
-		$form.find('input[name="'+this.id+'-'+this._totalForms()+'-ORDER"]')
-		    .val(0)
-		    .appendTo(this.$wrapper)
-		    
-		if ($children.length > 0){
-		    
-		    $additionalInputs.appendTo($li).show(
-			200,
+	    if ($elem.data('was-initial') >= 0){
+		// in this case, toggle the DELETE hidden form
+		console.log('Changing initial form', $elem.data('was-initial') )
+		$('#id_'+this.id+'-'+$elem.data('was-initial')+'-DELETE')
+		    .val(
+			$elem.prop('checked') ? '' : '1'
 		    )
-		}
-		this._incTotalForms()
+		var $li = $elem.parents('li').first(),
+		    $addInp = $li.find('.additional-inputs')
+		$elem.prop('checked') ? $addInp.show(200) : $addInp.hide(200)
 	    } else {
-		// remove new form
+		var $li = $elem.parents('.list-group-item').first()
+
+		if ($elem.prop('checked')){
+		    // add new form
+		    var $form = $(
+			this.$formTemplate.html().replace(/__prefix__/g, this._totalForms())
+		    ),
+			wrapperId = 'id_'+this.id+'-'+this._totalForms()+'-WRAPPER',
+			$formWrapper = $('<div />')
+			.attr('id', wrapperId),
+			// move first select to invisible wrapper
+			$select = $form
+			.find('select')
+			.first()
+			.parents('.form-group')
+			.appendTo($formWrapper),
+			$additionalInputs = $('<div />').addClass('additional-inputs').hide(),
+			$children = $form.find('.form-group').appendTo($additionalInputs)
+		    $formWrapper.appendTo(this.$wrapper)
+		    $elem.attr('data-children-counter', this._totalForms())
+		    
+
+		    $form.find('input[name="'+this.id+'-'+this._totalForms()+'-ORDER"]')
+			.val(0)
+			.appendTo($formWrapper)
+		    $select.find('option[value="'+$elem.val()+'"]').first().prop('selected', true)		    
+		    if ($children.length > 0){
+			
+			$additionalInputs.appendTo($li).show(
+			    200,
+			)
+		    }
+		    this._incTotalForms()
+		} else {
+		    // remove new form
+		    var $addInp = $li.find('div.additional-inputs'),
+			oldTotalForms = this._totalForms(),
+			removedChildCount = $elem.data('children-counter')
+
+		    $('#id_'+this.id+'-'+removedChildCount+'-WRAPPER').remove()
+		    
+		    
+		    $addInp.hide(200, function(){$addInp.remove()})
+		    var self = this
+		    for (var count = removedChildCount + 1; count < oldTotalForms; count++){
+			// decrease all numbers in id, name, for, etc...
+			var $formWrapper = $('#id_'+this.id+'-'+count+'-WRAPPER')
+			var attrs = ['id', 'for', 'name']
+			var $input = this.element.find('[data-children-counter="'+count+'"]').first()
+			var $additional = $input.parents('li').first().find('.additional-inputs')
+
+			var $containers = $formWrapper.add($additional)
+			for (var acount = 0; acount < attrs.length; acount++){
+			    var attr = attrs[acount]
+			    $containers.find('['+attr+'*="'+this.id+'-'+count+'-"]').each(
+				function(){
+				    $(this).attr(
+					attr,
+					$(this).attr(attr).replace(
+					    self.id+'-'+count+'-',
+					    self.id+'-'+(count-1)+'-'
+					)
+				    )
+				}
+			    )
+			    
+			}
+			$formWrapper.attr('id', 'id_'+this.id+'-'+(count-1)+'-WRAPPER');
+			$input.attr('data-children-counter', count-1)
+			
+			
+		    }
+		    this._decTotalForms()
+		}
 	    }
 	    
 	    
@@ -986,6 +1063,11 @@ $R.Widgets = {
 	$('input[type="checkbox"].check-all').checkall()
 	$('table thead th.select-shown-rows').selectshownrows()
 	$('.attendee-list').attendeelist()
+	$('select.nuclide-select').nuclideselect()
+	$R.addDomInsertionCallback(function(elem){
+	    $(elem).find('select.nuclide-select').nuclideselect()
+	})
+
 //	$('.rai-comment a[href$="#genericModal"').genericmodal()
     },
 
@@ -1196,7 +1278,6 @@ $.widget('raiforms.dependingfield', {
 	for (var item in dependsObj) {
 	    var $item = $('[name='+item+']')
 	    $item.change(function(evt){
-		console.log(dependsObj, item)	
 		self._toggle($(this), dependsObj[item])
 	    }).each(
 		function(){
@@ -1596,7 +1677,6 @@ $.widget(
 	    inputName : 'allow_edit'
 	},
 	_create : function(){
-	    console.log('Creating editingcontroller', this.options.count)
 	    var parentContainerSelector = this.element.data('editing-controller-parent-container')
 	    if ( parentContainerSelector !== undefined)
 	    {
@@ -1763,7 +1843,6 @@ $.widget(
 	    )
 		.done(function(data){
 		    if (data.status == '200'){
-			console.log('success')
 
 			$newli = $('<li />')
 			    .addClass('file-field list-group-item')
@@ -3053,6 +3132,88 @@ $.widget(
 	    )
 
 	    return this.$rows.filter(':visible').filter('[data-checked="true"]')
+	}
+    }
+)
+$.widget(
+    'raiwidgets.nuclideselect',
+    {
+	_create : function(){
+	    this.addNuclideOption = $('<option value="+">Nuklid hinzufügen...</option>').appendTo(this.element)
+	    var self = this
+	    this.element.change(
+		function(){
+		    if ($(this).val() == '+'){
+			self._showNuclideModal()
+		    }
+		}
+	    )
+	    // this.$modal = $('#genericModal')
+	    // this.$modalHeader = this.$modal.find('.modal-header').first()
+	    // this.$modalBody = this.$modal.find('.modal-body').first()
+	    this.addURL = this.element.data('add-nuclide-url')
+	    // this.$saveBtn = $('#btnSavegenericModal')
+	    
+	},
+	_showNuclideModal : function(){
+	    var self = this
+	    this.$modal = $R.genericModal(
+		{
+		    title :          'Nuklid hinzufügen',
+		    cancelBtn :      true,
+		    saveBtn :        true,
+		    applyBtn :       false,
+		    saveLabel :      'Speichern',
+		    cancelLabel :    'Abbrechen',
+		    saveCallback :   function(){ self._saveNuclide() },
+		    cancelCallback : function(){
+			var $emptyOpt = self.element.find('option[value=""]'),
+			    $firstOpt = self.element.find('option').first()
+			if ($emptyOpt.length > 0){
+			    $emptyOpt.prop('selected', true)
+			} else {
+			    $firstOpt.prop('selected', true)
+			}
+			
+		    }
+		}
+	    )
+	    $R.get(this.addURL).fail(
+
+	    ).done(
+		function(data){
+		    self.$modal.setBody('<form id="newNuclideForm">'+data['html']+'</form>')
+		    self.$modal.show()
+		}
+	    )
+
+	},
+	_saveNuclide : function(){
+	    var self = this
+	    $R.post(
+		this.addURL,
+		{
+		    data : $('#newNuclideForm').serialize()
+		}
+	    ).done(
+		function(data){
+		    console.log(data)
+		    if (data['errors'] == true){
+			self.$modal.setBody('<form id="newNuclideForm">'+data['html']+'</form>')
+		    } else {
+			$('.nuclide-select').each(
+			    function(){
+				var $addOpt = $(this).find('option[value="+"]').first() 
+				$('<option />').text(data['nuclide']).val(data['pk']).insertBefore($addOpt)
+			    }
+			)
+			self.element.find('option[value="'+data['pk']+'"]').prop('selected', true)
+			self.$modal.dismiss()
+			
+		    }
+		    
+		}
+	    )
 	}
     }
 )
