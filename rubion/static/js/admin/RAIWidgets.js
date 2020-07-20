@@ -1700,14 +1700,35 @@ $.widget(
 		var $elems = this.options.$container.find(this.options.controlFields[count])
 		$elems.each(
 		    function(){
-			$(this).prop('readonly', !tf)
 			var thisId = $(this).attr('id')
+			if(this.tagName == 'SELECT'){
+			    if (tf) {
+				// enabled editing
+				$(this).prop('disabled', false)
+				$('#'+thisId+'-hidden').remove()
+			    } else {
+				// disabled editing
+				var $hInp = $('<input type="hidden" />')
+				$hInp.attr('name', $(this).attr('name'))
+				$hInp.attr('id', thisId+'-hidden')
+				$hInp.val($(this).val())
+				$hInp.insertAfter($(this))
+				$(this).prop('disabled', true)
+			    }
+			    console.log('Found a select', $(this).val())
+			} else {
+			    $(this).prop('readonly', !tf)
+			}
+			
 			// look for labels and add/remove .disabled
 			if (!tf){
 			    $('label[for="'+thisId+'"]').addClass('disabled')
+			    $(this).addClass('disabled')
 			} else { 
 			    $('label[for="'+thisId+'"]').removeClass('disabled')
+			    $(this).removeClass('disabled')
 			}
+			
 		    }
 		)
 	    }
