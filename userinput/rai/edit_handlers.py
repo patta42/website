@@ -2,7 +2,8 @@
 from .definitions import RUBIONUserInfoPanel, WorkgroupInformationPanel
 from .forms import (
     GroupLeaderForm,  WorkgroupStatusForm, RUBIONUserSourceForm,
-    RUBIONUserWorkgroupForm
+    RUBIONUserWorkgroupForm, ProjectWorkgroupForm, ProjectMethodsForm,
+    ProjectStatusForm, ProjectNuclidesForm
 )
 from userinput.models import RUBIONUser, Project
 
@@ -11,7 +12,8 @@ from rai.widgets import (
     RAIRadioInput, RAISelectMultiple, RAISelect,
     RAIRadioSelect, RAISelectMultipleSelectionLists,
     RAIExtendedFileInput, RAISwitchInput,
-    RAISelectMultipleCheckboxes
+    RAISelectMultipleCheckboxes, RAITextarea,
+    RAINuclideSelect
 )
 from rai.comments.edit_handlers import CommentPanel
 
@@ -47,15 +49,15 @@ project_edit_handler = eh.RAIPillsPanel([
     ], heading = 'Nutzer-Angaben'),#, is_expanded = False),
     eh.RAIInlinePanel('related_methods', panels=[
         eh.RAIFieldPanel('page')
-    ], heading="benutzte Methoden"),
+    ], heading="benutzte Methoden", show_all_options = True),
     eh.RAIInlinePanel('related_nuclides', panels=[
-        eh.RAIMultiFieldPanel([
-            eh.RAIFieldPanel('room', classname = 'col-md-2'),
-            eh.RAIFieldPanel('snippet', classname = 'col-md-2', widget = RAISelect),
-            eh.RAIFieldPanel('max_order', classname = 'col-md-4'),
-            eh.RAIFieldPanel('amount_per_experiment', classname = 'col-md-4'),
-        ],heading = 'Nuclide spec', classname = 'form-row')
-    ], heading='Benutzte Nuklide'),
+        eh.RAIFieldRowPanel([
+            eh.RAIFieldPanel('snippet', classname = 'col-md-12', widget = RAINuclideSelect),
+            eh.RAIFieldPanel('room', classname = 'col-md-4'),
+            eh.RAIFieldPanel('max_order', classname = 'col-md-4', label="Maximale Bestellmenge", help_text="Angabe in MBq"),
+            eh.RAIFieldPanel('amount_per_experiment', classname = 'col-md-4', label="Menge pro Experiment", help_text="Angabe in MBq"),
+        ],heading = 'Nuklidangaben',)
+    ], heading='Benutzte Nuklide', add_button_label = 'Weiteres Nuklid hinzufügen'),
     
     eh.RAIUserDataPanel([
         eh.RAIMultiFieldPanel([
@@ -271,6 +273,7 @@ rubionuser_edit_handler = eh.RAIPillsPanel([
     CommentPanel(heading = 'Kommentare')
     
 ])
+
 rubionuser_create_handler = RAIMultiFormEditHandler([
     RAISubFormEditHandler(
         'workgroup',
@@ -354,4 +357,163 @@ rubionuser_create_handler = RAIMultiFormEditHandler([
         heading = 'Labor-Organisation'
     )
     
+])
+
+project_create_handler = RAIMultiFormEditHandler([
+    RAISubFormEditHandler(
+        'workgroup',
+        [
+            eh.RAIFieldPanel('workgroup'),
+        ],
+        heading = 'Arbeitsgruppe auswählen',
+        formclass = ProjectWorkgroupForm
+    ),
+    RAIModelMultiFormEditHandler(
+        'info_german',
+        [
+            eh.RAICollectionPanel([
+                eh.RAIFieldPanel('title_de',label="Titel des Projekts auf deutsch"),
+                eh.RAIFieldPanel('summary_de', label="Zusammenfassung des Projekts"),
+            ])
+        ],
+        heading = 'Projektinformationen auf deutsch',
+    ),
+    RAIModelMultiFormEditHandler(
+        'info_english',
+        [
+            eh.RAICollectionPanel([
+                eh.RAIFieldPanel('title',label="Titel des Projekts auf englisch"),
+                eh.RAIFieldPanel('summary_en', label="Zusammenfassung des Projekts (in englisch)"),
+            ])
+        ],
+        heading = 'Projektinformationen auf englisch',
+        ),
+    RAISubFormEditHandler(
+        'methods',
+        [
+            eh.RAICollectionPanel([
+                eh.RAIFieldPanel('methods', label="Genutzte Methoden"),
+            ])
+        ],
+        heading = 'Angaben zu den verwendeten Methoden',
+        formclass = ProjectMethodsForm
+    ),
+    RAIModelMultiFormEditHandler(
+        'safety_information',
+        [
+            eh.RAICollectionPanel([
+                eh.RAIFieldRowPanel([
+                    eh.RAIFieldPanel(
+                        'uses_gmos',
+                        widget=RAISwitchInput,
+                        label="Beinhaltet das Projekt die Arbeit mit genetisch veränderten Organismen?",
+                        help_text=" ",
+                        classname="col-md-12"
+                    ),
+                    RAIDependingFieldPanel(
+                        'gmo_info',
+                        widget = RAITextarea,
+                        label="Angaben zu den verwendeten genetisch modifizierten Organismen",
+                        help_text = " ",
+                        classname="col-md-12",
+                        depends_on = {
+                            'uses_gmos': [':checked']
+                        }
+                    ),
+                ], heading="Genetisch modifizierte Organismen"),
+                eh.RAIFieldRowPanel([
+                    eh.RAIFieldPanel(
+                        'uses_chemicals',
+                        classname="col-md-12",
+                        widget=RAISwitchInput,
+                        label = "Werden in dem Projekt Chemikalien verwendet?",
+                        help_text = ' '
+                    ),
+                    RAIDependingFieldPanel(
+                        'chemicals_info',
+                        classname="col-md-12",
+                        widget = RAITextarea,
+                        label = "Angaben zu den verwendeten Chemikalien",
+                        help_text = "Menge der jeweiligen Chemikalie, Sicherheitsvorschriften, etc.",
+                        depends_on = {
+                            'uses_chemicals': [':checked']
+                        }
+                    ),
+                ],  heading="Chemikalien"),
+                eh.RAIFieldRowPanel([
+                    eh.RAIFieldPanel(
+                        'uses_hazardous_substances',
+                        classname="col-md-12",
+                        widget=RAISwitchInput,
+                        label = "Werden im Projekt Gefahrstoffe verwendet?",
+                        help_text = " "
+                    ),
+                    RAIDependingFieldPanel(
+                        'hazardous_info',
+                        classname="col-md-12",
+                        widget = RAITextarea,
+                        label="Angaben zu den verwendeten Gefahrstoffen",
+                        help_text= "Menge, Sicherheitsmaßnahmen, etc.",
+                        depends_on = {
+                            'uses_hazardous_substances': [':checked']
+                        }
+                    ),
+                ], heading="Gefahrstoffe"),
+                eh.RAIFieldRowPanel([
+                    eh.RAIFieldPanel(
+                        'biological_agents',
+                        classname="col-md-12",
+                        widget=RAISwitchInput,
+                        label="Beinhaltet das Projekt Arbeiten, die unter die Biostoffverordnung fallen?",
+                        help_text = " "
+                    ),
+                    RAIDependingFieldPanel(
+                        'bio_info',
+                        classname="col-md-12",
+                        widget = RAITextarea,
+                        label = "Angaben zu den Arbeiten unter Biostoffverordnung",
+                        help_text = ' ',
+                        depends_on = {
+                            'biological_agents': [':checked']
+                        }
+                    ),
+                ], heading="Biostoffverordnung")
+            ])
+    ], heading = 'Angaben zu Gefahrstoffen'),
+    RAIModelMultiFormEditHandler(
+        'related_nuclides',
+        [
+            eh.RAICollectionPanel([
+                eh.RAIInlinePanel(
+                    'related_nuclides',
+                    [
+                        eh.RAIFieldRowPanel([
+                            eh.RAIFieldPanel('snippet', classname="col-md-12", widget = RAINuclideSelect),
+                            eh.RAIFieldPanel('room', classname="col-md-4"),
+                            eh.RAIFieldPanel('max_order', classname = 'col-md-4', label="Maximale Bestellmenge", help_text="Angabe in MBq"),
+                            eh.RAIFieldPanel('amount_per_experiment', classname = 'col-md-4', label="Menge pro Experiment", help_text="Angabe in MBq"),
+                        ],
+                        heading = "Angaben zum Nuklid",
+                        )
+                    ],
+                    add_button_label = 'Weiteres Nuklid hinzufügen'
+                )
+            ]),
+        ],
+        heading = "Im Projekt genutzte Nuklide",
+        formclass = ProjectNuclidesForm            
+
+    ),
+    RAISubFormEditHandler(
+        'status',
+        [
+            eh.RAICollectionPanel([
+                eh.RAIFieldPanel('status'),
+                eh.RAIFieldPanel('public')
+            ])
+        ],
+        heading = 'Angaben zum Projektstatus',
+        formclass = ProjectStatusForm
+    ),
+
 ])
