@@ -556,6 +556,122 @@ $R._domInsertionCallbacks = [];
 $R.addDomInsertionCallback = function(fnc){
     $R._domInsertionCallbacks.push(fnc)
 }
+
+$R.genericModal = function(opts){
+    
+    var defaults = {
+	body :             '',
+	title :            'Generic modal',
+	saveBtn :          true,
+	cancelBtn :        true,
+	applyBtn :         true,
+	saveLabel :        'Speichern',
+	cancelLabel :      'Abbrechen',
+	applyLabel :       'Anwenden',
+	saveCallback :     null,
+	applyCallback :    null,
+	cancelCallback :   null,
+	closeButton :      false,
+	size :             ''
+    }
+    if (opts === undefined){
+	var opts = {};
+    }
+    console.log(opts)
+    var settings =    $.extend({}, defaults, opts),
+	id =          'genericModal',
+	$modal =      $('#genericModal'),
+	$modalBody =  $modal.find('.modal-body').first(),
+	$modalTitle = $modal.find('.modal-title').first(),
+	btns = {
+	    $cancelBtn :  $('#btnCancel'+id),
+	    $saveBtn :    $('#btnSave'+id),
+	    $applyBtn :   $('#btnApply'+id)
+	}
+
+    var api = {
+	setBody : function(html){
+	    $modalBody.html(html)
+	},
+	setTitle : function(html){
+	    $modalTitle.html(html)
+	},
+	show : function(){
+	    $modal.modal('show')
+	
+	},
+	hide : function(){
+	    $modal.modal('hide')
+	},
+	dismiss : function(){
+	    $modal.on('hidden.bs.modal', function(){
+		$modalTitle.html('')
+		$modalBody.html('')
+		btns['$saveBtn'].off('click')
+		btns['$cancelBtn'].off('click')
+		btns['$applyBtn'].off('click')
+	    })
+	    $modal.modal('hide')
+	}
+    }
+
+    var init = function(){
+	console.log(api,'init')
+	// initialize modal
+	if($modal.data('bs.modal') === undefined){
+	    $modal.modal()
+	}
+
+	// fill with content
+	api.setBody(settings['body'])
+	api.setTitle(settings['title'])
+
+	// init buttons
+	//  -- unregister callbacks first 
+
+	for (var btn of ['save', 'cancel', 'apply']){
+	    var $btn = btns['$'+btn+'Btn']
+	    $btn.off()
+	    $btn.data('btn-type', btn)
+	    if (settings[btn+'Btn']){
+		$btn.show()
+		$btn.html(settings[btn+'Label'])
+		
+		if (settings[btn+'Callback'] !== null){
+		    $btn.click(settings[btn+'Callback'])
+		}
+	    } else {
+		$btn.hide()
+	    }
+	    
+	}
+	
+
+	
+    }
+    init()
+
+    return api
+
+}
+
+$R.message = function(type, content, duration){
+    if (duration === undefined){
+	duration = 2000
+    }
+    var $container = $('#alertContainer'),
+	$msg = $('<div class="alert">'+content+'</div>')
+	.addClass('alert-'+type)
+	.hide()
+	.appendTo($container)
+	.show(200)
+    window.setTimeout(
+	function(){
+	    $msg.hide(200, function(){$msg.remove()}) 
+	}
+	, duration
+    )
+}
 $(document).on(
     'rubiontail.baseloaded',
     function(){
