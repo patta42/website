@@ -1,0 +1,155 @@
+{% extends 'rai/views/default/shared/form-view.html' %}
+{% load rai_courses static %}
+{% block pagetitle %}
+Teilnehmer verwalten {{ object }}
+{% endblock %}
+{% block title_action %}Verwalten:{% endblock %}
+{% block heading %}
+<div style="font-size:smaller">{{object.get_parent.specific.title_de}}</div>
+<div style="font-size:0.875rem">vom {{object.start}} bis zum {{object.end}}</div>
+{% endblock %}
+
+{% block additional_js %}
+{{ block.super }}
+<script>
+  window.addScript('Lade Kursteilnehmer-Funktionalität', '{% static 'js/admin/views/attendee-view.js' %}', 'js')
+</script> 
+{% endblock %}
+{% block additional_css %}
+{{ block.super }}
+<style>
+  td.match{
+  font-weight:bold;
+  
+  }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<table class="attendee-list" style="width:100%"  data-attendee-edit-url="{% url "rai_courses_attendee_ajax_edit_generic" %}">
+  <thead>
+    <tr>
+      <th class="pl-1 checkbox-menu">
+	<div class="btn-group">
+	  <button class="btn p-0" type="button" data-toggle="tooltip" title="Alle/keinen Teilnehmer auswählen" >
+	    <div class="custom-control custom-checkbox">
+	      <input class="custom-control-input check-all" type="checkbox" data-check-all-name="attendee" id="overview_check_all">
+	      <label for="overview_check_all" class="custom-control-label"></label>
+	    </div>
+	  </button>
+	  <button type="button" class="btn dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" title="Aktion mit markierten Teilnehmern ausführen">
+	    <span class="sr-only">Toggle Dropdown</span>
+	  </button>
+	  <div class="dropdown-menu">
+	    <h6 class="dropdown-header">Kommunikation</h6>
+	    <button class="btn dropdown-item" type="button">
+	      <span class="mr-1"><i class="fas fa-poll fa-fw"></i></span>
+	      Klausurergebnis senden
+	    </button>
+	    <button class="btn dropdown-item" type="button" data-action="post_form" data-form-url="{% url "rai_mail_compose" %}" data-field-values="['email']" data-form-field-names="['to']">
+	      <span class="mr-1"><i class="fas fa-envelope fa-fw"></i></span>
+	      E-Mail senden
+	      <script type="text/html" class="additional-form-data">
+		<input type="checkbox" name="is_initial" checked />
+	      </script>
+ 	    </button>
+	    <h6 class="dropdown-header">Verwaltung</h6>
+	    <button class="btn dropdown-item" type="button">
+	      <span class="mr-1"><i class="fas fa-arrow-alt-circle-right fa-fw"></i></span>
+	      In anderen Kurs verschieben
+	    </button>
+	    <button class="btn dropdown-item" type="button" data-action="post_form" data-form-url="{% url "rai_courses_attendees_delete" %}" data-field-values="['pk']" data-form-field-names="['pk']" data-add-next="true">
+	      <span class="mr-1"><i class="fas fa-trash fa-fw"></i></span>
+	      Löschen
+	    </button>
+	    <h6 class="dropdown-header">PDF-Erzeugung</h6>
+	    <button class="btn dropdown-item" type="button">
+	      <span class="mr-1"><i class="fas fa-id-badge fa-fw"></i></span>
+	      Tisch-Schilder erzeugen
+	    </button>
+	    <button class="btn dropdown-item" type="button">
+	      <span class="mr-1"><i class="fas fa-graduation-cap fa-fw"></i></span>
+	      Bescheinigungen erzeugen
+	    </button>
+	  </div>
+	</div>
+      </th>
+      <th class="pl-1">Nachname, Vorname, Informationen</th>
+      <th class="pl-1 select-shown-rows" data-select-shown-rows-id="attendee_type">Teilnehmer-Typ</th>
+      <th class="pl-1">Note</th>
+      <th  style="text-align:center">Bestanden</th>
+      <th class="pl-1 select-shown-rows" data-select-shown-rows-id="waitlist">Warteliste</th>
+      <th class="pl-1">Aktion</th>
+    </tr>
+    
+  </thead>
+  <tbody>
+{% for a in attendees %}
+<tr data-attendee-pk="{{a.data.pk}}">
+  <td class="pl-1">
+    <div class="custom-control custom-checkbox">
+      <input class="custom-control-input row-check" type="checkbox" name="attendee" value="{{a.data.pk}}" id="overview_{{a.data.pk}}" data-field-name="pk" data-field-value="{{a.data.pk}}">
+      <label for="overview_{{a.data.pk}}" class="custom-control-label"></label>
+    </div>
+  </td>
+  <td class="pl-1">
+    <h6>
+      <label for="overview_{{a.data.pk}}"><span data-attendee-field="attendee-name">{{ a.data.last_name }}, {{ a.data.first_name }}</span></label>
+    </h6>
+    <small class="text-muted" data-field-name="email" data-field-value="{{a.data.first_name}} {{a.data.last_name}} <{{a.data.email}}>"><i class="fas fa-envelope"></i> {{ a.data.email }}<br />
+    Angemeldet am {{ a.data.created_at|date:"d.m.Y"}} um {{a.data.created_at|date:"H:i" }}</small>
+  </td>
+  <td class="pl-1">
+    <div data-select-shown-rows-id="attendee_type">{{a.type}}</div>
+    {% if a.data.sskstudentattendee %}
+    <div class="text-muted">Fach: <span data-attendee-field="student_course">{{ a.data.student_course }}</span></div>
+    <div class="text-muted">Matrikel-Nr.: <span data-attendee-field="student_id">{{a.data.student_id|format_student_id}}</span></div>
+    {% elif a.data.sskexternalattendee or a.data.sskhospitalattendee %}
+    <div class="text-muted">Firma: {{ a.data.invoice_company }}, {{ a.data.invoice_town }}</div>
+    <div class="">
+      <div class="btn-group">
+	<button type="button" class="btn btn-sm dropdown-toggle pl-0 {% if not a.data.payed %}text-danger{% else %}text-muted{% endif %}" style="border-left-width:0px" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="paidIndicatorBtn_{{a.data.pk}}">
+	  Bezahlt: <span id="paidIndicator_{{a.data.pk}}">{{a.data.payed|janein}}</span> ({{a.data.amount}}&nbsp;€)
+	</button>
+	<div class="dropdown-menu ajax-edit" data-ajax-url="{% url "rai_courses_attendee_ajax_edit" a.data.pk "payed" %}" data-ajax-field="payed" data-ajax-callback="{'true':{'#paidIndicatorIconTrue_{{a.data.pk}}':{'html':'<i class=\'fa-fw fas fa-check text-muted\'></i>'},'#paidIndicatorIconFalse_{{a.data.pk}}':{'html':'<i class=\'fa-fw far fa-square text-muted\'></i>'},'#paidIndicatorBtn_{{a.data.pk}}': {'addClass':'text-muted','removeClass':'text-danger'},'#paidIndicator_{{a.data.pk}}':{'text':'Ja'}}, 'false':{'#paidIndicatorIconTrue_{{a.data.pk}}':{'html':'<i class=\'fa-fw far fa-square text-muted\'></i>'},'#paidIndicatorIconFalse_{{a.data.pk}}':{'html':'<i class=\'fa-fw fas fa-check text-muted\'></i>'},'#paidIndicatorBtn_{{a.data.pk}}': {'addClass':'text-danger','removeClass':'text-muted'},'#paidIndicator_{{a.data.pk}}':{'text':'Nein'}}}">
+	  <button class="btn dropdown-item" type="button"  data-ajax-value="true">x
+	    <span class="mr-1" id="paidIndicatorIconTrue_{{a.data.pk}}"><i class="fa-fw {% if a.data.payed %}fas fa-check{% else %}far fa-square text-secondary{% endif %}"></i></span>
+	    Ja
+	  </button>
+	  <button class="btn dropdown-item" type="button" data-ajax-value="false">
+	    <span class="mr-1" id="paidIndicatorIconFalse_{{a.data.pk}}"><i class="fa-fw {% if not a.data.payed %}fas fa-check{% else %}far fa-square text-secondary{% endif %}"></i></span>
+	    Nein
+	  </button>
+	</div>
+      </div>
+    </div>
+    {% elif a.data.sskrubmemberattendee %}
+    <div class="text-muted">{{ a.data.department }}, {{ a.data.institute }}</div>
+    <div class="text-muted">{{ a.data.faculty }}</div>
+
+    {% endif %}
+  </td>
+  <td class="pl-1 pr-2">
+    <input autocomplete="off" type="text" class="form-control ajax-edit" name="result_{{a.data.pk}}" data-ajax-url="{% url "rai_courses_attendee_ajax_edit" a.data.pk "result" %}" data-ajax-field="result" data-ajax-pk="{{a.data.pk}}" size="3" value="{{a.data.result}}">
+  </td>
+  <td style="text-align:center">
+    <div class="custom-control custom-checkbox">
+      <input autocomplete="off" class="custom-control-input ajax-edit" type="checkbox" id="overview_passed_{{a.data.pk}}" {% if a.data.passed %}checked="checked" {%endif%}name="passed_{{a.data.pk}}" data-ajax-url="{% url "rai_courses_attendee_ajax_edit" a.data.pk "passed" %}" data-ajax-field="passed" data-ajax-pk="{{a.data.pk}}">
+      <label for="overview_passed_{{a.data.pk}}" class="custom-control-label"></label>
+    </div>
+  </td>
+  <td class="pl-1"  data-select-shown-rows-id="waitlist">
+    {{ a.waitlist|janein }}
+  </td>
+  <td class="pl-1">
+    <a href="" class="btn btn-outline-secondary">
+      <span class="mr-1"><i class="fas fa-pen"></i></span>
+      Details bearbeiten
+    </a>
+  </td>
+</tr>
+{% endfor %}
+  </tbody>
+</table>
+{% endblock %}
