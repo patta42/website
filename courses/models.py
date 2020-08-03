@@ -932,6 +932,17 @@ class CourseAttendee ( models.Model ):
         help_text=_('When was the confirmation mail sent?')
     )
     
+    result = models.CharField(
+        blank = True,
+        help_text = _('Result of the exam (either as a grade or in percent)'),
+        verbose_name = _('result'),
+        max_length = 6
+    )
+    passed = models.BooleanField(
+        blank = True,
+        verbose_name = _('Exam passed?'),
+        default = False
+    )
     
     # A method that validates the object and saves it.
     #
@@ -971,6 +982,7 @@ class CourseAttendee ( models.Model ):
                     return attr
 
         return self
+    
     def __str__( self ):
         try:
             return "{} ({} am {})".format(
@@ -1389,6 +1401,18 @@ class CourseDefinition2AttendeeRelation( AbstractAttendeeRelation ):
 class Course2AttendeeRelation( AbstractAttendeeRelation ):
     course = ParentalKey( Course, related_name = 'attendee_types' )
 
+    @classmethod
+    def from_CourseDefinitionRelation(self, rel):
+        return self(
+            attendee_name_en = rel.attendee_name_en,
+            attendee_name_de = rel.attendee_name_de,
+            attendee = rel.attendee,
+            description_de = rel.description_de,
+            description_en = rel.description_en,
+            price = rel.price,
+            max_attendees = rel.max_attendees,
+            waitlist = rel.waitlist
+        )
         
 
 # The last model simply contains the list of courses
