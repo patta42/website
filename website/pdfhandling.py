@@ -75,6 +75,12 @@ class RUBPDF(object):
             output.write(output_stream)
             output_stream.close()
 
+    def for_content_file(self, endpage = True):
+        if endpage:
+            self.pdf.showPage()
+        self.pdf.save()
+        
+        return self.buffer.getvalue()
 
 
 class RUBIONPDF ( RUBPDF ):
