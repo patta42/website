@@ -1,10 +1,13 @@
+
 from .helpers import get_next_invoice_number
 
 from decimal import Decimal
 
 from django.conf import settings
 
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import cm
+
 
 from textwrap import wrap
 
@@ -430,3 +433,54 @@ def test_course_invoice( filename = 'test.pdf' ):
     foo.write2file(filename)
 
     
+
+class CourseNamePlate(RUBIONPDF):
+    left = 85
+    top = 0
+    font_size_name = 48
+    font_size_affil = 36
+
+    def __init__(self, attendee_pks, *args, **kwargs):
+        from .models import CourseAttendee
+        super().__init__(pagesize = landscape(A4), *args, **kwargs)
+        self.width, self.height = landscape(A4)
+
+        # try to position the name/affil block in the vertical center of the lower part of the page.
+        # total height is font size of name + 1.2 font size of affil (1.2 is the line height)
+        #
+        # Positioning starts from self.height/2
+        self.top = (self.height/2 - (self.font_size_name + 1.2*self.font_size_affil))/2+self.font_size_name
+        self.left = 1.5*self.font_size_name
+        attendees = CourseAttendee.objects.filter(pk__in = attendee_pks)
+        for attendee in attendees:
+            if attendee.academic_title:
+                name = '{} '.format(attendee.get_academic_title_display())
+            else:
+                name = ''
+            name += '{} {}'.format(attendee.first_name, attendee.last_name)
+            self.pdf.setStrokeColor(self.RUBGRAY)
+            self.font_scala(self.font_size_name, color = self.RUBBLUE)
+            self.pdf.drawString(self.left, self.height/2 - self.top, name)
+            self.add_affiliation(attendee)
+            self.pdf.showPage()
+
+    def add_affiliation(self, attendee):
+        attendee = attendee.specific
+        self.font_scala(self.font_size_affil)
+        
+        # use duck-typing for the second line
+        
+        if hasattr(attendee, 'invoice_company'):
+            affil = attendee.invoice_company
+        elif hasattr(attendee, 'institute'):
+            affil = attendee.institute
+        elif hasattr(attendee, 'student_course'):
+            affil = 'Student/in '+attendee.student_course
+        self.pdf.drawString(self.left, self.height/2 - self.top - 1.2*self.font_size_affil, affil)
+
+        
+def test_name_plates(filename = 'test.pdf'):
+    foo = CourseNamePlate([2,4,5])
+    with open(filename, 'wb') as out:
+        out.write(foo.for_content_file()) 
+        
