@@ -318,7 +318,7 @@ $R.help = {
 		    if (callback === undefined){
 			show.slideDown(300);
 		    } else {
-		console.log(callback)
+			console.log(callback)
 			show.slideDown(300, function(){ callback() });
 		    }
 		})
@@ -400,7 +400,11 @@ $R.dialog = function(opts){
 	applyButtonLabel : 'Apply',
 	onCancel : null,
 	onApply : null,
-	onSave : null
+	onSave : null,
+	onShow : null,
+	onShown : null,
+	onHide : null,
+	onHidden : null
     }
 
     var settings = $.extend({}, defaults, opts)
@@ -419,7 +423,6 @@ $R.dialog = function(opts){
     if($dm.data('bs.modal') !== undefined){
 	$dm.modal('dispose')
     }
-
     // build content
 
     var makeContent = function(setting, $parent){
@@ -493,7 +496,31 @@ $R.dialog = function(opts){
 	$title.removeClass('text-primary').addClass(settings['titleFontColor'])
     }
     
-    $dm.modal()
+    $dm.modal({show:false})
+    if (settings['onShow'] != null){
+	$dm.on('show.bs.modal', settings['onShow'])
+    }
+    if (settings['onShown'] != null){
+	$dm.on('shown.bs.modal', settings['onShown'])
+    }
+    if (settings['onHide'] != null){
+	$dm.on('hide.bs.modal', settings['onHide'])
+    }
+    if (settings['onHidden'] != null){
+	$dm.on('hidden.bs.modal', settings['onHidden'])
+    }
+    $dm.modal('show')
+
+    
+    var api = {
+	close : function(){
+	    $dm.modal('hide')
+	},
+	dismiss : function(){
+
+	}
+    }
+    return api
 }
 
 $R.infoDialog = function(title, content){
@@ -526,8 +553,27 @@ $R.okCancelDialog = function(title, content, onOK, onCancel){
 	titleIcon: 'fas fa-question-circle',
 	applyButtonLabel : 'OK',
 	cancelButtonLabel : 'Abbrechen',
-	saveButton: false
+	saveButton: false,
+
     })
+}
+$R.waitDialog = function(options){
+    if (options === undefined){
+	var options = {}
+    }
+    var defaults = {
+	title:'Bitte warten',
+	content:'<div style="text-align:center;font-size:400%"><i class="fas fa-cog fa-spin"></i></div>',
+	titleIcon: 'fas fa-clock',
+	saveButton: false,
+	cancelButton : false,
+	applyButton : false,
+	canCancel : false
+
+    }
+    settings = $.extend({}, defaults, options)
+    return $R.dialog(settings)
+    
 }
 $R.observeDOM = (function(){
   var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
@@ -572,17 +618,18 @@ $R.genericModal = function(opts){
 	applyCallback :    null,
 	cancelCallback :   null,
 	closeButton :      false,
-	size :             ''
+	size :             '',
+	scroll : false
     }
     if (opts === undefined){
 	var opts = {};
     }
-    console.log(opts)
     var settings =    $.extend({}, defaults, opts),
 	id =          'genericModal',
 	$modal =      $('#genericModal'),
 	$modalBody =  $modal.find('.modal-body').first(),
 	$modalTitle = $modal.find('.modal-title').first(),
+	$modalDialog = $modal.find('.modal-dialog').first(),
 	btns = {
 	    $cancelBtn :  $('#btnCancel'+id),
 	    $saveBtn :    $('#btnSave'+id),
@@ -603,25 +650,49 @@ $R.genericModal = function(opts){
 	hide : function(){
 	    $modal.modal('hide')
 	},
-	dismiss : function(){
+	dismiss : function(cb){
 	    $modal.on('hidden.bs.modal', function(){
 		$modalTitle.html('')
 		$modalBody.html('')
 		btns['$saveBtn'].off('click')
 		btns['$cancelBtn'].off('click')
 		btns['$applyBtn'].off('click')
+		$modal.modal('dispose')
+		if (cb !== undefined){
+		    cb()
+		}
 	    })
 	    $modal.modal('hide')
+	    
+	},
+	getBody : function(){
+	    return $modalBody
+	},
+	getButton : function(which){
+	    return btns['$'+which+'Btn']
 	}
+	
     }
 
     var init = function(){
-	console.log(api,'init')
 	// initialize modal
-	if($modal.data('bs.modal') === undefined){
-	    $modal.modal()
+	if($modal.data('bs.modal') !== undefined){
+	    $modal.modal('dispose')
 	}
-
+	$modalDialog
+	    .removeClass('modal-sm')
+	    .removeClass('modal-lg')
+	    .removeClass('modal-xl')
+	    .removeClass('modal-xxl')
+	    .removeClass('modal-dialog-scrollable')
+	if (settings['size'] != ''){
+	    $modalDialog.addClass('modal-'+settings['size'])
+	}
+	if (settings['scroll'] === true){
+	    $modalDialog.addClass('modal-dialog-scrollable')
+	}
+	
+	$modal.modal()
 	// fill with content
 	api.setBody(settings['body'])
 	api.setTitle(settings['title'])
