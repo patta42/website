@@ -55,20 +55,24 @@ Teilnehmer verwalten {{ object }}
 	      </script>
  	    </button>
 	    <h6 class="dropdown-header">Verwaltung</h6>
-	    <button class="btn dropdown-item" type="button">
+	    <button class="btn dropdown-item" type="button" data-action="post_form" data-form-url="{% url "rai_courses_attendees_move" %}" data-field-values="['pk']" data-form-field-names="['pk']" data-add-next="true">
 	      <span class="mr-1"><i class="fas fa-arrow-alt-circle-right fa-fw"></i></span>
 	      In anderen Kurs verschieben
+	      <script type="text/html" class="additional-form-data">
+		<input type="hidden" name="origin" value="{{object.pk}}" />
+		
+	      </script>
 	    </button>
 	    <button class="btn dropdown-item" type="button" data-action="post_form" data-form-url="{% url "rai_courses_attendees_delete" %}" data-field-values="['pk']" data-form-field-names="['pk']" data-add-next="true">
 	      <span class="mr-1"><i class="fas fa-trash fa-fw"></i></span>
 	      Löschen
 	    </button>
 	    <h6 class="dropdown-header">PDF-Erzeugung</h6>
-	    <button class="btn dropdown-item" type="button">
+	    <button class="btn dropdown-item" type="button" data-action="post_form" data-form-url="{% url "rai_courses_attendees_pdf_nameplate" %}" data-field-values="['pk']" data-form-field-names="['attendee_pks']" data-post-method="ajax-receive-file" data-wait-message="Namensschilder werden erzeugt">
 	      <span class="mr-1"><i class="fas fa-id-badge fa-fw"></i></span>
 	      Tisch-Schilder erzeugen
 	    </button>
-	    <button class="btn dropdown-item" type="button">
+	    <button class="btn dropdown-item" type="button" data-form-url="{% url "rai_courses_attendees_pdf_certificate" %}" data-action="post_form" data-field-values="['pk']" data-form-field-names="['attendee_pks']" data-post-method="ajax-receive-file">
 	      <span class="mr-1"><i class="fas fa-graduation-cap fa-fw"></i></span>
 	      Bescheinigungen erzeugen
 	    </button>
@@ -113,7 +117,7 @@ Teilnehmer verwalten {{ object }}
 	  Bezahlt: <span id="paidIndicator_{{a.data.pk}}">{{a.data.payed|janein}}</span> ({{a.data.amount}}&nbsp;€)
 	</button>
 	<div class="dropdown-menu ajax-edit" data-ajax-url="{% url "rai_courses_attendee_ajax_edit" a.data.pk "payed" %}" data-ajax-field="payed" data-ajax-callback="{'true':{'#paidIndicatorIconTrue_{{a.data.pk}}':{'html':'<i class=\'fa-fw fas fa-check text-muted\'></i>'},'#paidIndicatorIconFalse_{{a.data.pk}}':{'html':'<i class=\'fa-fw far fa-square text-muted\'></i>'},'#paidIndicatorBtn_{{a.data.pk}}': {'addClass':'text-muted','removeClass':'text-danger'},'#paidIndicator_{{a.data.pk}}':{'text':'Ja'}}, 'false':{'#paidIndicatorIconTrue_{{a.data.pk}}':{'html':'<i class=\'fa-fw far fa-square text-muted\'></i>'},'#paidIndicatorIconFalse_{{a.data.pk}}':{'html':'<i class=\'fa-fw fas fa-check text-muted\'></i>'},'#paidIndicatorBtn_{{a.data.pk}}': {'addClass':'text-danger','removeClass':'text-muted'},'#paidIndicator_{{a.data.pk}}':{'text':'Nein'}}}">
-	  <button class="btn dropdown-item" type="button"  data-ajax-value="true">x
+	  <button class="btn dropdown-item" type="button"  data-ajax-value="true">
 	    <span class="mr-1" id="paidIndicatorIconTrue_{{a.data.pk}}"><i class="fa-fw {% if a.data.payed %}fas fa-check{% else %}far fa-square text-secondary{% endif %}"></i></span>
 	    Ja
 	  </button>
