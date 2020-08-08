@@ -25,11 +25,16 @@ class RUBPDF(object):
     WEIGHT_REGULAR = 'R'
     WEIGHT_BOLD = 'Bd'
 
+    FIGURES_TZ = ''
+    FIGURES_MZ = 'Mz'
+
     def __init__(self, pagesize = A4, templatefile = None):
         pdfmetrics.registerFont(TTFont('FlamaBd', os.path.join(PDFFONTDIR,'RubFlama-Bold.ttf')))
         pdfmetrics.registerFont(TTFont('FlamaR',  os.path.join(PDFFONTDIR,'RubFlama-Regular.ttf')))
         pdfmetrics.registerFont(TTFont('ScalaR',  os.path.join(PDFFONTDIR,'RubScalaTZ.ttf')))
         pdfmetrics.registerFont(TTFont('ScalaBd', os.path.join(PDFFONTDIR,'RubScalaTZBold.ttf')))
+        pdfmetrics.registerFont(TTFont('ScalaRMz',  os.path.join(PDFFONTDIR,'RUBScalaMZ.ttf')))
+        pdfmetrics.registerFont(TTFont('ScalaBdMz', os.path.join(PDFFONTDIR,'RUBScalaMZBold.ttf')))
 
         if templatefile:
             self.template_pdf = PdfFileReader(templatefile)
@@ -45,11 +50,11 @@ class RUBPDF(object):
             weight = self.WEIGHT_REGULAR
         self.pdf.setFont('Flama{}'.format(weight) , size)
 
-    def font_scala(self, size, weight = None, color = BLACK):
+    def font_scala(self, size, weight = None, color = BLACK, figures = ''):
         self.pdf.setFillColor(color)
         if not weight:
             weight = self.WEIGHT_REGULAR
-        self.pdf.setFont('Scala{}'.format(weight) , size)
+        self.pdf.setFont('Scala{}{}'.format(weight, figures) , size)
 
 
     def get_in_response(self, response):
