@@ -1,21 +1,29 @@
-
 from .helpers import get_next_invoice_number
+
+import datetime
 
 from decimal import Decimal
 
 from django.conf import settings
 
+from io import BytesIO
+
+import locale
+
+import os
+
+from PyPDF2 import PdfFileWriter, PdfFileReader
+
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import cm
-
 
 from textwrap import wrap
 
 from website.pdfhandling import RUBIONPDF, RUBIONLetter
 
-import datetime
 
-import os
+
+
 
 class RUBIONInvoice( RUBIONLetter ):
     def __init__( self, sender, *args, **kwargs ):
@@ -483,4 +491,92 @@ def test_name_plates(filename = 'test.pdf'):
     foo = CourseNamePlate([2,4,5])
     with open(filename, 'wb') as out:
         out.write(foo.for_content_file()) 
-        
+
+class CourseCertificate(RUBIONPDF):
+    template_file = 'templates/courses/pdf/Musterbescheinigung-Fachkunde.pdf'
+
+    xcenter = 308.8225
+    name_pos = 449.794
+    born_pos = 416.426
+    living_pos = 400.826
+    coursedate_pos = 296.426
+    signdate_pos = 190.683
+    
+    def __init__(self, attendee_pks, *args, **kwargs):
+        from .models import CourseAttendee
+        self.width, self.height = A4
+        locale.setlocale(locale.LC_ALL, 'de_DE')
+        template = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            self.template_file
+        )
+        super().__init__(templatefile = template, pagesize = A4, *args, **kwargs)
+        attendees = CourseAttendee.objects.filter(pk__in = attendee_pks)
+        for attendee in attendees:
+            attendee = attendee.specific
+            self.font_scala(12, weight = self.WEIGHT_BOLD)
+            self.pdf.drawCentredString(
+                self.xcenter, self.name_pos,
+                '{} {}'.format(attendee.first_name, attendee.last_name)
+            )
+            self.font_scala(12, figures = self.FIGURES_MZ)
+            if attendee.country_of_birth != '':
+                pob = '{} ({})'.format(attendee.place_of_birth, attendee.country_of_birth)
+            else:
+                pob = '{}'.format(attendee.place_of_birth)
+            self.pdf.drawCentredString(
+                self.xcenter, self.born_pos,
+                'geboren am {date} in {place}'.format(
+                    date = attendee.date_of_birth.strftime('%d. %m. %Y'),
+                    place = pob
+                )
+            )
+            if attendee.country:
+                place = '{} ({})'.format(attendee.town, attendee.country)
+            else:
+                place = attendee.town
+            self.pdf.drawCentredString(
+                self.xcenter, self.living_pos,
+                'wohnhaft in {place}'.format(
+                    place = place
+                )
+            )
+            if attendee.related_course.end.month == attendee.related_course.start.month:
+                start = attendee.related_course.start.strftime('%d.')
+            else:
+                start = attendee.related_course.start.strftime('%d. %B')
+            self.pdf.drawCentredString(
+                self.xcenter, self.coursedate_pos,
+                'vom {start} – {end}'.format(
+                    start = start,
+                    end = attendee.related_course.end.strftime('%d. %B %Y')
+                )
+            )
+
+            today = datetime.date.today()
+            self.pdf.drawString(
+                71.648, self.signdate_pos,
+                'Bochum, {date}'.format(
+                    date = today.strftime('%d. %B %Y')
+                )
+            )
+            
+            
+            self.pdf.showPage()
+
+    def for_content_file(self, endpage = True):
+        if endpage:
+            self.pdf.showPage()
+        self.pdf.save()
+        tpl_page = self.template_pdf.getPage(0)
+        new_pdf = PdfFileReader(self.buffer)
+        new_buf = BytesIO()
+        output = PdfFileWriter()
+        for n_page in range(new_pdf.getNumPages()-1):
+            page = new_pdf.getPage(n_page)
+            page.mergePage(tpl_page)
+            output.addPage(page)
+        output.write(new_buf)
+        return new_buf.getvalue()
+
+    
