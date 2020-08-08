@@ -396,10 +396,150 @@ $.widget(
 )
 
 
+$.widget(
+    'raiwidgets.attendeelist',
+    {
+	_create : function(){
+	    // called on the table
+	    this.$tbody = this.element.find('tbody').first()
+	    this.$thead = this.element.find('thead').first()
+	    this.$rows = this.$tbody.find('tr')
+	    this.$menu = this.$thead.find('.checkbox-menu').first()
+	    this.$invisContainer = $('<div />').css({
+		position: 'absolute',
+		left : '-10000px',
+		top : '-10000px',
+		width : '1px',
+		height : '1px'
+	    }).insertBefore(this.element)
+
+	    var self = this
+	    this.$menu.find('button[data-action="post_form"]').each(
+		function(){
+		    var $btn = $(this)
+		    $btn.click(function(){self._postForm($btn)})
+		}
+	    )
+	    this.$tbody.find('input.row-check').each(
+		function(){
+		    $(this).change(function(){
+			if ($(this).prop('checked')){
+			    $(this).parents('tr').first().attr('data-checked', true)
+			} else {
+			    $(this).parents('tr').first().attr('data-checked', false)
+			}
+		    })
+		    if ($(this).prop('checked')){
+			$(this).parents('tr').first().attr('data-checked', true)
+		    } else {
+			$(this).parents('tr').first().attr('data-checked', false)
+		    }
+		}
+	    )
+	},
+	_postForm : function($elem){
+	    var $rows = this._getCheckedRows()
+	    // clean up old content from invis container
+
+	    this.$invisContainer.children().remove()
+	    var self = this;
+	    if ($rows.length == 0){
+		$R.infoDialog(
+		    'Bitte Einträge auswählen',
+		    $('<div><strong>Es sind keine Einträge ausgewählt.</strong><p>Bitte nutze die Kästchen auf der Seite der Tabelle um Einträge auszuwählen.</p></div>')
+		)
+		return
+	    }
+	    var fieldValues = JSON.parse($elem.data('field-values').replace(/'/g,'"')),
+		formFieldNames = JSON.parse($elem.data('form-field-names').replace(/'/g,'"')),
+		$form = $('<form method="POST" />')
+		.appendTo(this.$invisContainer)
+	    if ($elem.data('add-next') == true){
+
+		var $path = $elem.data('add-next-value') ? $elem.data('add-next-value') : window.location.pathname
+		$form.attr('action', $elem.data('form-url')+encodeURI('?next='+$path))
+	    } else {
+		$form.attr('action', $elem.data('form-url'))
+	    }
+	    
+	    $rows.each(
+		function(){
+		    for (var c = 0; c < fieldValues.length; c++){
+			var $row = $(this),
+			    value = $row.find('[data-field-name="'+fieldValues[c]+'"]').first().data('field-value'),
+			    $input = $('<input type="checkbox" checked />')
+			    .attr('name', formFieldNames[c])
+			    .val(value)
+			    .appendTo($form)
+			
+		    }
+		}
+	    )
+	    $('<input type="hidden" name="csrfmiddlewaretoken" value="'+$R.getCookie('csrftoken')+'" />').appendTo($form)
+	    $($elem.find('.additional-form-data').first().html()).appendTo($form)
+	    $form.attr('enctype','multipart/form-data')
+	    if ($elem.data('post-method') == 'ajax-receive-file'){
+		this.modal = $R.waitDialog({
+		    onShown : function(){self._sendRequest($elem, $form)}
+		})
+	    } else {
+		$form.submit()
+	    }
+	},
+	_sendRequest : function($elem, $form){
+	    var request = new XMLHttpRequest();
+	    request.open('POST', $elem.data('form-url'), true);
+	    request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+	    request.responseType = 'blob';
+	    var self = this
+	    request.onload = function() {
+		// Only handle status code 200
+		if(request.status === 200) {
+		    // Try to find out the filename from the content disposition `filename` value
+		    var disposition = request.getResponseHeader('content-disposition');
+		    var matches = /filename=(.+)$/.exec(disposition);
+		    var filename = (matches != null && matches[1] ? matches[1] : 'file.pdf');
+		    
+		    // The actual download
+		    var blob = new Blob([request.response], { type: 'application/pdf' });
+		    var link = document.createElement('a');
+		    link.href = window.URL.createObjectURL(blob);
+		    link.download = filename;
+		    
+		    document.body.appendChild(link);
+		    
+		    link.click();
+		    self.modal.close();
+		    document.body.removeChild(link);
+		}
+		
+		// some error handling should be done here...
+	    };
+	    
+	    request.send($form.serialize());
+   	},
+	_getCheckedRows : function(){
+	    // we cannot simply look for [data-checked=true ] since the checked status of the
+	    // input might have been set via JS, which does not trigger the click function.
+	    
+	    this.$rows.filter(':visible').each(
+		function(){
+		    var $input = $(this).find('input.row-check').first()
+		    $(this).attr('data-checked', $input.prop('checked'))
+		}
+	    )
+
+	    return this.$rows.filter(':visible').filter('[data-checked="true"]')
+	}
+    }
+)
+
 $(document).on(
     'rubiontail.baseloaded',
     function(){
 	$('#attendeViewUnifyCourses').unifycourses()
 	$('#attendeViewImportResult').importresults()
+	$('.attendee-list').attendeelist()
+
     }
 )
