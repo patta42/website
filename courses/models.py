@@ -323,6 +323,8 @@ class Course( RoutablePageMixin, TranslatedPage, BodyMixin  ):
         
         for atype in self.get_attendee_types().all():
             Klass = atype.get_attendee_class()
+            if not Klass:
+                continue
             try:
                 disp = Klass.display_name_plural
             except AttributeError:
