@@ -182,7 +182,6 @@ $R.editing = {
 		)
 	    }
 	    var setTotalForms = function(val){
-		console.log('Setting total forms to', val)
 		self.$config[cfg.suffixes.TOTAL_FORMS].val(val)
 	    }
 
@@ -277,18 +276,14 @@ $R.editing = {
 
 	    self.add = function(){
 		// add a new sub-form
-		console.log(1)
 		var $new_elem = $(
 		    self.$config.EMPTY_FORM_TEMPLATE.html().replace(
 			    /__prefix__/g,
 			self.getNextId()
 		    )
 		).hide();
-		console.log(2)
 		self.$config.FORMS.append($new_elem);
 		// order is 1-based, thus it's a good idea to increase the total number here
-		console.log('In Add, before increasing total forms, total forms is', self.getTotalForms())
-		
 		self.incTotalForms();
 		var opts = self.inlinePanelOpts;
 		opts['order'] = self.getTotalForms();
@@ -312,10 +307,7 @@ $R.editing = {
 	    // Add callback to add button
 	    $$(cfg.buttons.ADD).click(function(){
 		if (!$(this).hasClass('disabled')){
-		    console.log('add was clicked')
-		    console.log('calling add')
 		    self.add();
-		    console.log('add finished')
 		}
 	    });
 
@@ -504,7 +496,6 @@ $R.editing = {
 		var $d = (id) => self.identifier+'-'+id;
 		var $c = (id) => $elem.find('.'+self.identifier+'-'+id);
 		var $textarea = $elem.find($elem.data($d('controls')));
-		console.log($textarea)
 		self.url = $elem.data($d('process'));
 		self.element_id = $textarea.attr('id');
 		var $$ = (id) => ($elem.find('#'+self.element_id+id));
