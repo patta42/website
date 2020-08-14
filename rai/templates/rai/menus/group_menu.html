@@ -1,16 +1,29 @@
-{% load i18n %}
+{% load i18n rai_tags %}
 <div class="btn-toolbar mb-2 mb-md-0 align-items-center">
   <div class="btn-group mr-2">
     {% for action in actions %}
+    {% show_for_instance action action.object as show %}
+    {% if show %}
     <a href="{{action.url}}" class="btn{% if action.btn_type %} btn-{{ action.btn_type }}{% endif %}{% if action.text_type %} text-{{ action.text_type }}{% endif %}{% if icons_only %} icon-only{% endif %} page-menu-action" title="{{action.label}}">
       <i class="{{action.icon_font}} fa-{{action.icon}}"></i>
       <span class="label">{{action.label}}</span>
     </a>
+    {% endif %}
     {% endfor %}
   </div>
   {% if save_button %}
     <button type="submit" form="{{ main_form_id|default:"main_form" }}" class="btn btn-success" id="btnSave">
-      <i class="fas fa-save"></i> {% trans "Save" %}
+      <span class="mr-1">
+	<i class="fas fa-{{save_button_icon|default:"save"}}"></i>
+      </span>
+      {% trans save_button_label %}
+    </button>
+  {% endif %}
+  {% if proceed_button %}
+    <button type="submit" form="{{ main_form_id|default:"main_form" }}" class="btn btn-success" id="btnProceed">
+      <span class="mr-1">
+	<i class="fas fa-arrow-alt-circle-right"></i> {% trans proceed_button_label %}
+      </span>
     </button>
   {% endif %}
     
@@ -29,7 +42,7 @@
   </button>
   {% endif %}
   {% if settings_menu %}
-  <button type="button" class="btn btn-secondary ml-2">
+  <button type="button" class="btn btn-secondary ml-2" data-toggle="modal" data-target="#listSettingsModal" id="btnOpenListViewSettings">
     <i class="{{ settings_menu.icon_font }} fa-{{ settings_menu.icon }} fa-fw"></i>
   </button>
   {% endif %}
