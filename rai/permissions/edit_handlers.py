@@ -63,3 +63,5 @@ class PermissionSelectionPanel(RAIMultiFieldPanel):
         super().__init__(children, classname=classname, **kwargs)
     def clone(self):
         return RAIMultiFieldPanel(**self.clone_kwargs())
+
+    
