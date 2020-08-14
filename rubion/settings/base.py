@@ -39,6 +39,7 @@ INSTALLED_APPS = [
 
     'rubauth',
 
+#    'rai',
 
     'wagtail.contrib.modeladmin',
     'wagtail.contrib.table_block',
@@ -73,12 +74,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+#    'debug_toolbar',
     'django_cron',
-    'rubionadmin'
-    
+    'django_extensions',
+    'rubionadmin',
+    'rai'
 ]
 
 MIDDLEWARE = [
+#    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
 
     'django.middleware.locale.LocaleMiddleware',
@@ -119,15 +123,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'rubion.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/1.11/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'rubion2',
-    }
-}
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
