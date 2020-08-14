@@ -21,3 +21,9 @@ def format_student_id(sid):
         '<span class="mr-1">{}</span>{}',
         sid[0:3], sid[3:6], sid[6:9], sid[9:12]
     )
+@register.filter
+def janein(val):
+    if val:
+        return "ja"
+    else:
+        return "nein"
