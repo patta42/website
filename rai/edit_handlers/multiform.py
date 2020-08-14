@@ -63,7 +63,7 @@ class RAIMultiFormEditHandler(RAIBaseCompositeEditHandler):
         self.child = self.panels[self.current_child].bind_to(
             model = self.model, request = self.request
         )
-
+        
     def on_form_bound(self):
         self.form.fields['multiform_step_counter'].initial = self.current_child 
         self.child = self.child.bind_to(form = self.form)
@@ -89,8 +89,12 @@ class RAIMultiFormEditHandler(RAIBaseCompositeEditHandler):
     
     def proceed (self):
         self.current_child += 1
-        return self.clone()
+        new = self.clone()
+        if self.request:
+            new.child.bind_to(request = self.request)
 
+        return new
+        
 
 class RAISubFormEditHandler(RAIBaseCompositeEditHandler):
     template = 'rai/edit_handlers/multi-form/sub-form-handler.html'
@@ -109,15 +113,18 @@ class RAISubFormEditHandler(RAIBaseCompositeEditHandler):
         return rai_form_factory(
             '{}MultiForm'.format(self.formclass.__name__),
             fields = {},
-            base = self.formclass
+            base = self.formclass,
+            widgets = self.widget_overrides()
         )
 
+    
 class RAIModelMultiFormEditHandler(RAISubFormEditHandler):
     def get_form_class(self):
         formclass = self.children[0].get_form_class()
         return rai_form_factory(
             '{}MultiForm'.format(formclass.__name__),
             fields = {},
-            base = formclass
+            base = formclass,
+            widgets = self.widget_overrides()
         )
         
