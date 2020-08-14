@@ -1,14 +1,18 @@
+from .mail import CourseResultMail
 from .forms import ResultsUploadForm, AttendeesMoveChooseCourseForm
 
 from courses.models import CourseAttendee, CourseInformationPage, Course, Course2AttendeeRelation
 from courses.pdfhandling import CourseNamePlate, CourseCertificate
 
+from django.conf import settings
+from django.core.mail import EmailMessage
 from django.db.models import Q
 from django.forms import modelform_factory
 from django.http import HttpResponseNotFound, JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.template.response import TemplateResponse
+from django.utils import translation
 from django.utils.text import slugify
 from django.utils.safestring import mark_safe
 
@@ -16,7 +20,9 @@ from django.utils.safestring import mark_safe
 import pandas as pd
 from rai.default_views.generic import RAIView, RAIAdminView,  SingleObjectMixin, PageMenuMixin
 from rai.default_views.multiform_create import MultiFormCreateView
+from rai.notifications.models import NotificationTemplate
 
+from website.models import SentMail
 
 class CourseAttendeeView(RAIAdminView, PageMenuMixin, SingleObjectMixin):
     template_name = 'courses/rai/attendee-view.html'
@@ -297,3 +303,46 @@ def pdf_nameplate(request):
         )
         resp['Content-Disposition'] = "attachment; filename=Tischschilder.pdf"
         return resp
+
+def send_results_view(request):
+    if not request.is_ajax():
+        return HttpResponseNotFound()
+    noti = NotificationTemplate.objects.get(notification_id = CourseResultMail.identifier)
+    if request.method == 'GET':
+        # get means get the HTML for the modal to add text to the mail
+        return JsonResponse({
+            'status' : 200,
+            'en' : noti.template_en,
+            'de' : noti.template
+        })
+        
+    if request.method == 'POST':
+        from rai.notifications.internals import REGISTERED_NOTIFICATIONS
+        attendee_pks = request.POST.getlist('attendee_pk')
+        lang = request.POST.get('lang', 'de')
+        tpl_updated = request.POST.get('tpl_'+lang, '')
+        noti_obj = REGISTERED_NOTIFICATIONS[noti.notification_id]
+        translation.activate(lang)
+        for pk in attendee_pks:
+            attendee = CourseAttendee.objects.get(pk = pk).specific
+            kwargs = { 'at' : attendee }
+            text = noti_obj.render_template(tpl_updated, **kwargs)
+            if lang == 'de':
+                subject = noti.subject
+            else:
+                subject = noti.subject_en
+            to = [attendee.email]
+            mail = EmailMessage(
+                subject,
+                text,
+                settings.RUBION_MAIL_FROM,
+                to
+            )
+            mail.send(fail_silently = False)
+            sentmail = SentMail.from_email_message(mail)
+            sentmail.save()
+        return JsonResponse({
+            'status' : 200,
+            'n_mails' : len(attendee_pks)
+        })
+    
