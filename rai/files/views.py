@@ -26,7 +26,6 @@ def document_edit(request, pk):
 def add_document(request, rai_collection, collection_pk, obj_pk):
     from .internals import REGISTERED_COLLECTIONS
     if request.method == 'POST' and request.is_ajax():
-        print(REGISTERED_COLLECTIONS)
         relation = REGISTERED_COLLECTIONS.get(rai_collection, None)
         if not relation:
             return  JsonResponse({
