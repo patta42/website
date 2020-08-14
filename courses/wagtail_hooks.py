@@ -169,4 +169,13 @@ class CoursesModelAdminGroup ( ModelAdminGroup ):
 
 # Now you just need to register your customised ModelAdmin class with Wagtail
 modeladmin_register(CoursesModelAdminGroup)
+# RAI
 
+from rai.base import rai_register
+from rai.mail.base import register_mail_template
+
+from courses.rai.mail import CourseResultMail
+from courses.rai.register import RAITeachingGroup
+
+rai_register(RAITeachingGroup)
+register_mail_template(CourseResultMail)
