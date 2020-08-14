@@ -20,7 +20,7 @@
 {% block content %}
 <ul class="list-group" id="mainlist" data-rubion-original-object-count="{{original_object_count}}">
   {% for object in objects %}
-      {% render_object_in_list object item_template visible_fields %}
+      {% render_object_in_list object item_template %}
   {% endfor %}
 </ul>
 
@@ -28,13 +28,16 @@
 {% block modals %}
 {{ block.super }}
 {% include 'rai/generic/modal_header.html' with size="lg" backdrop="static" id="filterModal" title="Filter settings" %}
-<form id="filterForm" action=".">
+<form id="filterForm" action="." autocomplete="off">
   {% csrf_token %}
   {{ filter_form }}
 </form>
 {% include 'rai/generic/modal_footer.html' with id="filterModal" cancel_button=True apply_button=True save_button=True%}
 
-{% include 'rai/generic/modal_header.html' with backdrop="static" id="listSettingsModal" title="Cancel" %}
-Some content here
-{% include 'rai/generic/modal_footer.html' with id="listSettingsModal" %}
+{% include 'rai/generic/modal_header.html' with size="xxl" backdrop="static" id="listSettingsModal" title="Anzeige-Einstellungen" %}
+<form id="settingsForm" action="." methods="post"  autocomplete="off">
+  {% csrf_token %}
+  {{ settings_form }}
+</form>
+{% include 'rai/generic/modal_footer.html' with id="listSettingsModal" cancel_button=True save_button=True%}
 {% endblock %}
