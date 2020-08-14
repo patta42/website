@@ -20,7 +20,8 @@ import userinput.rai.filters as filters
 from userinput.rai.permissions import MovePermission, InactivatePermission
 
 from userinput.rai.edit_handlers import (
-    project_edit_handler, workgroup_edit_handler, workgroup_create_edit_handler, rubionuser_edit_handler
+    project_edit_handler, workgroup_edit_handler, workgroup_create_edit_handler, rubionuser_edit_handler,
+    rubionuser_create_handler, project_create_handler
 )
 
 from wagtail.core.models import PageRevision
@@ -64,7 +65,10 @@ class RUBIONUserMoveAction(RUBIONUserOnlyWhenActiveMixin, MoveToWorkgroupAction)
     
 class RUBIONUserInactivateAction(RUBIONUserOnlyWhenActiveMixin, UserinputInactivateAction):
     pass
-        
+
+class RUBIONUserCreateAction(CreateAction):
+    edit_handler = rubionuser_create_handler
+    
 class RAIUserDataListAction(ListAction):
     # list_item_template = 'userinput/rubionuser/rai/list/item-in-list.html'
     list_filters = [
@@ -232,7 +236,7 @@ class RAIUserDataListAction(ListAction):
 
 class RUBIONUserDataEditAction(RUBIONUserOnlyWhenActiveMixin, EditAction):
     edit_handler = rubionuser_edit_handler
-
+    text_style = 'secondary'
 
 class RAIProjectListAction(ListAction):
     list_item_template = 'userinput/project/rai/list/item-in-list.html'
@@ -241,6 +245,9 @@ class RAIProjectListAction(ListAction):
     ]
 class RAIProjectEditAction(EditAction):
     edit_handler = project_edit_handler
+
+class RAIProjectCreateAction(CreateAction):
+    edit_handler = project_create_handler
     
     
 class RAIWorkgroupListAction(ListAction):
