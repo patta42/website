@@ -1,6 +1,9 @@
 from .generic import RAIFieldPanel
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
+
+from wagtail.admin.edit_handlers import StreamFieldPanel
+
 import json
 
 class RAIDependingFieldPanel(RAIFieldPanel):
@@ -33,3 +36,30 @@ class RAIDependingFieldPanel(RAIFieldPanel):
             'field_type': self.field_type(),
             'classes' : self.classes()
         }))
+    
+class RAIStreamFieldPanel(RAIFieldPanel):
+    def classes(self):
+        classes = super().classes()
+        classes.append("stream-field")
+
+        # In case of a validation error, BlockWidget will take care of outputting the error on the
+        # relevant sub-block, so we don't want the stream block as a whole to be wrapped in an 'error' class.
+        if 'error' in classes:
+            classes.remove("error")
+
+        return classes
+
+    def html_declarations(self):
+        self.block_def.all_html_declarations()
+
+    def get_comparison_class(self):
+        return compare.StreamFieldComparison
+
+    def id_for_label(self):
+        # a StreamField may consist of many input fields, so it's not meaningful to
+        # attach the label to any specific one
+        return ""
+
+    def on_model_bound(self):
+        super().on_model_bound()
+        self.block_def = self.db_field.stream_block
