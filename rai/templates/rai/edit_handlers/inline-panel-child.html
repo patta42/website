@@ -1,6 +1,6 @@
 {% load i18n %}
 <div id="inline_child_{{ child.form.prefix }}" class="d-flex align-items-start inline-child pt-1">
-  <div class="btn-group-vertical mr-1">
+  <div class="btn-group-vertical ml-2">
     {% if can_order %}
     <button type="button" class="btn btn-sm btn-secondary" id="id_{{ child.form.prefix }}-move-up" title="{% trans 'Move up' %}">
       <i class="fas fa-arrow-up"></i>
