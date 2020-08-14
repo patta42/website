@@ -80,7 +80,8 @@ class BeiratMemberReplaceForm(forms.Form):
     source = forms.ChoiceField(
         choices = (
             ('new_user', 'Neuen Nutzer anlegen'),
-            ('existent_user', 'Nutzer aus Nutzer- und Mitarbeiterliste auswählen')
+            ('existent_user', 'Nutzer aus Nutzer- und Mitarbeiterliste auswählen'),
+            ('no_user', 'Beiratsposition ist nicht besetzt')
         ),
         label = 'Quelle für das Beiratsmitglied auswählen.',
         widget = RAIRadioSelect,
@@ -147,6 +148,5 @@ class BeiratMemberReplaceForm(forms.Form):
             phone= cleaned_data.get('phone', None)
             if not phone:
                 self.add_error('phone', 'Dieses Feld muss ausgefüllt werden.')
-            
             
         return cleaned_data
