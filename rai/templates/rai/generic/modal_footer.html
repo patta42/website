@@ -1,7 +1,7 @@
 {% load i18n %}
       </div>
 <div class="modal-footer">
-  {% if cancel_button %}<button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Cancel" %}</button>{% endif %}
+  {% if cancel_button %}<button id="btnCancel{{id}}" type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Cancel" %}</button>{% endif %}
   {% if apply_button %}<button id="btnApply{{id}}" type="button" class="btn btn-primary">{% trans "Apply" %}</button>{% endif %}
   {% if save_button %}<button id="btnSave{{id}}" type="button" class="btn btn-primary">{% trans "Apply and save as default" %}</button>{% endif %}
       </div>
