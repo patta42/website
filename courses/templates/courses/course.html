@@ -17,10 +17,18 @@
 {% endblock %}
 {% block content %}
 {% with parent=page.get_parent.specific %}
-<h2>{{ parent.title_trans }}</h2>
+
+  <h2>{{ parent.title_trans }}</h2>
 <h3>{% trans "Course from" %} {{page.title_trans}}</h3>
 <div class="introduction">{{ parent.introduction }}</div>
+{% if request.is_preview %}
+<div class="editable" data-editable-field="body">
+{% endif %}
 {{ page.body }}
+{% if request.is_preview %}
+</div>
+{% endif %}
+
 {% if page.is_bookable %}
   <h3>{% trans "Register" %}</h3>
   {% if page.started_in_past %}
@@ -62,5 +70,6 @@ Other participants can register for one of the following courses. During the reg
 {% endblock %}
 
 {% block extra_css %}
-  {% include "website/fontawesome.html" %}
+    {{ block.super }}
+    {% include "website/fontawesome.html" %}
 {% endblock %}
