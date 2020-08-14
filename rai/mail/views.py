@@ -79,16 +79,29 @@ class EMailView(RAIView, PageMenuMixin):
                 
             else:
                 print(form.errors)
-            
+
+    def dispatch(self, request, *args, **kwargs):
+        self.form = None
+        return super().dispatch(request, *args, **kwargs)
+                
     def get(self, request, *args, **kwargs):
-        self.form = RAIEMailForm(user = request.user)
+        # get might be called from post with self.form set.
+        # Thus, populate self.form only if its None
+        if not self.form:
+            self.form = RAIEMailForm(user = request.user)
         return super().get(request, *args, **kwargs)
     
     def post(self, request, *args, **kwargs):
         post = request.POST.copy()
+        is_initial = post.get('is_initial', False)
         to_list = post.getlist('to', [])
         post.update({'to': ', '.join(to_list)})
-        self.form = RAIEMailForm(post, request.FILES, user = request.user)
+        if not is_initial:
+            self.form = RAIEMailForm(post, request.FILES, user = request.user)
+        else:
+            self.form = RAIEMailForm(initial = {'to' : ', '.join(to_list)}, user = request.user)
+            return self.get(request, *args, **kwargs)
+                               
         if self.form.is_valid():
 
             self.handle_files(request)
