@@ -43,7 +43,7 @@ group_edit_handler = eh.RAIPillsPanel(
     [
         eh.RAIObjectList([
            PermissionSelectionInlinePanel('permissions', 'rai_id','value', heading='Definition der Berechtigungen', allow_add = True, can_delete = True)
-        ], heading = 'Berechtigungen'),
+        ], heading = 'Berechtigungen', wrapper_classes = 'wide'),
         eh.RAIObjectList([
             eh.RAIFieldPanel('members', widget = RAISelectMultipleSelectionLists)
         ], heading ='Mitglieder'),
