@@ -1,9 +1,10 @@
+from django.http import Http404, JsonResponse
 from django.template.response import TemplateResponse
 
 from rai.default_views import InactivateView
 
-from userinput.models import WorkGroup
-from userinput.rai.forms import MoveToWorkgroupForm
+from userinput.models import WorkGroup, Nuclide
+from userinput.rai.forms import MoveToWorkgroupForm, AddNuclideForm
 
 
 class MoveToWorkgroupView(InactivateView):
@@ -64,3 +65,24 @@ class MoveToWorkgroupView(InactivateView):
             return self.get(request, *args, **kwargs)
         
             
+def add_nuclide(request):
+    if not request.is_ajax():
+        raise Http404('Page does not exist')
+    if request.method == 'GET':
+        form = AddNuclideForm()
+        return JsonResponse({'status': 200, 'html': form.as_p()})
+    if request.method == 'POST':
+        form = AddNuclideForm(request.POST)
+        if form.is_valid():
+            elem, mass = form.cleaned_data['nuclide'].split('-')
+            if Nuclide.objects.filter(element = elem, mass = mass).exists():
+                return JsonResponse({'status': 200, 'errors': True, 'html' : '<ul class="errorlist"><li>Das Nuklid existiert bereits</li></ul>'+form.as_p()})
+            else:
+                nuclide = Nuclide(
+                    element = elem,
+                    mass = mass
+                )
+                nuclide.save()
+                return JsonResponse({'status': 200, 'errors': False, 'pk' : nuclide.pk, 'nuclide' : str(nuclide)})
+        else:
+            return JsonResponse({'status': 200, 'errors' : True, 'html' : form.as_p()})
