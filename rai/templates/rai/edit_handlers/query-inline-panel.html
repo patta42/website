@@ -1,6 +1,9 @@
 {% load i18n %}
 {% load wagtailadmin_tags  %}
 <div class="collapsable{% if self.classes %} {{self.classes|join:" "}}{%endif%}" id="{{ self.formset.prefix }}">
+  {% if self.long_heading %}
+  <h4>{{self.long_heading}}</h4>
+  {% endif %}
 {{ self.formset.management_form }}
 <div class="multiple" id="id_{{ self.formset.prefix }}-FORMS">
   {% if self.formset.non_form_errors %}
@@ -15,7 +18,7 @@
     {% include self.child_template %}
 {% endfor %}
 <div class="add button-group mt-2">
-  {% if self.can_add %}
+  {% if self.allow_add %}
   <button type="button" class="btn btn-secondary" id="id_{{ self.formset.prefix }}-add">
     <i class="fas fa-plus{% if self.label %} mr-1{% endif %}"></i>{% if self.label %} {% blocktrans with label=self.label|lower %}Add {{ label }}{% endblocktrans %}{% endif %}
   </button>
