@@ -1,0 +1,338 @@
+{% load i18n rai_tags %}
+
+{% if settings %}<input type="hidden" name="action" value="update_view_settings" />
+<div class="container-fluid" id="settings__select_and_order">
+  <div class="row">
+    <div class="col-2">
+      <p>Hier können die in der Liste angezeigten Felder und ihre Reihenfolge festgelegt werden.</p>
+      <p>Um Felder zur Anzeige hinzuzufügen oder auszublenden, einfach die
+      Felder an- bzw. abhaken. Um die Reihenfolge zu verändern, das
+      entsprechende Icon (<i class="fas fa-grip-vertical"></i>) anklicken,
+      die Maustatste gedrückt halten und das Feld an die gewünschte Position ziehen.</p>
+      <p>Felder, die einer Grupper zugehören, können nur innerhalb der Gruppe angeordnet werden.</p>
+    </div>
+    <div class="col-5">
+      <h5>Ausgewählte Elemente</h5>
+      <ul class="list-group" id="settings__selected_items">
+	
+	{% for key, setting in settings.items %}
+	{% if setting.selected or setting.children %}
+    <li class="list-group-item"{% if setting.children and setting.selected_children_count == 0 %} style="display:none"{% endif %}>
+	  <div class="d-flex justify-content-between">
+	    <div>
+	      <h6>
+		<div class="custom-control custom-checkbox">
+    <input type="checkbox" class="custom-control-input" name="settings__{{key}}" id="settings__{{key}}"{% if setting.selected %} checked{% endif %} value="{{forloop.counter0}}">
+    <label class="custom-control-label" for="settings__{{key}}">{{setting.label}}</label>
+		</div>
+	      </h6>
+	      <span class="text-muted">{{setting.desc}}</span>
+	    </div>
+	    <div>
+	      <span class="grab-icon cursor-grab">
+		<i class="fas fa-grip-vertical"></i>
+	      </span>
+	    </div>
+	  </div>
+	  {% if setting.children %}
+	  <ul class="list-group" data-selection-children-for="{{key}}">
+	    {% for child in setting.children %}
+	    {% if child.selected %}
+	    <li class="list-group-item">
+	      <div class="d-flex justify-content-between">
+		<div>
+		  <h6>
+		    <div class="custom-control custom-checkbox">
+    <input type="checkbox" class="custom-control-input" name="settings__{{key}}__{{child.key}}" id="settings__{{child.key}}" checked value="{{forloop.counter0}}">
+    <label class="custom-control-label" for="settings__{{child.key}}">{{child.label}}</label>
+		    </div>
+		  </h6>
+		  <span class="text-muted">{{child.desc}}</span>
+		</div>
+		<div>
+		  <span class="grab-icon-group cursor-grab">
+		    <i class="fas fa-grip-vertical"></i>
+		  </span>
+		</div>
+	      </div>
+	    </li>
+	    {% endif%}
+	    {% endfor %}
+	  </ul>
+	  {% endif %}
+	</li>
+	{% endif %}
+	{% endfor %}
+      </ul>
+    </div>
+    <div class=" col-5">
+      <h5>Ausgeblendete Elemente</h5>
+      <ul class="list-group" id="settings__unselected_items">
+	{% for key, setting in settings.items %}
+	{% if not setting.selected or setting.children  %}
+	<li class="list-group-item"{% if setting.children and setting.unselected_children_count == 0 %} style="display:none"{% endif %}>
+	  <h6>
+	    <div class="custom-control custom-checkbox">
+    <input type="checkbox" class="custom-control-input" name="settings__{{key}}{% if setting.children %}__clone{% endif %}" id="settings__{{key}}{% if setting.children %}__clone{% endif %}" value="{{forloop.counter0}}">
+    <label class="custom-control-label" for="settings__{{key}}{% if setting.children %}__clone{% endif %}">{{setting.label}}</label>
+	    </div>
+	  </h6>
+	  <span class="text-muted">{{setting.desc}}</span>
+	  {% if setting.children %}
+	  <ul class="list-group">
+	    {% for child in setting.children %}
+	    {% if not child.selected %}
+	    <li class="list-group-item">
+	      <div class="d-flex justify-content-between">
+		<div>
+		  <h6>
+		    <div class="custom-control custom-checkbox">
+    <input type="checkbox" class="custom-control-input" name="settings__{{key}}__{{child.key}}" id="settings__{{child.key}}" value="{{forloop.counter0}}">
+    <label class="custom-control-label" for="settings__{{child.key}}">{{child.label}}</label>
+		    </div>
+		  </h6>
+		  <span class="text-muted">{{child.desc}}</span>
+		</div>
+		<div>
+		  <span class="grab-icon-group cursor-grab">
+		    <i class="fas fa-grip-vertical"></i>
+		  </span>
+		</div>
+	      </div>
+
+	    </li>
+	    {% endif%}
+	    {% endfor %}
+	  </ul>
+	  {% endif %}
+	</li>
+	{% endif %}
+	{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+<script>
+    $(document).on('rubiontail.baseloaded',function(){
+	setLoadStatus(
+	    'initiiere Listeineinstellungen', 
+	    function(){
+		var updateVals = function(evt, ui){
+		    console.log('Updating values on', evt.target) 
+		    var counter = 0;
+		    $(evt.target).children('li').each(function(){
+			var $li = $(this),
+			    $ip = $li.find('input[type="checkbox"]').first()
+			if ($li.is(':visible')){
+			    console.log('updating', $ip)
+			    $ip.val(counter)
+			    counter++
+			}
+		    })
+		}
+		$('#settings__selected_items').sortable({
+		    axis: 'y',
+		    handle : '.grab-icon',
+		    placeholder : 'bg-light list-group-item',
+		    forcePlaceholderSize: true,
+		    update : updateVals
+			
+
+		})
+		$('#settings__selected_items li ul').sortable({
+		    axis: 'y',
+		    handle : '.grab-icon-group',
+		    placeholder : 'bg-light list-group-item',
+		    update : updateVals
+		    
+		})
+		$('#settings__selected_items input[type="checkbox"]').each(
+		    function(){
+			
+			var $this = $(this), $li = $this.parents('li').first()
+			if ($li.find('ul li').length > 0){
+			    var $unsel = $('#settings__unselected_items'), $otherInput = $unsel.find('input[name="'+$this.attr('name')+'__clone"]'),
+				$otherLi = $otherInput.parents('li').first()
+			    if ($otherLi.find('ul li').length>0){
+				$this.prop('indeterminate', true)
+				$otherInput.prop('indeterminate', true)
+			    }
+			}
+		    }
+		)
+		$('#settings__select_and_order input[type="checkbox"]').change(
+		    function(){
+			var $elem = $(this),
+			    isChild = ( ($elem.attr('name').indexOf('__') != $elem.attr('name').lastIndexOf('__')) && $elem.attr('name').indexOf('__clone') < 0),
+			    $li = $elem.parents('li').first(),
+			    isParent = $li.find('ul').length > 0,
+			    $unselectedContainer = $('#settings__unselected_items'),
+			    $selectedContainer = $('#settings__selected_items'),
+			    $target
+			console.log('change', '__clone index', $elem.attr('name').indexOf('__clone'), 'isChild', isChild, 'isParent', isParent)		    
+			
+			if ($elem.prop('checked')){
+			    $target = $selectedContainer
+			} else {
+			    $target = $unselectedContainer
+			}
+			if (!isChild && !isParent){
+			    // simplest case: Move a normal, top-level setting
+			    $li.hide(
+				200,
+				function(){
+				    // check or uncheck children, if available
+				    $li.find('ul input[type="checkbox"]').prop('checked', $elem.prop('checked'))
+				    $li.appendTo($target).show(200)
+				    updateVals({target : $selectedContainer})
+				}
+			    )
+			} else {
+			    // either a child or a parent
+			    
+			    if(!isChild && isParent) {
+				// second case, move a group
+				
+				// check if we move from a clone to the normal one or the other way around
+				var cloneIdx = $elem.attr('name').indexOf('__clone'),
+				    isClone = cloneIdx > -1,
+				    otherName = isClone ? $elem.attr('name').slice(0, cloneIdx) : $elem.attr('name')+'__clone'
+				$otherInput = $('input[name="'+otherName+'"]'),
+				$li = $elem.parents('li').first(),
+				$otherLi = $otherInput.parents('li').first(),
+				$children = $li.find('li'),
+				$target = $otherLi.find('ul').first()
+				$li.hide(
+				    200,
+				    function(){
+					// since we do not move the input, toggle its value
+					if (isClone){
+					    $elem.prop('indeterminate', false).prop('checked', false)
+					    $otherInput.prop('indeterminate', false).prop('checked', true)
+					} else {
+					    $elem.prop('indeterminate', false).prop('checked', false)
+					    $otherInput.prop('indeterminate', false).prop('checked', false)
+					}
+					$children.each(
+					    function() {
+						if ($otherLi.is(':visible')) {
+						    $(this).hide()
+						}
+						$(this).appendTo($target)
+						var $ip = $(this).find('input[type="checkbox"]').first()
+						$ip.prop('checked', !$ip.prop('checked'))
+						if ($otherLi.is(':visible')) {
+						    $(this).show(200, function(){
+							updateVals({target:$selectedContainer})
+							$selectedContainer.find('ul').each(
+							    function(){updateVals({target:$(this)})}
+							)
+						    })
+						}
+					    }
+					)
+					if (!$otherLi.is(':visible')){
+					    // send to the end of the list
+					    $otherLi.appendTo($otherLi.parents('ul').first())
+					    $otherLi.show(200, function(){
+						updateVals({target:$selectedContainer})
+						$selectedContainer.find('ul').each(
+						    function(){updateVals({target:$(this)})}
+						)
+					    })
+					}
+					
+				    }
+				)
+			    } else {
+				// third case, move a child
+				var $li = $elem.parents('li').first(),
+				    $parentLi = $li.parents('li').first(),
+				    $parentInput = $parentLi.find('input[type="checkbox"]').first(),
+				    cloneIdx = $parentInput.attr('name').indexOf('__clone'),
+				    isClone = cloneIdx > -1,
+				    otherName = isClone ? $parentInput.attr('name').slice(0, cloneIdx) : $parentInput.attr('name')+'__clone',
+				    $otherInput = $('input[name="'+otherName+'"]'),
+				    $otherParent = $otherInput.parents('li').first(),
+				    $target = $otherParent.find('ul').first(),
+				    nSiblings = $li.parent().find('li').length - 1 // after removal of the clicked one
+				
+				console.log('li', $li, 'parentLI', $parentLi, 'isClone', isClone, 'otherInput', $otherInput)
+				console.log('otherParent', $otherParent, '$target', $target)
+				if(nSiblings == 0){
+				    $parentLi.hide(
+					200,
+					function(){
+					    $parentInput.prop('indeterminate', false).prop('checked', false)
+					    if (isClone){
+						$otherInput.prop('indeterminate', false).prop('checked', true)
+					    } else {
+						$otherInput.prop('indeterminate', false).prop('checked', false)
+					    }
+					    
+					    $li.hide().appendTo($target)
+					    if ($otherParent.is(':visible')){
+						$li.show(200, function(){
+						    updateVals({target:$selectedContainer})
+						    $selectedContainer.find('ul').each(
+							function(){updateVals({target:$(this)})}
+						    )
+						})
+					    } else {
+						$li.show()
+						$otherParent.appendTo($otherParent.parents('ul').first()).show(200, function(){
+						    updateVals({target:$selectedContainer})
+						    $selectedContainer.find('ul').each(
+							function(){updateVals({target:$(this)})}
+						    )
+						})
+					    }
+					}
+				    )
+				} else {
+				    $li.hide(
+					200,
+					function(){
+					    $li.appendTo($target);
+					    if (isClone){
+						$parentInput.prop('checked', false).prop('indeterminate', true)
+						$otherInput.prop('checked', true).prop('indeterminate', true)
+					    } else {
+						$parentInput.prop('checked', true).prop('indeterminate', true)
+						$otherInput.prop('checked', false).prop('indeterminate', true)
+					    }
+					    if ($otherParent.is(':visible')){
+						$li.show(200, function(){
+						    updateVals({target:$selectedContainer})
+						    $selectedContainer.find('ul').each(
+							function(){updateVals({target:$(this)})}
+						    )
+						})
+					    } else {
+						$li.show()
+						$otherParent.appendTo($otherParent.parents('ul').first()).show(200, function(){
+						    updateVals({target:$selectedContainer})
+						    $selectedContainer.find('ul').each(
+							function(){updateVals({target:$(this)})}
+						    )
+						})
+					    }
+					}
+				    )
+				}
+				
+			    }			
+			}
+			
+		    }
+		)
+	    }
+	)
+    })
+		     
+</script>
+{% else %}
+<div class="alert alert-info">
+  <p>Diese Auflistung kann nicht konfiguriert werden.
+</div>
+{% endif %}
