@@ -30,7 +30,8 @@ window.addScript('Lade Style-Apassungen', '{% static 'css/admin/RUB-bootstrap-th
 window.addScript('Lade RUBIONtail-Style-Apassungen', '{% static 'css/admin/RUBIONtail.css' %}', 'css')
 window.addScript('Lade jquery UI Style-Apassungen', '{% static 'js/admin/third-party/jquery-ui-1.12.1.custom/jquery-ui.min.css' %}', 'css')
 window.addScript('Lade jquery UI', '{% static '/js/admin/third-party/jquery-ui-1.12.1.custom/jquery-ui.min.js' %}', 'js')
-
+window.addScript('Lade jquery colors', '{% static '/js/admin/third-party/jquery-color.min.js' %}', 'js')
+window.addScript('Lade jquery animate shadow', '{% static '/js/admin/third-party/jquery.animate-shadow.min.js' %}', 'js')
 window.addScript('Lade RAI Widgets', '{% static  'js/admin/RAIWidgets.js'  %}', 'js')
 window.addScript('Lade Such- und Markierungs-Plugin', '{% static 'js/admin/third-party/mark.js-8.11.1/jquery.mark.min.js' %}', 'js')
 window.addScript('Lade Spracherweiterungen', '{% static 'js/admin/third-party/moment/moment.min.js' %}', 'js')
@@ -58,7 +59,7 @@ window.addScript('Lade Editor-Erweiterungen', '{% static 'js/admin/RUBIONeditor.
     
 
   </head>
-  <body data-rai-help-uri="{% help_uri %}" data-rai-user_pk="{{user_pk}}">
+  <body data-rai-help-uri="{% help_uri %}" data-rai-user_pk="{{user_pk}}" id="body">
     <div class="" style="position:fixed; top:0; height:100vh; width:100vw; background-color:rgba(0,0,0,.75); z-index:2000" id="loadscreen">
       <div style="position:absolute; top:33%; left:50%; color:rgba(255,255,255,.75); transform:translate(-50%, -50%); padding:2rem;">
 	<div id="loadscreen_icon" style="text-align:center; font-size:2.5rem"><!--<i class="fas fa-cog fa-spin"></i>-->
@@ -184,7 +185,7 @@ console.log(window._scriptsToAdd)
 		       
     
 </script>
-
+{% block additional_js %}{% endblock %}
 {% block modals %}
     {% include 'rai/help/help_modal.html' %} 
     {% include 'rai/generic/generic-modal.html' %}
@@ -206,5 +207,6 @@ console.log(window._scriptsToAdd)
       )
 window.addScript('Lade initialisierungscode', '{% static 'js/admin/init.js' %}', 'js')
     </script>
+
   </body>
 </html>
