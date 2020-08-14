@@ -11,7 +11,7 @@ from wagtail.core.models import Page, PageRevision
 register = template.Library()
 
 @register.simple_tag( takes_context = True )
-def render_object_in_list(context, obj, tpl, visible_fields):
+def render_object_in_list(context, obj, tpl):
     if tpl is None:
         tpl = 'rai/views/default/default-list-item.html'
 
@@ -25,12 +25,45 @@ def render_object_in_list(context, obj, tpl, visible_fields):
         {
             'object' : obj,
             'last_revision':page_revision, 
-            'visible_fields' : visible_fields,
-            'item_actions' : context['item_actions']
+            'item_actions' : context['item_actions'],
+            'settings' : context['settings'],
+            'active_action' : context['active_action']
         }
     )
-        
 
+@register.simple_tag        
+def render_setting( obj, key, setting, active_action ):
+    sett = active_action.item_provides[key]
+    sett['children'] = setting.get('children', [])
+    type_ = sett.get('type', 'par')
+    classes = []
+    if isinstance(type_, list):
+        classes = type_
+        type_ = type_[0]
+        
+    field = sett.get('field', None)
+    callback = sett.get('callback', None)
+    func = sett.get('func', None)
+    value ='foo'
+    if field:
+        value = getattr(obj, field)
+    if func:
+        fnc =  getattr(obj, func)
+        value = fnc()
+    if callback:
+        fnc = getattr(active_action, callback)
+        value = fnc(obj)
+
+    
+    return render_to_string(
+        'rai/views/default/default-list-item/'+str(type_)+'.html',
+        {
+            'value' : value,
+            'object' : obj,
+            'active_action': active_action,
+            **sett
+        }
+    )
 @register.simple_tag( takes_context = True )
 def render_list_filters(context):
     return render_to_string(
@@ -40,6 +73,9 @@ def render_list_filters(context):
         }
     )
 
+@register.filter
+def is_list(val):
+    return isinstance(val, list)
 
 @register.filter
 def to_str(val):
