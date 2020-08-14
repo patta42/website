@@ -46,6 +46,13 @@ class RUBIONUserInstrumentFilter(RAIFilter, metaclass = RUBIONUserInstrumentFilt
     is_mutual_exclusive = False
     help_text = _l('Filter users by their usage of instruments')
 
+    def __init__(self, qs, value = None):
+        super().__init__(qs, value)
+        if self.value is not None:
+            values = [int(val) for val in self.value]
+            self.value = values
+    
+    
     def get_queryset(self):
         """
         Filters the users by their instrument usage
@@ -67,14 +74,13 @@ class RUBIONUserInstrumentFilter(RAIFilter, metaclass = RUBIONUserInstrumentFilt
         # workgroup <-> user on the DB level
         exclude = []
 
-        pks = [int(v) for v in self.value]
+        
         
         for user in self.qs.all():
             do_exclude = True
             for instrument in user.get_instruments():
                 
-                if instrument.pk in pks:
-                    print('Instrument found')
+                if instrument.pk in self.value:
                     do_exclude = False
                     break
 
