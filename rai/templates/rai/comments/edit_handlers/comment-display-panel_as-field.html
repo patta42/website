@@ -1,5 +1,27 @@
-<div class="card mb-3" data-rai-comment-id="{{id}}" style="width:75%; max-width:50rem">
-  You are: {{request_user}}
+{% load rai_comment_tags wagtailimages_tags wagtailadmin_tags static %}
+<div class="rai-comment d-flex align-items-start">
+  <h6 class="label" style="flex-grow:0">
+    {% if has_instance %}
+      {% as_staff owner as staff %}
+      {% if owner.wagtail_userprofile.avatar %}
+        <img src="{% avatar_url owner.wagtail_userprofile size=50 %}" class="user-profile-picture-in-comment" width="50" height="50"/>
+      {% elif staff.picture %}
+        {% image staff.picture fill-50x50 class="user-profile-picture-in-comment" %} 
+      {% else %}
+        <img src="{% static "images/icons/staff-placeholder.png" %}" width="50" height="50" alt="" class="user-profile-picture-in-comment"/>
+      {% endif %}
+    {% else %}
+      {% as_staff request_user as staff %}
+	{% if request_user.wagtail_userprofile.avatar %}
+	<img src="{% avatar_url request_user.wagtail_userprofile size=50 %}" width="50" height="50" class="user-profile-picture-in-comment"/>
+      {% elif staff.picture %}
+        {% image staff.picture fill-50x50 class="user-profile-picture-in-comment" %} 
+      {% else %}
+        <img src="{% static "images/icons/staff-placeholder.png" %}" width="50" height="50" alt="" class="user-profile-picture-in-comment"/>
+      {% endif %}
+    {% endif %}
+</h6>
+<div class="card mb-3" data-rai-comment-id="{{id}}" style="max-width:50rem;flex-grow:1">
   <div class="card-body p-2">
     <div>
       <div style="color:rgba(0,0,0,.25); float:left">
@@ -8,6 +30,7 @@
       <div style="margin-left:2.5rem">
 	{% if has_instance %}
 	<div class="d-flex justify-content-between bg-light">
+	  <div>
 	  <h6>
 	    {% if owner %}
 	    {{owner.last_name}}, {{owner.first_name}}
@@ -16,33 +39,40 @@
 	    {% endif %}
 	  </h6>
 	  <div class="rai-comment-timestamp">
-	    Verfasst am: {{timestamp}}
+	    {{timestamp}}
 	  </div>
+	  </div>
+	  {% if may_edit %}
+	  <div class="btn-group" role="group">
+	    <button id="btnGroupDrop{{id}}" type="button" class="btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+	      <i class="fas fa-ellipsis-v"></i>
+	    </button>
+	    <div class="dropdown-menu" aria-labelledby="btnGroupDrop{{id}}">
+	      <a class="dropdown-item comment-edit-button" href="{% url "rai_comment_edit" id %}#genericModal"><span class="mr-2"><i class="fas fa-pen"></i></span> Kommentar ändern</a>
+	      <a class="dropdown-item comment-delete-button" href="{% url "rai_comment_delete" id %}" data-comment-id="{{id}}"><span class="mr-2"><i class="fas fa-trash"></i></span> Kommentar löschen</a>
+	    </div>
+	  </div>
+    {% endif %}
+
 	</div>
 	{% else %}
 	<h6 class="card-heading">Kommentar hinzufügen:</h6>
-	{% endif %}
+	{% endif %} 
       </div>
     </div>
     <hr />
     {% if has_instance %}
-    <div>
+    <div class="rai-comment-content">
       {{ content.render_as_object }}
     </div>
-    {% if may_edit %}
-    <div class="text-right">
-      <a href="">Kommentar ändern</a>
-    </div>
-    {% endif %}
-
+   
     {% else %}
-    
     {{ content.render_as_object }}
     {% endif %}
 	  
   </div>
 </div>
-
+</div>
 {% comment %}
 
 
