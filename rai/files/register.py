@@ -1,6 +1,6 @@
 from .models import RAICollection
 
-from .base import RAIDocumentCollection, register_collection
+from .base import RAIOnDemandDocumentCollection, RAIDocumentCollection, register_collection
 from .views import document_edit, add_document, delete_document
 
 from django.urls import path
@@ -8,6 +8,7 @@ from django.urls import path
 from wagtail.core import hooks
 
 register_collection(RAIDocumentCollection)
+register_collection(RAIOnDemandDocumentCollection)
 
 
 @hooks.register('register_rai_url')
