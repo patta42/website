@@ -1,11 +1,9 @@
 import datetime
 
-from django.db import Q
+from django.db.models import Q
 
 from wagtail.core.query import PageQuerySet
-from wagtail.core.models import BasePageManager
-
-
+from wagtail.core.models import PageManager
 
 class ActiveInactivePageQuerySet(PageQuerySet):
     def active(self):
@@ -16,5 +14,6 @@ class ActiveInactivePageQuerySet(PageQuerySet):
         td = datetime.datetime.today()
         return self.filter(expire_at__lte = td)
 
-ActiveInactivePageManager = BasePageManager.from_queryset(ActiveInactivePageQuerySet)
+    
+ActiveInactivePageManager = PageManager.from_queryset(ActiveInactivePageQuerySet)
     
