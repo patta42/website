@@ -1,8 +1,9 @@
 from pprint import pprint
 
-from django.forms import Widget, Select, CheckboxSelectMultiple, RadioSelect
+from django.forms import Widget, Select, CheckboxSelectMultiple, RadioSelect, MultiWidget
+from django.urls import reverse
 
-from rai.utils import update_if_not_defined, add_css_class, remove_css_class
+from rai.utils import update_if_not_defined, add_css_class, remove_css_class, LIST_OF_ELEMENTS
 
 
 import random
@@ -392,7 +393,40 @@ class RAITimeInput(RAIDateInput):
 class RAIDateTimeInput(RAIDateInput):
     template_name = 'rai/forms/widgets/datetime.html'
 
+
+class RAINuclideInput(MultiWidget):
+    template_name = 'rai/forms/widgets/nuclide.html'
+    def __init__(self, attrs = None):
+        widgets = [
+            RAITypeAndSelect(attrs, choices = LIST_OF_ELEMENTS),
+            RAITextInput(attrs)
+        ]
+        super().__init__(widgets, attrs)
+
+    def decompress(self, value):
+        if isinstance(value, str):
+            return value.split('-')
+        return [None, None]
+
+    def value_from_datadict(self, data, files, name):
+        element, mass= super().value_from_datadict(data, files, name)
+        return '{}-{}'.format(element, mass)
+
+class RAINuclideSelect(RAISelect):
+    '''
+    This widget gets extended by JS to allow specifying
+    additional Nuclides as defined in userinpiut.models
+    '''
+    required_css_classes = ['nuclide-select', 'custom-select']
     
+    def __init__(self, attrs = None):
+        if not attrs:
+            attrs = {}
+            
+        attrs.update({'data-add-nuclide-url' : reverse('userinput_add_nuclide')})
+        super().__init__(attrs = attrs)
+                      
+
 # This is the default context set by django's Widget
     
     # context = {}
