@@ -25,12 +25,12 @@
   </div>
 
   <div class="px-2 py-1 bg-light rounded border border-secondary" style=" flex-grow:1">
-    <div>
-      <h6>Optionen für die Vorschau</h6>
+    <div class="template-editor-preview-options">
+      <h6>Optionen für die Vorschau {% help "rai:notification:preview:options" ""%}</h6>
       {% for label, definition in preview_options.items %}
       <div class="form-group">
 	<label for="{{definition.prefix}}Selection" style="white-space: nowrap;" class="mr-2">{{label}}:</label>
-	<select class="custom-select mr-2" id="{{definition.prefix}}Selection">
+	<select name="{{definition.prefix}}" class="custom-select mr-2" id="{{definition.prefix}}Selection">
 	  {% for pk, name in definition.options %}
 	  <option value="{{pk}}">{{name}}</option>
 	  {% endfor %}
