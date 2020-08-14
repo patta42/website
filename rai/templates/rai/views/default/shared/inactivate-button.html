@@ -1,0 +1,5 @@
+{% if button.type == "a" %}
+  <a class="btn {{button.btnClass}}" href="{% url button.value %}" {% if button.id %} id="{{button.id}}"{% endif %}>{{button.label}}</a>
+{% else %}
+  <button type="{{button.type}}" class="btn {{button.btnClass}}"{% if button.value %} value="{{button.value}}"{% endif %}{% if button.name %} name="{{button.name}}"{% endif %}{% if button.id %} id="{{button.id}}"{% endif %}>{{button.label}}</button>
+{% endif %}
