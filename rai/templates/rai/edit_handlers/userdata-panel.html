@@ -2,19 +2,21 @@
 <div class="userdata-panel">
   <div class="alert alert-warning" role="alert">
     <i class="fas fa-exclamation-circle fa-2x fa-pull-left"></i>
-    Diese Angaben werden im Normalfall vom Nutzer bereit gestellt.
-    Sie sollten nur im Ausnahmefall durch einen RUBION-Mitarbeiter
-    geändert werden.
-    <hr />
+    <h6 class="alert-heading">Diese Angaben werden im Normalfall vom Nutzer bereit gestellt.</h6>
+    <p>Sie sollten nur im Ausnahmefall durch einen RUBION-Mitarbeiter
+    geändert werden.</p>
+    <p>Aus diesem Grund ist das Editieren dieser Einträge zunächst nicht möglich, um unabsichtliche Änderungen zu vermeiden. Du kannst den Editiermodus mit dem folgenden Schalter aktivieren und die Einträge bearbeiten.</p>
+        <hr />
+	
     <div class="d-flex align-items-center">
-      <div class="mr-3">Editieren: </div>
-      <div class="btn-group btn-group-toggle editing-controller" data-toggle="buttons" data-editing-controler-parent-container=".userdata-panel">
-	<label class="btn btn-secondary active">
-	  <input type="radio" name="allow_edit" id="allow_edit_false" autocomplete="off" checked> ausgeschaltet
-	</label>
-	<label class="btn btn-secondary">
-	  <input type="radio" name="allow_edit" id="allow_edit_true" autocomplete="off"> eingeschaltet
-	</label>
+      <div class="mr-3">Editiermodus: </div>
+      <div class="editing-controller" data-editing-controller-parent-container=".userdata-panel">
+	<div class="custom-control-switch">
+	  <label>
+	    an
+	  <input class="custom-control-input" type="checkbox" name="allow_edit" autocomplete="off"><span class="lever"></span> aus
+	  </label>
+	</div>
       </div>
     </div>
   </div>
