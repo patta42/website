@@ -4,8 +4,10 @@ body {
     --rubgreen:rgb(141,174,16);
     --rubgreen10:rgba(141,174,16,.1);
     --rubgreen25:rgba(141,174,16,.25);
+    --rubgreen25-solid:#AAC24C;
     --rubgreen50:rgba(141,174,16,.50);
     --rubgreen75:rgba(141,174,16,.75);
+    --rubgreen75-solid:#E3EBC3;
     --gray10:rgba(0,0,0,.1);
     --gray0625:rgba(0,0,0,.0625);
     --gray125:rgba(0,0,0,.125);
@@ -22,7 +24,18 @@ body {
     --danger-color:#dc3545;
     --danger-background-color:#f8d7da;
     --danger-border-color:#f5c6cb;
-		       
+
+    --success-color:var(--rubgreen25);
+    --success-color-solid:var(--rubgreen75-solid);
+    --success-border-color:var(--rubgreen);
+
+    --warning-background-color:#fff3cd;
+    --warning-border-color:#ffeeba;
+    --warning-color:#856404;
+
+    --highlight-background-color:var(--warning-background-color)
+
+			
 }
 
 .feather {
@@ -199,10 +212,6 @@ fieldset.multi-field-panel{
 }
 /* Larger checkboxes and radios */
 
-.custom-control{
-    
-}
-
 .custom-control-label::before {
     position: absolute;
     top: 0;
@@ -230,6 +239,9 @@ fieldset.multi-field-panel{
     display: block;
     min-height: 1.5rem;
     padding-left: 2rem;
+}
+.custom-control.custom-control-inline{
+    display: inline-flex;
 }
 .page-header{
     position:fixed;
@@ -638,12 +650,19 @@ h6.sidebar-heading{
 .form-row-wrapper h6.label,
 fieldset.multi-field-panel legend,
 .form-group > label,
+fieldset fieldset.inline-panel legend,
 fieldset fieldset.form-group legend{
     font-size:larger;
     position:relative;
     overflow:visible;
     margin-left:-1rem;
 
+}
+/*
+ Otheriwse doesn't fit on course creation form.
+*/
+#main_form fieldset fieldset.inline-panel legend.label{
+    margin-left:1rem;
 }
 
 .inline-panel-all-options .form-group label,
@@ -688,6 +707,7 @@ fieldset .form-group > label:not(.custom-control-label):before,
 fieldset.multi-field-panel legend:before,
 .form-row-wrapper h6.label:before,
 .input-group-wrapper.as-field h6.label:before,
+fieldset fieldset.inline-panel legend:before,
 fieldset fieldset.form-group legend:before
 {
     content:' ';
@@ -1458,4 +1478,16 @@ table.attendee-list tbody td h6{
 
 button .additional-form-data{
     display:none;
+}
+.custom-select.disabled{color:#6c757d;background-color:#e9ecef}
+
+/* colored popovers */
+
+.popover.success{
+    background-color: var(--success-color-solid);
+    color: var(--success-border-color);
+}
+.popover.success .arrow:after{
+    border-right-color: var(--success-color-solid);
+    border-left-color: var(--success-color-solid);
 }
