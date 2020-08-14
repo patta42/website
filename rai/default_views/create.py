@@ -42,6 +42,8 @@ class CreateView(RAIAdminView, PageMenuMixin):
         if not self.formclass:
             self.formclass = self.edit_handler.get_form_class()
             self.formset_classes = self.edit_handler.get_additional_formset_classes()
+        else:
+            self.formset_classes = {}
         self.formsets = {}
         for key,formset_class in self.formset_classes.items():
             self.formsets.update({key : formset_class(prefix = key)})
