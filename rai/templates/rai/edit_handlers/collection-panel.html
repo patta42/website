@@ -1,3 +1,5 @@
-  {% for child in self.children %}
-    {{ child.render_as_field }}
-  {% endfor %}
+{% if depends_on %}<div data-depends-on="{{depends_on}}" class="depending-field">{% endif %}
+{% for child in self.children %}
+{{ child.render_as_field }}
+{% endfor %}
+{% if depends_on %}</div>{% endif %}
