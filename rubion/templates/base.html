@@ -25,7 +25,10 @@
     <link rel="stylesheet" type="text/css" href="{% static 'css/rubion.css' %}">
 <!--    <link rel="stylesheet" href="{% static "mathscribe/jqmath-0.4.3.css" --
   --    %}"> -->
-    {% block extra_css %}
+{% block extra_css %}
+{% if request.is_preview %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin/wysiwyg.css' %}" >
+{% endif %}
     {# Override this in templates to add extra stylesheets #}
     {% endblock %}
 <!--    <script src="{% static "mathscribe/jquery-1.4.3.min.js" %}"></script>
@@ -41,6 +44,10 @@
     {% block extra_head_js %}
     {# Override this in templates to add extra js to the head #}
     {% endblock %}
+    {% if request.is_preview %}
+    <script src="{% static "js/admin/third-party/jq-3.4.1/jquery-3.4.1.min.js" %}"></script>
+    <script src="{% static "js/admin/third-party/editorjs.js" %}"></script>
+    {% endif %}
   </head>
   
   <body class="{% block body_class %}{% endblock %}">
@@ -82,7 +89,9 @@
     </div>
     {# Global javascript #}
     <script type="text/javascript" src="{% static 'js/rubion2017.js' %}"></script>
-    
+    {% if request.is_preview %}
+    <script type="text/javascript" src="{% static 'js/admin/wysiwyg.js' %}"></script>
+    {% endif %}
     {% block extra_js %}
     {# Override this in templates to add extra javascript #}
     {% endblock %}
