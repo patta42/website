@@ -10,7 +10,16 @@ class NotificationTemplate(models.Model):
         help_text = 'Die Vorlage für die deutschsprachige E-Mail'
     )
     template_en = models.TextField(
-        help_text = 'Die Vorlge für die englischsprachige E-Mail',
+        help_text = 'Die Vorlage für die englischsprachige E-Mail',
         blank = True
     )
-    
+    subject = models.CharField(
+        help_text = 'Die Betreff-Zeile für die deutschsprachige E-Mail',
+        blank = True,
+        max_length = 512
+    )
+    subject_en = models.CharField(
+        help_text = 'Die Betreff-Zeile für die englischsprachige E-Mail',
+        blank = True,
+        max_length = 512
+    )
