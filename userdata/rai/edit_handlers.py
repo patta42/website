@@ -13,7 +13,7 @@ from rai.widgets import RAISelect, RAITextInput
 class ChooseStaffGroupHandler(RAIChooseParentHandler):
     # We do have a container that allows StaffUsers and Containers as children
     # but we don't want the parent container
-
+    
     def compute_choices(self):
         super().compute_choices()
         max_depth = self.page_choices.aggregate(Max('depth'))
