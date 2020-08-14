@@ -81,27 +81,14 @@ class RAIFieldChangedListenerMixin:
                 return True
         return False
                 
-
-    
-class RAINotification(RAIListener):
-    title = None
-    label = None
-    help_text = None
+class NotificationTemplateMixin:
     template = None
     template_en = None
     template_name = None
     template_name_en = None
-    
+        
     context_definition = {}
 
-    internal = False
-    
-
-    def register(self):
-        super().register()
-        self.register_template()
-        self.register_with_wagtail()
-        
     def register_template(self):
         """
         Adds the notification template to the database to allow
@@ -129,12 +116,7 @@ class RAINotification(RAIListener):
                 template_en = template_string_en
             )
             nt.save()
-
-    def register_with_wagtail(self):
-        @hooks.register('rai_notification')
-        def register_notification():
-            return self
-
+            
     def _get_query_from_definition(self, definition):
         cb = definition.get('preview_options_callback', None)
         
@@ -201,6 +183,27 @@ class RAINotification(RAIListener):
                 }
             })
         return options
+
+    
+    
+class RAINotification(RAIListener, NotificationTemplateMixin):
+    title = None
+    label = None
+    help_text = None
+    
+
+    internal = False
+    
+    def register(self):
+        super().register()
+        self.register_template()
+        self.register_with_wagtail()
+
+
+    def register_with_wagtail(self):
+        @hooks.register('rai_notification')
+        def register_notification():
+            return self
 
     
 
