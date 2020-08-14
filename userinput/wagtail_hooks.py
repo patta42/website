@@ -32,7 +32,7 @@ from django.utils.translation import ugettext_lazy as _l
 from django.utils.safestring import mark_safe
 from django.utils.html import format_html
 from django.utils.text import format_lazy
-from django.urls import reverse
+from django.urls import reverse, path
 from django.template.loader import render_to_string
 
 from notifications.models import (
@@ -568,5 +568,28 @@ modeladmin_register( UserInputResultsMAG )
 ## RAI ##
 
 from rai.base import rai_register
-from userinput.rai.register import RAIUserInputGroup
+from rai.files.base import register_collection
+
+from rai.notifications.base import register_listener
+
+
+from userinput.rai.register import RAIUserInputGroup, RAIRadiationSafetyGroup
+from userinput.rai.rubionuser.notifications import RUBIONUserChangedNotification
+from userinput.rai.collections import (
+    RUBIONUserDocumentCollection, RUBIONUserOnDemandDocumentCollection
+)
+from userinput.rai.views.generic import add_nuclide
+
 rai_register(RAIUserInputGroup)
+rai_register(RAIRadiationSafetyGroup)
+register_listener(RUBIONUserChangedNotification)
+register_collection(RUBIONUserDocumentCollection)
+register_collection(RUBIONUserOnDemandDocumentCollection)
+
+
+
+@hooks.register('register_rai_url')
+def register_rai_urls():
+    return [
+        path('nuclides/add', add_nuclide, name="userinput_add_nuclide")
+    ]
