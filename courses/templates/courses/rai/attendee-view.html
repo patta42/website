@@ -43,7 +43,7 @@ Teilnehmer verwalten {{ object }}
 	  </button>
 	  <div class="dropdown-menu">
 	    <h6 class="dropdown-header">Kommunikation</h6>
-	    <button class="btn dropdown-item" type="button">
+	    <button class="btn dropdown-item" type="button" data-action="get-and-post" data-action-url="{% url "rai_courses_ajax_send_results" %}">
 	      <span class="mr-1"><i class="fas fa-poll fa-fw"></i></span>
 	      Klausurergebnis senden
 	    </button>
