@@ -7,9 +7,14 @@
 {% block sortfields %}{%trans "Project"%}{% endblock %}
 {% block title_sortname %}{% trans "Project" %}{% endblock %}
 {% block additional_content %}
+{% with group=object.get_workgroup %} 
   <p class="mb-1 text-primary" data-rubion-searchable="true">
-    {{object.get_workgroup}}
+    {{group}}
   </p>
+<p class="mb-1">
+  Gruppenleiter: <span class="text-primary" data-rubion-searchable="true">{% include 'userinput/rubionuser/rai/shared/full-user-name.html' with object=group.get_head %}</span>
+</p>
+{% endwith %}
 <p class="mb-1">
   {% trans "Start" %}: {{object.first_published_at}},  
   {% trans "Expire" %}: {{object.expire_at}} 
