@@ -1,11 +1,16 @@
+
+
 from pprint import pprint
 
+from django.core.exceptions import FieldDoesNotExist
+from django.db.models.fields import CharField, TextField
 from django.forms.models import modelformset_factory
 from django.template.loader import render_to_string
 from django.utils.encoding import force_text
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 
+import functools
 
 from rai.forms import (
     RAIAdminModelForm, rai_modelform_factory, FORM_FIELD_OVERRIDES, formfield_for_dbfield
@@ -15,9 +20,20 @@ from rai.utils import update_if_not_defined, debug
 from taggit.managers import TaggableManager
 
 from wagtail.admin import compare
+from wagtail.core.fields import RichTextField
 from wagtail.core.utils import camelcase_to_underscore
 
+def diff_text(a, b):
+    if a is None:
+        a = ''
+    if b is None:
+        b = ''
 
+    return compare.diff_text(a,b)
+
+class RAITextFieldComparison(compare.TextFieldComparison):
+    def htmldiff(self):
+        return diff_text(self.val_a, self.val_b).to_html()
 
 class RAIEditHandler: 
     """
@@ -348,8 +364,7 @@ class RAIBaseCompositeEditHandler(RAIEditHandler):
 
         return comparators
 
-        
-
+     
 class RAIBaseFormEditHandler(RAIBaseCompositeEditHandler):
 
     base_form_class = None
@@ -484,7 +499,7 @@ class RAIFieldPanel(RAIEditHandler):
                 return compare.RichTextFieldComparison
 
             if isinstance(field, (CharField, TextField)):
-                return compare.TextFieldComparison
+                return RAITextFieldComparison
 
         except FieldDoesNotExist:
             pass
@@ -509,8 +524,11 @@ class RAIFieldPanel(RAIEditHandler):
             raise ImproperlyConfigured("%r must be bound to a model before calling db_field" % self)
 
         
-        return model._meta.get_field(self.field_name)
-
+        try:    
+            return model._meta.get_field(self.field_name)
+        except AttributeError:
+            raise FieldDoesNotExist
+        
     def on_form_bound(self):
         self.bound_field = self.form[self.field_name]
         if self.label:
@@ -518,7 +536,6 @@ class RAIFieldPanel(RAIEditHandler):
         if self.help_text:
             self.bound_field.help_text = self.help_text
         self.heading = self.bound_field.label
-#        self.help_text = self.bound_field.help_text
         
         
     def __repr__(self):
