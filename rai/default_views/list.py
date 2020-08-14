@@ -1,4 +1,4 @@
-from .generic import RAIAdminView, FilterSettingsView
+from .generic import RAIAdminView, ViewSettingsFilterSettingsView
 
 
 from django.http import HttpResponseForbidden, QueryDict
@@ -7,23 +7,20 @@ from django.template.loader import render_to_string
 from django.urls import resolve, reverse
 
 
-class ListView(FilterSettingsView):
+class ListView(ViewSettingsFilterSettingsView):
     template_name = 'rai/views/default/list.html'
     
-    def post(self, request):
-        """
-        Handles a POST-request
+    # def post(self, request):
+    #     """
+    #     Handles a POST-request
         
-        For this view, a POST request is sent if the users wants to save some view-specific settings,
-        here list or filter settings.
+    #     For this view, a POST request is sent if the users wants to save some view-specific settings,
+    #     here list or filter settings.
 
-        This saves the respective settings and redirects to the view.
-        """
-
+    #     This saves the respective settings and redirects to the view.
+    #     """
         
-        self.update_filter_settings(request)
-        
-        return redirect(request.path_info)
+    #     return super().post(request)
 
     
     
@@ -33,12 +30,12 @@ class ListView(FilterSettingsView):
         for Action in self.raiadmin.group_actions:
             action = Action(self.raiadmin)
             if (action.action_identifier != self.active_action.action_identifier) and (action.show(request)):
-                
                 actions.append({
                     'icon' : action.icon,
                     'icon_font' : action.icon_font,
                     'label' : action.label,
-                    'url' : action.get_href()
+                    'url' : action.get_href(),
+                    'show_for_instance':action.show_for_instance,
                 })
         return render_to_string(
             'rai/menus/group_menu.html',
@@ -47,6 +44,8 @@ class ListView(FilterSettingsView):
                 'settings_menu' : self.get_settings_menu(),
                 'sort_button' : True,
                 'filter_button' : True,
+                'request' : self.request
+                
             }
         )
     def get_settings_menu(self):
@@ -68,14 +67,15 @@ class ListView(FilterSettingsView):
                     'label' : action.label,
                     'icon_font' : action.icon_font,
                     'icon': action.icon,
-                    'urlname': action.get_url_name()
+                    'urlname': action.get_url_name(),
+                    'show_for_instance' : action.show_for_instance
                 })
         context.update({
             'title' : self.raiadmin.menu_label,
             'objects' : self.get_queryset(), 
             'page_menu' : self.get_page_menu(),
             'item_template' : self.active_action.list_item_template,
-            'configurable_display_fields' : self.active_action.configurable_display_fields,
+            'active_action': self.active_action,
             'visible_fields' : [], 
             'orders' : self.active_action.list_orders,
             'item_actions' : item_actions,
