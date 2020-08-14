@@ -419,7 +419,9 @@ $R.dialog = function(opts){
 	$closeBtn = $header.find('button[data-dismiss="modal"]').first()
 
     // destroy any previous modal instances
-
+    $body.children().remove()
+    $title.children().remove()
+    
     if($dm.data('bs.modal') !== undefined){
 	$dm.modal('dispose')
     }
