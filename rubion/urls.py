@@ -5,6 +5,8 @@ from django.conf.urls import include, url
 from django.conf.urls.i18n import i18n_patterns
 from django.contrib import admin
 
+from django.urls import path
+
 from search import views as search_views
 from wagtail.admin import urls as wagtailadmin_urls
 from rubionadmin import urls as rubionadmin_urls
@@ -16,9 +18,12 @@ from wagtail.documents import urls as wagtaildocs_urls
 from userinput import urls as userinput_urls
 from rubauth import urls as rubauth_urls
 from rubauth.views import logout
+
+from rai import urls as rai_urls 
 urlpatterns = [
     url(r'^django-admin/', admin.site.urls),
-    url(r'^admin/', include(wagtailadmin_urls)),
+    url(r'^admin/', include(rai_urls)),
+    url(r'^wagtail-admin/', include(wagtailadmin_urls)),
     url(r'^rubionadmin/', include(rubionadmin_urls)),
     url(r'^coursesadmin/', include(courses_urls, namespace='coursesadmin')),
     url(r'^manage-courses/', include(courses_user_urls, namespace='manage-courses')),
@@ -41,6 +46,11 @@ if settings.DEBUG:
     from django.conf.urls.static import static
     from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
+    
     # Serve static and media files from development server
     urlpatterns += staticfiles_urlpatterns()
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    import debug_toolbar
+    urlpatterns += [
+        path('__debug__/', include(debug_toolbar.urls))
+    ] 
