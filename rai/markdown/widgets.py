@@ -81,6 +81,8 @@ class RAIMarkdownWidget(RAITextarea):
     
     def __init__(self, features, attrs = None):
         self.features = { **self.default_features, **(features or {}) }
+        self.is_editable = True
+        self.edit_mode = True
         super().__init__(attrs)
     
     def render_as_object(self, name, value, attrs):
@@ -102,6 +104,7 @@ class RAIMarkdownWidget(RAITextarea):
             'name': name,
             'is_hidden': self.is_hidden,
             'required': self.is_required,
+            'is_editable' : self.is_editable,
             'value': self.format_value(value),
             'attrs': self.build_attrs(self.attrs, attrs),
             'template_name': self.template_name,
