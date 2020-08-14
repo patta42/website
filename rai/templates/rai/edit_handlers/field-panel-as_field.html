@@ -1,5 +1,22 @@
+{% if field.errors %}
+<div class="alert alert-danger {{classes|join:" "}}">
+  <h6 class="alert-heading">Es sind folgende Fehler aufgetreten:</h6>
+  <ul>
+  {% for error in field.errors %}
+  <li>{{error}}</li>
+  {% endfor %}
+  </ul>
+  <hr />
+{% endif %}
 <div class="form-group {{classes|join:" "}}">
-<label for="{{field.id_for_label}}">{{field.label}}</label>
+  <label for="{{field.id_for_label}}">
+    <span>{{field.label}}</span>
+  </label>
   {% include "rai/edit_handlers/shared/field.html"  with show_label=False show_help_text=False disabled=self.disabled  %}
-<small class="text-muted form-text">{{field.help_text}}</small>
+  <p>
+    <small class="text-muted form-text help-text">{{field.help_text}}</small>
+  </p>
 </div>
+{% if field.errors %}
+</div>
+{%endif%}
