@@ -188,3 +188,17 @@ class ListSettingsAction(ModelAction):
     def get_url_for_registration(self):
         #urls = super().get_url_for_registration()
         return []#urls + self.settings_action.get_url_for_registration()
+
+class HistoryAction(SpecificAction):
+    label = 'Historie'
+    icon = 'history'
+    icon_font = 'fas'
+    action_identifier = 'history'
+    
+    def get_view(self):
+        return self.raiadmin.historyview.as_view(
+            raiadmin = self.raiadmin,
+            active_action = self
+        )
+    def show(self, request):
+        return user_can_view(request, self.get_rai_id())
