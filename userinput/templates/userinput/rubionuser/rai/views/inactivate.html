@@ -1,15 +1,14 @@
 {% extends 'rai/views/default/shared/form-view.html' %}
-{% load i18n rai_help %}
+{% load i18n rai_help rai_forms wagtailadmin_tags %}
 {% block title_action %}{% trans "Inactivate" %}:{% endblock %}
 {% block heading %}{% if object.title %}{{ object.title }}{% else %}{{object}}{% endif %}{% endblock %}
 {% block innerformcontent %}
 <div class="alert alert-danger mt-2">
   <h4 class="alert-heading">Bestätigung erforderlich</h4>
   <div class="pl-5 pt-5">
-  <p>
-    Bitte bestätige das Inaktivieren von 
-  </p>
-  <p>
+    <p>
+      Bitte bestätige das Inaktivieren von 
+    </p>
     <div class="h3">
       {% include 'userinput/rubionuser/rai/shared/full-user-name.html' %}
     </div>
@@ -17,23 +16,25 @@
     <div class="h5">
       {{ ag }}
     </div>
-    <span>
+    <p>
       Gruppenleiter:
       <strong>
 	{% include 'userinput/rubionuser/rai/shared/full-user-name.html' with object=ag.get_head %}
       </strong>
-    </span>
+    </p>
     {% endwith %}
-  </p>
-  {% if is_staff %}
+    {% if is_staff %}
+    <hr />
     {% include './staff_form.html' %}
-  {% endif %}
-  {% if group_leader_form %}
+    {% endif %}
+    {% if group_leader_form %}
+    <hr />
     {% include './group_leader.html' %}
-  {% endif %}
-  <hr class="mt-5">
-  {% for button in buttons.values %}
-  {% include 'rai/views/default/shared/inactivate-button.html' %}
-  {% endfor %}
+    {% endif %}
+    <hr class="mt-5">
+    {% for button in buttons.values %}
+    {% include 'rai/views/default/shared/inactivate-button.html' %}
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}
