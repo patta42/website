@@ -1,5 +1,7 @@
 <ul class="file-list-panel list-group" data-add-files-url="{% url "rai_files_add" self.collection.get_id self.collection.get_pk self.instance.pk %}">
+{{ self.formset.management_form }}
 {% for child in self.children %}
-  {{ child.render_as_field }}
+
+{{ child.render_form_content }}
 {% endfor %}
 </ul>
