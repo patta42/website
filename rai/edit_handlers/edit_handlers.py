@@ -143,6 +143,7 @@ class RAICollectionPanel(RAIBaseFormEditHandler):
         kwargs['depends_on'] = self.depends_on
         return kwargs
 
+    
     def render(self):
         return render_to_string(
             self.template,
@@ -342,8 +343,6 @@ class RAIInlinePanel(RAIEditHandler):
         # if this formset is valid, it may have been re-ordered; respect that
         # in case the parent form errored and we need to re-render
         if self.formset.can_order and self.formset.is_valid():
-            print(len(self.children))
-            
             for child in self.children:
                 pprint(child.form.fields)
                 for field in child.form.fields:
