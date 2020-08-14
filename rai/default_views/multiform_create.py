@@ -31,7 +31,6 @@ class MultiFormCreateView(CreateView):
         self.prepare_edit_handler()
         # bind to request now
         self.edit_handler = self.edit_handler.bind_to(request = self.request)
-
         # edit_handler should delivier the correct form
         self.formclass = self.edit_handler.get_form_class()
         session_key = self.session_key
