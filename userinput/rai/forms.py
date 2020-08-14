@@ -4,10 +4,15 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils.html import format_html
 
+from instruments.models import MethodPage
 from userdata.models import StaffUser
 from userinput.models import RUBIONUser, WorkGroup
 
-from rai.widgets import RAITypeAndSelect, RAIRadioSelect, RAITextInput, RAISelect
+from rai.widgets import (
+    RAITypeAndSelect, RAIRadioSelect, RAITextInput, RAISelect,
+    RAISelectMultipleCheckboxes, RAISwitchInput, RAINuclideInput
+)
+
 
 from rubauth.rai.forms import RUBLoginIdField
 
@@ -157,6 +162,67 @@ class RUBIONUserWorkgroupForm(forms.Form):
         self.fields['workgroup'].choices = [
             (group.pk, '{}|Gruppenleiter: {}'.format(group.specific.title_de, group.get_head())) for group in groups
         ]
+
+class ProjectWorkgroupForm(RUBIONUserWorkgroupForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['workgroup'].label = 'Welcher Arbeitsgruppe soll das neue Projekt zugeordnet werden?'
+
+
+    
+class ProjectMethodsForm(forms.Form):
+    methods = forms.MultipleChoiceField(
+        required = False,
+        label = 'Genutzte Methoden',
+        widget=RAISelectMultipleCheckboxes,
+    )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        choices = []
+        for m in MethodPage.objects.order_by('title_de').all():
+            choices.append((m.pk, m.title_de))
+        self.fields['methods'].choices = choices
+    
+        
+class ProjectStatusForm(forms.Form):
+    status = forms.ChoiceField(
+        label = "Status des neuen Projekts",
+        choices = [
+            ('applied', 'Beantragt'),
+            ('accepted', 'Genehmigt')
+        ],
+        widget = RAIRadioSelect
+    )
+    public = forms.BooleanField(
+        label = "Soll das Projekt öffentlich sichtbar sein?",
+        widget = RAISwitchInput,
+        initial = True
+    )
+
+class ProjectNuclidesForm(forms.Form):
+    nuclide = forms.CharField(
+        label = "Nuklid",
+        widget = RAINuclideInput
+    )
+    room = forms.CharField(
+        label = "Raum",
+        help_text = "In welchem Raum wird das Nuklid verwendet",
+        widget = RAITextInput,
+        required = False
+    )
+    max_amount = forms.CharField(
+        label = "Maximale Bestellmenge",
+        help_text = "Angabe bitte in MBq",
+        widget = RAITextInput,
+        required = False
+    )
+    max_per_exp = forms.CharField(
+        label = "maximal Menge pro Experiment",
+        help_text = "Angaben bitte in MBq",
+        widget = RAITextInput,
+        required = False
+    )
+    
 class RUBIONUserSourceForm(forms.Form):
     source = forms.ChoiceField(
         choices = (
@@ -250,3 +316,25 @@ class RUBIONUserSourceForm(forms.Form):
         return cleaned_data
     
     
+class AddNuclideForm(forms.Form):
+    nuclide = forms.CharField(
+        widget = RAINuclideInput,
+        label = 'Nuklidspezifikation'
+    )
+
+    def clean_nuclide(self):
+        nuclide = self.cleaned_data['nuclide']
+        if '-' not in nuclide:
+            raise forms.ValidationError("Die Nuklidspezifikation hat ein falsche Format.", code = 'invalid')
+        else:
+            elem, mass = nuclide.split('-')
+            if elem == '':
+                raise forms.ValidationError("Bitte ein Element angeben.", code = 'invalid')
+            if mass == '':
+                raise forms.ValidationError("Bitte eine Masse angeben.", code = 'invalid')
+            else:
+                try:
+                    mass = int(mass)
+                except ValueError:
+                    raise forms.ValidationError("Bitte die Masse als ganze Zahl angeben.", code = 'invalid')
+        return nuclide
