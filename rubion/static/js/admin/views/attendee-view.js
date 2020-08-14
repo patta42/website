@@ -1,4 +1,107 @@
 $.widget(
+    'attendeeview.sendresults',
+    {
+	options : {
+	    checkedRows : null
+	},
+	_create : function(){
+	    this.$form = $('<form>')
+	    this.url = this.element.data('action-url')
+	    var self = this,
+		$hidden = ($('<div>')
+			   .css({position:'absolute', top:'-10000px', left:'-10000px'})
+			   .appendTo(this.$form)
+			  ),
+		
+		$checkedRows = this.options['checkedRows']
+	    this.pks = []
+	    
+	    $checkedRows.each(function(){
+		self.pks.push($(this).data('attendee-pk'))
+		$hidden.append(
+		    $('<input type="checkbox" name="attendee_pk" value="'+$(this).data('attendee-pk')+'" checked>')
+		)
+	    })
+	    
+	    $R.get(this.url).done(
+		function(data){
+		    self.tpl_en = data['en']
+		    self.tpl_de = data['de']
+		    self._openModal()
+		}
+	    )
+
+	    
+	    
+	    
+	},
+	_openModal : function(){
+	    var self = this,
+		$langSelectHead = $('<h5>Sprache auswählen</h5>').appendTo(this.$form),
+		$langSelector = $('<div>').appendTo(this.$form).addClass('pl-3'),
+
+		$containerLang_de = ($('<div>')
+				     .addClass('custom-control custom-radio custom-control-inline')
+				     .appendTo($langSelector)
+				    ),
+		$containerLang_en = ($('<div>')
+				     .addClass('custom-control custom-radio custom-control-inline')
+				     .appendTo($langSelector)
+				    ),
+
+		$inputLang_de = $('<input type="radio" name="lang" value="de" id="inputLang_de">').addClass('custom-control-input').appendTo($containerLang_de),
+		$inputLang_en = $('<input type="radio" name="lang" value="en" id="inputLang_en">').addClass('custom-control-input').appendTo($containerLang_en),
+		$labelLang_de = $('<label class="custom-control-label" for="inputLang_de">deutsch</label>').appendTo($containerLang_de),
+		$labelLang_en = $('<label class="custom-control-label" for="inputLang_en">englisch</label>').appendTo($containerLang_en),
+		$texteditHead = $('<h5>Text vervollständigen</h5>').appendTo(this.$form).addClass('mt-2'),
+		$textareaWrap = $('<div>').appendTo(this.$form).addClass('pl-3'),
+		$textarea_de = $('<textarea name="tpl_de" id="tpl_de">').val(this.tpl_de).appendTo($textareaWrap).css({width:'100%', height:'15rem'}),
+		$textarea_en = $('<textarea name="tpl_en" id="tpl_en">').val(this.tpl_en).appendTo($textareaWrap).css({width:'100%', height:'15rem'})
+
+	    this.$form.find('input[type="radio"]').click(function(){
+		self._selectLang($(this).val())
+	    })
+
+ 	    this.modal = $R.genericModal({
+		title : 'Klausurergebnis versenden',
+		saveLabel : '<span id="sendSpinner"></span>Ergebnis versenden (<span id="langLabel"></span>)',
+		size : 'lg',
+		saveCallback : function(){self._send()},
+		applyBtn : false,
+		cancelCallback : function(){
+		    self.modal.dismiss()
+		}
+	    })
+	    this.modal.setBody(this.$form)
+	    this.modal.show()
+	    self._selectLang('de')
+	},
+	_selectLang : function(lang){
+	    var other = lang == 'de' ? 'en' : 'de'
+	    $('#inputLang_'+other).prop('checked', false)
+	    $('#inputLang_'+lang).prop('checked', true)
+	    $('#tpl_'+other).hide()
+	    $('#tpl_'+lang).show()
+	    $('#langLabel').text(lang == 'de' ? 'deutsch' : 'englisch')
+	},
+	_send : function(){
+	    var self = this
+	    $('#sendSpinner').html('<i class="fas fa-circle-notch fa-spin"></i>').addClass('mr-1')
+	    $R.post(
+		this.url,
+		{ data: this.$form.serialize() }
+	    ).done(function(data){
+		$R.message(
+		    'success',
+		    data['n_mails']+' E-Mails wurden versendet.'
+		)
+		self.modal.dismiss()
+	    }).fail()
+	}
+    }
+)
+
+$.widget(
     'attendeeview.importresults',
     {
 	_create : function(){
@@ -418,6 +521,25 @@ $.widget(
 		function(){
 		    var $btn = $(this)
 		    $btn.click(function(){self._postForm($btn)})
+		}
+	    )
+	    this.$menu.find('button[data-action="get-and-post"]').click(
+		function(){
+		    var $checkedRows = self._getCheckedRows()
+		    if ($checkedRows.length == 0){
+			$R.infoDialog(
+			    'Bitte Einträge auswählen',
+			    $('<div><strong>Es sind keine Einträge ausgewählt.</strong><p>Bitte nutze die Kästchen auf der Seite der Tabelle um Einträge auszuwählen.</p></div>')
+			)
+			return
+		    }
+		    else {
+			
+			if($(this).data('attendeeview-sendresults') !== undefined){
+			    $(this).sendresults('destroy')
+			}
+			$(this).sendresults({checkedRows : $checkedRows})
+		    }
 		}
 	    )
 	    this.$tbody.find('input.row-check').each(
