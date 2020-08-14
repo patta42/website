@@ -72,3 +72,7 @@ class AdminMenuSettings(ModelWithJsonField):
         for k,v in dct.items():
             if v and hasattr(self, k):
                 setattr(self, k , v)
+
+class PanelSettings(ModelWithJsonField):
+    user = models.ForeignKey(dj_settings.AUTH_USER_MODEL, on_delete = models.CASCADE)
+    settings = JsonField(blank = True)
