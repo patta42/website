@@ -37,14 +37,26 @@ class CommentDisplayPanel(RAIMultiFieldPanel):
         for child in self.children:
             if issubclass(child.__class__, CommentContentPanel):
                 content = child
+
+        # It might happen that the panel was not bound to a request.
+        # Maybe this should not happen?
+
+        if not hasattr(self, 'request') or not self.request:
+            user = None
+        else:
+            user = self.request.user
+                
         context = {
             'self': self,
             'content' : content,
             'has_instance' : False,
-            'request_user' : self.request.user
+            'request_user' : user
         }
         if self.instance:
-            may_edit = self.instance.owner == self.request.user or self.request.user.is_superuser
+            if user:
+                may_edit = self.instance.owner == self.request.user or self.request.user.is_superuser
+            else:
+                may_edit = False
             context.update({
                 'owner' : self.instance.owner,
                 'timestamp' : self.instance.created_at,
@@ -58,12 +70,12 @@ class CommentDisplayPanel(RAIMultiFieldPanel):
 class CommentContentPanel(RAIFieldPanel):
     def on_request_bound(self):
         if self.instance:
-            if self.request.user == self.instance.owner:
-                print('Juppie')
-            else:
-                self.form.fields['comment'].widget.is_editable = False
+            self.form.fields['comment'].widget.is_editable = False
         else:
             pass
+
+    def get_comparison(self):
+        return []
 
 class CommentPanel(RAIDecorationPanel):
     template = 'rai/comments/edit_handlers/comment-panel.html'
