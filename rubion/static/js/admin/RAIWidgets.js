@@ -1062,12 +1062,11 @@ $R.Widgets = {
 
 	$('input[type="checkbox"].check-all').checkall()
 	$('table thead th.select-shown-rows').selectshownrows()
-	$('.attendee-list').attendeelist()
 	$('select.nuclide-select').nuclideselect()
 	$R.addDomInsertionCallback(function(elem){
 	    $(elem).find('select.nuclide-select').nuclideselect()
 	})
-
+	$('.ajax-edit').ajaxedit()
 //	$('.rai-comment a[href$="#genericModal"').genericmodal()
     },
 
@@ -3053,109 +3052,7 @@ $.widget(
 )
 
 
-/**
- *  A collection of functionalities used for the attendee-list-view of Courses. 
- *  Might not be very re-usable.
- */
-$.widget(
-    'raiwidgets.attendeelist',
-    {
-	_create : function(){
-	    // called on the table
-	    this.$tbody = this.element.find('tbody').first()
-	    this.$thead = this.element.find('thead').first()
-	    this.$rows = this.$tbody.find('tr')
-	    this.$menu = this.$thead.find('.checkbox-menu').first()
-	    this.$invisContainer = $('<div />').css({
-		position: 'absolute',
-		left : '-10000px',
-		top : '-10000px',
-		width : '1px',
-		height : '1px'
-	    }).insertBefore(this.element)
 
-	    var self = this
-	    this.$menu.find('button[data-action="post_form"]').each(
-		function(){
-		    var $btn = $(this)
-		    $btn.click(function(){self._postForm($btn)})
-		}
-	    )
-	    this.$tbody.find('input.row-check').each(
-		function(){
-		    $(this).change(function(){
-			if ($(this).prop('checked')){
-			    $(this).parents('tr').first().attr('data-checked', true)
-			} else {
-			    $(this).parents('tr').first().attr('data-checked', false)
-			}
-		    })
-		    if ($(this).prop('checked')){
-			$(this).parents('tr').first().attr('data-checked', true)
-		    } else {
-			$(this).parents('tr').first().attr('data-checked', false)
-		    }
-		}
-	    )
-	},
-	_postForm : function($elem){
-	    var $rows = this._getCheckedRows()
-	    // clean up old content from invis container
-
-	    this.$invisContainer.children().remove()
-	    
-	    if ($rows.length == 0){
-		$R.infoDialog(
-		    'Bitte Einträge auswählen',
-		    $('<div><strong>Es sind keine Einträge ausgewählt.</strong><p>Bitte nutze die Kästchen auf der Seite der Tabelle um Einträge auszuwählen.</p></div>')
-		)
-		return
-	    }
-	    var fieldValues = JSON.parse($elem.data('field-values').replace(/'/g,'"')),
-		formFieldNames = JSON.parse($elem.data('form-field-names').replace(/'/g,'"')),
-		$form = $('<form method="POST" />')
-		.appendTo(this.$invisContainer)
-	    if ($elem.data('add-next') == true){
-
-		var $path = $elem.data('add-next-value') ? $elem.data('add-next-value') : window.location.pathname
-		$form.attr('action', $elem.data('form-url')+encodeURI('?next='+$path))
-	    } else {
-		$form.attr('action', $elem.data('form-url'))
-	    }
-	    
-	    $rows.each(
-		function(){
-		    for (var c = 0; c < fieldValues.length; c++){
-			var $row = $(this),
-			    value = $row.find('[data-field-name="'+fieldValues[c]+'"]').first().data('field-value'),
-			    $input = $('<input type="checkbox" checked />')
-			    .attr('name', formFieldNames[c])
-			    .val(value)
-			    .appendTo($form)
-			
-		    }
-		}
-	    )
-	    $('<input type="hidden" name="csrfmiddlewaretoken" value="'+$R.getCookie('csrftoken')+'" />').appendTo($form)
-	    $($elem.find('.additional-form-data').first().html()).appendTo($form)
-	    $form.attr('enctype','multipart/form-data')
-	    $form.submit()
-	},
-	_getCheckedRows : function(){
-	    // we cannot simply look for [data-checked=true ] since the checked status of the
-	    // input might have been set via JS, which does not trigger the click function.
-	    
-	    this.$rows.filter(':visible').each(
-		function(){
-		    var $input = $(this).find('input.row-check').first()
-		    $(this).attr('data-checked', $input.prop('checked'))
-		}
-	    )
-
-	    return this.$rows.filter(':visible').filter('[data-checked="true"]')
-	}
-    }
-)
 $.widget(
     'raiwidgets.nuclideselect',
     {
@@ -3235,6 +3132,108 @@ $.widget(
 		    
 		}
 	    )
+	}
+    }
+)
+
+$.widget(
+    'raiwidgets.ajaxedit',
+    {
+	options : {
+	    url : null,
+	    field : null,
+	    pk : null
+	},
+	_create : function(opts){
+	    if (opts === undefined){
+		opts = {}
+	    }
+	    this.settings = $.extend({}, this.options, opts)
+	    if (this.settings['url'] == null){
+		this.settings['url'] = this.element.data('ajax-url')
+	    }
+	    if (this.settings['field'] == null){
+		this.settings['field'] = this.element.data('ajax-field')
+	    }
+	    if (this.settings['pk'] == null){
+		this.settings['pk'] = this.element.data('ajax-pk')
+	    }
+	    var self = this
+	    if (this.element.is('input')){
+		this.element.change(
+		    function(){
+			self._saveValue()
+		    }
+		)
+	    } else {
+		if (this.element.is('.dropdown-menu')){
+		    this.element.find('button').each(
+			function(){
+			    $(this).click(function(evt){
+				self._saveValue(evt)
+			    })
+			}
+		    )
+		}
+	    }
+	},
+	_saveValue : function(evt){
+	    var data = {
+		pk : this.settings['pk'],
+		field : this.settings['field']
+	    }
+	    if (this.element.is('[type="checkbox"]')){
+		if (!this.element[0].hasAttribute('value')){
+		    data[this.settings['field']] = this.element.prop('checked')
+		} else {
+		    data[this.settings['field']] = this.element.val()
+		}
+			 
+	    } else {
+		if (this.element.is('input')) {
+		    data[this.settings['field']] = this.element.val()
+		} else {
+		    if (this.element.is('.dropdown-menu')){
+			data[this.settings['field']] = $(evt.target).data('ajax-value')
+		    }
+		}
+		
+	    }
+	    var self=this
+	    $R
+		.post(
+		    this.settings.url,
+		    { data : data }
+		)
+		.fail()
+		.done(
+		    function(data){
+			
+			if (!data['has_errors']){
+			    if (self.element.is('input')){
+				if (self.element[0].hasAttribute('value')){
+				    self.element.val(data['object'][self.settings['field']])
+				} else {
+				    self.element.prop('checked', data['object'][self.settings['field']])
+				}
+			    } else {
+				var callbacks = JSON.parse(self.element.data('ajax-callback').replace(/'/g,'"')),
+				    activeCb = callbacks[data['object'][self.settings['field']]]
+
+				for (var selector in activeCb){
+				    $elems = $(selector)
+				    for (var fnc in activeCb[selector]){
+					if (typeof $elems[fnc] === 'function'){
+					    $elems[fnc](activeCb[selector][fnc])
+					}
+				    }
+				}
+				
+			    }
+			    $R.message('success', 'Daten wurden geändert')
+			}
+		    }
+		)
 	}
     }
 )
