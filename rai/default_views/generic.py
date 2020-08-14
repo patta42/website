@@ -5,6 +5,7 @@ from collections import OrderedDict
 from django.contrib import messages
 from django.urls import resolve, reverse
 from django.http import QueryDict, HttpResponseForbidden
+from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.views.generic import TemplateView
 
@@ -382,13 +383,15 @@ class ViewSettingsFilterSettingsView(FilterSettingsView):
 
     def get(self, request):
         # before calling super().get(), get the current view settings.
-        self.get_settings(request)
+        self.ordered_settings = self.get_ordered_settings(request)
         
         return super().get(request)
 
     def get_context_data(self, **kwargs):
+        
         context = super().get_context_data(**kwargs)
         context['settings_form'] = self.get_settings_form()
+        context['settings'] = getattr(self, 'ordered_settings', None)
         return context
 
     #
@@ -396,18 +399,70 @@ class ViewSettingsFilterSettingsView(FilterSettingsView):
     #
 
     def update_view_settings(self, request):
-        pass
+        # make a copy of of request.POST
+        post = request.POST.copy()
+        # remove entries that don't start with 'setting'
+        
+        for key in request.POST.keys():
+            if not key.startswith('setting'):
+                del(post[key])
+        try:
+            user_settings = ListViewSettings.objects.get(
+                user = request.user,
+                view_name = self.view_name
+            )
+        except ListViewSettings.DoesNotExist:
+            user_settings = ListViewSettings(
+                user = request.user,
+                view_name = self.view_name
+            )
 
-    def get_settings(self, request):
+        user_settings.settings = post.urlencode()
+        user_settings.save()
+        
+    def get_settings_spec(self, request):
+        # It is slightly more complex here than for the filters
+        # since it is perfectly valid to unselect all options,
+        # which will result in an empty query string.
+        # However, the action field will be send. If it is present in
+        # request.GET, we have querystring representing a valid settings_spec
+        action = request.GET.get('action', None)
+        settings_spec = None
+        if action and action == 'update_view_settings':
+            settings_spec = self.parse_querydict(request.GET)
+        else:
+            try:
+                saved_settings = ListViewSettings.objects.get(
+                    user = request.user,
+                    view_name = self.view_name
+                )
+                
+            except ListViewSettings.DoesNotExist:
+                saved_settings = None
+            if saved_settings:
+                settings_spec = self.parse_querydict(QueryDict(
+                    saved_settings.settings
+                ))
+        return settings_spec
+        
+    def parse_querydict(self, qd):
+        spec = {}
+        keyword = 'settings__'
+        l = len(keyword)
+        for key in qd.keys():
+            if key.startswith(keyword):
+                spec[key[l:]] = int(qd[key])
+
+        return spec
+    def get_default_settings(self):
         # get default settings from active action
         raw_settings = getattr(self.active_action, 'item_provides', None)
 
-    def get_settings_form(self):
         # make an item with
         # - label
         # - descripton
         # for each settings that is not a group. for groups, make the same for children 
-        raw_settings = getattr(self.active_action, 'item_provides', None)
+
         settings = OrderedDict()
         group_items = OrderedDict()
         if raw_settings:
@@ -441,8 +496,54 @@ class ViewSettingsFilterSettingsView(FilterSettingsView):
                     settings[group]['selected_children_count'] += 1
                 else:
                     settings[group]['unselected_children_count'] += 1
+        return settings
+    
+    def get_ordered_settings(self, request):
+        default_settings = self.get_default_settings()
+        if not default_settings:
+            return None
+        
+        settings_spec = self.get_settings_spec(request)
+        if settings_spec is None:
+            return default_settings
+        else:
+            keys = default_settings.keys()
+            ordered = [None] * len(keys)
+            # for unselected items, order does not matter, fill from end to start
+            count = len(keys) - 1
+            for key in keys:
+                if key not in settings_spec:
+                    item = default_settings[key]
+                    item['selected'] = False
+                    for child in item['children']:
+                        child['selected'] = False
+                    item['selected_children_count'] = 0
+                    item['unselected_children_count'] = len(item['children'])
+                    ordered[count] = (key, item)
+                    count -= 1
                     
-        ordered_settings = settings
+                else:
+                    item = default_settings[key]
+                    item['selected'] = True
+                    ordered_children = [None] * len(item['children'])
+                    count2 = len(item['children']) - 1
+                    for child in item['children']:
+                        subkey = '{}__{}'.format(key, child['key'])
+                        if  subkey in settings_spec:
+                            ordered_children[settings_spec[subkey]] = child
+                            ordered_children[settings_spec[subkey]]['selected'] = True
+                        else:
+                            ordered_children[count2] = child
+                            ordered_children[count2]['selected']  = False
+                            count2 -= 1
+                    item['children'] = ordered_children
+                    item['selected_children_count'] = count2+1
+                    item['unselected_children_count'] = len(item['children']) - (count2 + 1)
+                    ordered[settings_spec[key]] = (key, item)
+                    
+            return OrderedDict(ordered)
+    def get_settings_form(self):
+        ordered_settings = self.ordered_settings
         return render_to_string(self.list_settings_form_template, {'settings' : ordered_settings})
         
                 
