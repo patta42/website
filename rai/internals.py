@@ -26,3 +26,17 @@ def registered_rai_items_as_choices(flat = False):
 def registered_rai_items_as_flat_choices():
     return registered_rai_items_as_choices(flat = True)
 
+
+REGISTERED_DECORATIONS = {}
+
+for fn in hooks.get_hooks('rai_decoration'):
+    rai_model_id, decoration = fn()
+    decorations_for_model = REGISTERED_DECORATIONS.get(rai_model_id, {})
+    decorations_for_model.update(decoration)
+    REGISTERED_DECORATIONS.update({rai_model_id : decorations_for_model})
+
+def get_decorator_for(rai_model_id, decorated_model_id):
+    decorations_for_rai = REGISTERED_DECORATIONS.get(rai_model_id, None)
+    if decorations_for_rai:
+        return decorations_for_rai.get(decorated_model_id, None)
+    return None
