@@ -1,3 +1,4 @@
+from rai.notifications.base import NotificationTemplateMixin
 from wagtail.core import hooks
 
 
@@ -50,3 +51,18 @@ class RAIModelAddressCollection(RAIMailAddressCollection):
 def register_mail_collection(mail_collection_class):
     mail_collection = mail_collection_class()
     mail_collection.register()
+
+class MailWithTemplate(NotificationTemplateMixin):
+    def register(self):
+        self.register_template()
+        self.register_with_wagtail()
+        
+    def register_with_wagtail(self):
+        @hooks.register('rai_notification')
+        def register_notification():
+            return self
+
+
+def register_mail_template(TemplateMailClass):
+    mail = TemplateMailClass()
+    mail.register()
