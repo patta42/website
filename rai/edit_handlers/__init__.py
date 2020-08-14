@@ -3,6 +3,7 @@ from .edit_handlers import (
     RAIPillsPanel, RAICollectionPanel, RAICollapsablePanel,
     RAITranslatedContentPanel, RAIInlinePanel, RAIMissingPanel,
     RAIMultiFieldPanel, RAIQueryInlinePanel, RAIReadOnlyPanel,
-    RAIInputGroupCollectionPanel
+    RAIInputGroupCollectionPanel, RAIDecorationPanel, RAIFieldList
 )
 from .generic import RAIFieldPanel
+from .pages import RAIParentChooserPanel
