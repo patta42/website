@@ -153,7 +153,8 @@ class RAIAdminModelForm(ClusterForm, metaclass=RAIAdminModelFormMetaclass):
         if commit:
             if issubclass(self._meta.model, Page):
                 instance = super().save(commit = False)
-                instance.save_revision_and_publish(user = self.user)
+                revision = instance.save_revision(user = self.user)
+                revision.publish()
             else:
                 super().save(commit = True)
         else:
