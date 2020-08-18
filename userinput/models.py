@@ -1,5 +1,6 @@
 from .admin_edit_forms import RUBIONUserAdminEditForm
-from  .query import ActiveInactivePageManager
+from .query import ActiveInactivePageManager
+
 import datetime 
 
 from dateutil.relativedelta import relativedelta
@@ -1051,7 +1052,19 @@ class RUBIONUser ( UserGeneratedPage2 ):
     @classmethod
     def active_filter(self):
         return Q(expire_at__isnull = True) | Q(expire_at__gte = datetime.datetime.now())
-    
+
+
+    def save(self, update_staff_user = True, **kwargs):
+        super().save(**kwargs)
+        try:
+            Kls = self.safety_instructions.all()[0]
+            Kls.clear_for_staff(self)
+        except IndexError:
+            pass
+        staff = None
+        for si_rel in self.safety_instructions.all():
+            staff = si_rel.save_for_staff(staff = staff)
+            
     # Admin content panels.
     # @TODO might require some clean-up
     content_panels = [
@@ -1880,7 +1893,8 @@ class AbstractFundingRelation( Orderable ):
 # ----------------------------------------------------------------------
 #
 # Relations 
-## ----------------------------------------------------------------------
+#
+# ----------------------------------------------------------------------
 
 class Project2MethodRelation( AbstractRelatedMethods ):
     project_page = ParentalKey( Project, related_name = 'related_methods')
@@ -2156,10 +2170,7 @@ class Nuclide ( models.Model ):
 from rai.base import rai_register_decorations
 from rai.comments.models import RAICommentDecoration
 
-
 from rai.files.models import RAIDocumentModelRelation, RAIOnDemandDocumentModelRelation
-
-
 
 class RUBIONUserCommentDecoration(RAICommentDecoration):
     decorated_model = models.ForeignKey(
