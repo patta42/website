@@ -267,6 +267,7 @@ class StaffUser ( TranslatedPage ):
         blank = True
     )
 
+
     comment = RichTextField(
         blank = True,
         verbose_name = _('Comment')
@@ -440,6 +441,16 @@ class StaffUser ( TranslatedPage ):
                 self.user.is_active = True
                 self.user.save()
 
+    def save(self, update_rubionuser = True, **kwargs):
+        super().save(**kwargs)
+
+        # if there is a connected RUBIONUser, change the safety instructions there, too.
+        if update_rubionuser:
+            SafetyInstruction2StaffRelation.clear_for_ruser(self)
+            ruser = None
+            for si_rel in self.safety_instructions.all():
+                ruser = si_rel.save_for_ruser(ruser = ruser)
+                
     class Meta:
         verbose_name = _('staff member')
         verbose_name_plural = _('staff members')
@@ -556,6 +567,12 @@ class SafetyInstructionsSnippet( models.Model ):
         help_text = _('Does this instruction include the management of hazardous materials?')
     )
 
+    is_valid_for = models.SmallIntegerField(
+        default = 1,
+        verbose_name = _('Valid for (years)'),
+        help_text = _('How long this instruction is valid. Use 0 for forever.')
+    )
+    
     title = TranslatedField( 'title' )
     title_short = TranslatedField( 'title_en_short', 'title_de_short' )
     panels = [
@@ -578,6 +595,72 @@ class SafetyInstructionsSnippet( models.Model ):
         return self.title_short
 
 
+class AbstractSafetyInstructionRelation(ClusterableModel):
+    class Meta:
+        verbose_name = _('Safety instructions for Users and Staff')
+
+    instruction = models.ForeignKey(
+        SafetyInstructionsSnippet,
+        on_delete = models.CASCADE
+    )
+    as_required = models.BooleanField(
+        verbose_name = _('On demand only'),
+        default = False
+    )
+
+
+class SafetyInstruction2StaffRelation(AbstractSafetyInstructionRelation):
+    staff = ParentalKey(StaffUser, related_name = 'safety_instructions')
+    @classmethod
+    def clear_for_ruser(self, staff):
+        try:
+            ruser = RUBIONUser.objects.get(linked_user = staff.user)
+        except RUBIONUser.DoesNotExist:
+            ruser = None
+        SafetyInstruction2UserRelation.objects.filter(user = ruser).all().delete()
+            
+        
+    def save_for_ruser(self, ruser = None):
+        if not ruser:
+            try:
+                ruser = RUBIONUser.objects.get(linked_user = self.staff.user)
+            except RUBIONUser.DoesNotExist:
+                ruser = None
+        if ruser:
+            rel = SafetyInstruction2UserRelation(
+                instruction = self.instruction,
+                as_required = self.as_required,
+                user = ruser
+            )
+            rel.save()
+        return ruser
+        
+    
+class SafetyInstruction2UserRelation(AbstractSafetyInstructionRelation):
+    user = ParentalKey(RUBIONUser, related_name = 'safety_instructions')
+
+    def save_for_staff(self, staff = None):
+        if not staff:
+            try:
+                staff = StaffUser.objects.get(user = self.user.linked_user)
+            except StaffUser.DoesNotExist:
+                staff = None
+        if staff:
+            rel = SafetyInstruction2StaffRelation(
+                instruction = self.instruction,
+                as_required = self.as_required,
+                staff = staff
+            )
+            rel.save()
+        return staff
+
+    def clear_for_staff(self, ruser):
+        try:
+            staff = StaffUser.objects.get(user = ruser.linked_user)
+        except StaffUser.DoesNotExist:
+            staff = None
+        SafetyInstruction2StaffRelation.objects.filter(staff = staff).all().delete()
+    
 @register_snippet
 class SafetyInstructionUserRelation( models.Model ):
     class Meta:
