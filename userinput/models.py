@@ -1694,7 +1694,9 @@ class Project ( UserGeneratedPage2 ):
             self.save_revision_and_publish( user = user )
         else:
             self.save_revision_and_publish()
-
+    def inactivate(self, user = None):
+        self._close(user)
+            
     @classmethod
     def active_filter(self):
         return Q(expire_at__isnull = True) | Q(expire_at__gte = datetime.datetime.now())
