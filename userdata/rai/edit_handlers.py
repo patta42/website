@@ -116,7 +116,10 @@ edit_staff_user_handler = eh.RAIPillsPanel([
  
     ], heading ="öffentliche Angaben"),
     eh.RAIObjectList([
-        
+        eh.RAIInlinePanel('safety_instructions', panels=[
+            eh.RAIFieldPanel('instruction', label="Unterweisung"),
+            eh.RAIFieldPanel('as_required', label="nur bei Bedarf"),
+        ], show_all_options = True, heading="Sicherheitsunterweisungen")
     ], heading = 'Strahlenschutz'),
     eh.RAIObjectList([
         eh.RAICollapsablePanel([
