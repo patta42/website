@@ -228,12 +228,11 @@ rubionuser_edit_handler = eh.RAIPillsPanel([
     RUBIONUserInfoPanel(heading = 'Übersicht'), 
     eh.RAIObjectList([
         eh.RAICollapsablePanel([
-            eh.RAIFieldRowPanel([
-                eh.RAIFieldPanel('dosemeter', widget=RAISelect, classname="col-md-12"),
-                eh.RAIFieldPanel('needs_safety_instructions', widget=RAISelectMultipleCheckboxes)#, panels = [
-                # eh.RAIFieldPanel('title_de')
-                # ])# Unterweisungen hier
-            ], heading = "Dosimeter und Sicherheitsunterweisungen")
+            eh.RAIFieldPanel('dosemeter', widget=RAISelect, classname="col-md-12"),
+            eh.RAIInlinePanel('safety_instructions', panels = [
+                eh.RAIFieldPanel('instruction', label="Unterweisung"),
+                eh.RAIFieldPanel('as_required', label="Nur bei Bedarf"),
+            ], show_all_options = True, heading="Benötigte Sicherheitsunterweisungen"),
         ], heading = 'Strahlenschutz'),
         eh.RAICollapsablePanel([
             eh.RAIInputGroupCollectionPanel([
