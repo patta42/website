@@ -22,8 +22,8 @@ from rubauth.views import logout
 from rai import urls as rai_urls 
 urlpatterns = [
     url(r'^django-admin/', admin.site.urls),
-    url(r'^admin/', include(rai_urls)),
-    url(r'^wagtail-admin/', include(wagtailadmin_urls)),
+    url(r'^rubiontail/', include(rai_urls)),
+    url(r'^admin/', include(wagtailadmin_urls)),
     url(r'^rubionadmin/', include(rubionadmin_urls)),
     url(r'^coursesadmin/', include(courses_urls, namespace='coursesadmin')),
     url(r'^manage-courses/', include(courses_user_urls, namespace='manage-courses')),
@@ -50,7 +50,7 @@ if settings.DEBUG:
     # Serve static and media files from development server
     urlpatterns += staticfiles_urlpatterns()
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    import debug_toolbar
-    urlpatterns += [
-        path('__debug__/', include(debug_toolbar.urls))
-    ] 
+    # import debug_toolbar
+    # urlpatterns += [
+    #     path('__debug__/', include(debug_toolbar.urls))
+    # ] 
