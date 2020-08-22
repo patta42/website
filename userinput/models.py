@@ -721,6 +721,14 @@ class RUBIONUser ( UserGeneratedPage2 ):
     def __init__ ( self, *args, **kwargs):
         self.dont_clean = False
         super(RUBIONUser, self).__init__( *args, **kwargs)
+        if self.linked_user:
+            if not self.name_db:
+                self.name_db = self.linked_user.last_name
+            if not self.first_name_db:
+                self.first_name_db = self.linked_user.first_name
+            if not self.email_db:
+                self.email_db = self.linked_user.email
+
     
     # --- Shorthands
 
@@ -1694,6 +1702,7 @@ class Project ( UserGeneratedPage2 ):
             self.save_revision_and_publish( user = user )
         else:
             self.save_revision_and_publish()
+            
     def inactivate(self, user = None):
         self._close(user)
             
