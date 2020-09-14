@@ -3,7 +3,8 @@ from .filters import CoursesDateFilter, CoursesOrgaFilter
 from .helpers import AttendeeButtonHelper, CourseButtonHelper
 from .models import (
     Course, CourseInformationPage, ListOfCoursesPage, SskStudentAttendee,
-    SskRubMemberAttendee, SskHospitalAttendee, SskExternalAttendee, SskExternalStudentUARuhr
+    SskRubMemberAttendee, SskHospitalAttendee, SskExternalAttendee, SskExternalStudentUARuhr,
+    StudentAttendee
 )
 
 
@@ -127,7 +128,11 @@ class CourseInformationPageModelAdmin( ModelAdmin ):
     def _title( self, obj):
         return obj.title_trans
     _title.short_description = _('Title')
-
+    
+class StudentAttendeeMA( ModelAdmin ):
+    model = StudentAttendee
+    button_helper_class = AttendeeButtonHelper
+    
 class SskStudentAttendeeMA( ModelAdmin ):
     model = SskStudentAttendee
     button_helper_class = AttendeeButtonHelper
@@ -163,7 +168,8 @@ class CoursesModelAdminGroup ( ModelAdminGroup ):
     items = (
         CourseInformationPageModelAdmin, CourseModelAdmin, 
         SskStudentAttendeeMA, SskExternalAttendeeMA,
-        SskHospitalAttendeeMA, SskRubMemberAttendeeMA, SskExternalStudentUARuhrMA
+        SskHospitalAttendeeMA, SskRubMemberAttendeeMA, SskExternalStudentUARuhrMA,
+        StudentAttendeeMA
     )
 
 
