@@ -108,6 +108,6 @@ class CreateView(RAIAdminView, PageMenuMixin):
         else:
             form.save()
             for formset in self.formsets.values():
-                subform.save()
+                formset.save()
             messages.success(request, _('The data was saved.'))
         return self.redirect_to_default()
