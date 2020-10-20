@@ -68,9 +68,10 @@ class RAIView(TemplateView):
         request = getattr(self, 'request', None)
         try:
             user_settings = AdminMenuSettings.objects.get(user__pk = request.user.pk)
+            user_settings = user_settings.as_dict()
         except AdminMenuSettings.DoesNotExist:
             user_settings = None
-        user_settings = user_settings.as_dict()
+
 
         items = []
         for fn in hooks.get_hooks('rai_menu_group'):
@@ -80,10 +81,14 @@ class RAIView(TemplateView):
                 for Component in group.components:
                     component = Component()
                     url = component.get_default_url()
-                    user_label = user_settings['item_labels'].get(
-                        url, 
-                        component.menu_label
-                    )
+                    if user_settings:
+                        user_label = user_settings['item_labels'].get(
+                            url, 
+                            component.menu_label
+                        )
+                    else:
+                        user_label = component.menu_label
+                        
                     if component.show(request):
                         components.append({
                             'label' : component.menu_label,
@@ -94,16 +99,22 @@ class RAIView(TemplateView):
                         })
                 # only show the group if there are any components in it
                 if components:
-                    user_label = user_settings['group_item_labels'].get(
-                        group.menu_label,
-                        group.menu_label
-                    )
+                    if user_settings:
+                        user_label = user_settings['group_item_labels'].get(
+                            group.menu_label,
+                            group.menu_label
+                        )
+                    else:
+                        user_label = group.menu_label
                     items.append({
                         'label' : group.menu_label,
                         'user_label' : user_label,
                         'components' : components
                     })
-        group_order = user_settings.get('group_order', None)
+        if user_settings:
+            group_order = user_settings.get('group_order', None)
+        else:
+            group_order = None
         if group_order:
             items_sorted = []
             items_copy = items
@@ -439,6 +450,7 @@ class ViewSettingsFilterSettingsView(FilterSettingsView):
                 
             except ListViewSettings.DoesNotExist:
                 saved_settings = None
+
             if saved_settings:
                 settings_spec = self.parse_querydict(QueryDict(
                     saved_settings.settings
@@ -454,6 +466,7 @@ class ViewSettingsFilterSettingsView(FilterSettingsView):
                 spec[key[l:]] = int(qd[key])
 
         return spec
+    
     def get_default_settings(self):
         # get default settings from active action
         raw_settings = getattr(self.active_action, 'item_provides', None)
@@ -539,9 +552,17 @@ class ViewSettingsFilterSettingsView(FilterSettingsView):
                     item['children'] = ordered_children
                     item['selected_children_count'] = count2+1
                     item['unselected_children_count'] = len(item['children']) - (count2 + 1)
-                    ordered[settings_spec[key]] = (key, item)
                     
+                    # Workaround. It seems that sometimes (needs research!) settings_spec[key] is
+                    # not unique
+                    tmp = settings_spec[key]
+                    while ordered[tmp] is not None:
+                        tmp = tmp + 1
+                    ordered[tmp] = (key, item)
+
+
             return OrderedDict(ordered)
+
     def get_settings_form(self):
         ordered_settings = self.ordered_settings
         return render_to_string(self.list_settings_form_template, {'settings' : ordered_settings})
