@@ -210,7 +210,6 @@ class FilterSettingsView(RAIAdminView):
 
         This saves the respective settings and redirects to the view.
         """
-        
         self.update_filter_settings(request)
         return redirect(request.path_info)
 
@@ -280,20 +279,23 @@ class FilterSettingsView(RAIAdminView):
         Is called by self.post() 
         """
 
+        print ('In upd_f_s')
         # get ListFilterSettings from db or create a new one
         try:
             filter_settings = ListFilterSettings.objects.filter(
                 user = request.user,
                 view_name = self.view_name
             ).get()
-            
+            print ('Filter settings is: {}'.format(filter_settings))
         except ListFilterSettings.DoesNotExist:
-            if not request.user.is_staff:
+            if not request.user.is_staff and not request.user.has_perm('wagtailadmin.access_admin'):
                 return HttpResponseForbidden()
             filter_settings = ListFilterSettings(
                 user = request.user,
                 view_name = self.view_name
             )
+            print ('Filter settings is: {}'.format(filter_settings))
+        print ('Filter settings is: {}'.format(filter_settings))
 
         # remove all entries in POST that are not filter specs
         qd = self.request.POST.copy()
@@ -532,6 +534,7 @@ class ViewSettingsFilterSettingsView(FilterSettingsView):
                         child['selected'] = False
                     item['selected_children_count'] = 0
                     item['unselected_children_count'] = len(item['children'])
+#                    print('Setting {}'.format(count))
                     ordered[count] = (key, item)
                     count -= 1
                     
@@ -555,9 +558,13 @@ class ViewSettingsFilterSettingsView(FilterSettingsView):
                     
                     # Workaround. It seems that sometimes (needs research!) settings_spec[key] is
                     # not unique
+#                    print('Trying to set {}'.format(settings_spec[key]))
                     tmp = settings_spec[key]
-                    while ordered[tmp] is not None:
-                        tmp = tmp + 1
+                    if ordered[tmp] is not None:
+                        tmp = 0
+                        while ordered[tmp] is not None:
+                            tmp = tmp + 1
+#                    print('Will set {}'.format(tmp))
                     ordered[tmp] = (key, item)
 
 
