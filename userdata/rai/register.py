@@ -55,7 +55,7 @@ class RAIStaffRoles(RAIModelAdmin):
     menu_label = 'Aufgaben'
     menu_icon = 'tasks'
     menu_icon_font = 'fas'
-    group_actions = [ListAction, RolesCreateAction, RolesPDFListAction]
+    group_actions = [ListAction, RolesCreateAction]#, RolesPDFListAction]
     default_action = ListAction
     item_actions = [RolesEditAction, DeleteAction]
 
@@ -71,7 +71,7 @@ class RAIStaffGroup(RAIAdminGroup):
     components = [
         RAIStaffUser,
         RAIStaffRoles,
-        RAIStaffRolePDFList,
+#        RAIStaffRolePDFList,
         RAIBeiratGroups,
         RAIBeirat
     ]
@@ -82,6 +82,8 @@ class RAIBeiratMailCollection(RAIModelAddressCollection):
     label = 'Beirat'
 
     def format_as_mail_string(self, instance):
+        if instance is None:
+            return ''
         if instance.email:
             email = instance.email
         else:
@@ -95,6 +97,13 @@ class RAIBeiratMailCollection(RAIModelAddressCollection):
     def get_for_instance(self, instance):
         return self.format_as_mail_string(instance.member)
 
+    def get_mail_addresses(self):
+        addresses = [] 
+        for obj in self.get_objects():
+            if obj.member is not None:
+                addresses.append(self.get_for_instance(obj))
+
+        return addresses
 
     
     
