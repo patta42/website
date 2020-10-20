@@ -76,13 +76,13 @@ class ProjectCreateView(MultiFormCreateView):
         project = parent.add_child(instance = project)
         self.make_relations(project)
         # Setting status of project
-        if self.session_store['status']['form']['status'] == 'applied':
+        if self.session_store['status']['form']['status'] == 'accepted':
             now = datetime.datetime.now()
             next_year = now + relativedelta(years=+1)
             project.expire_at = next_year
             project.go_live_at = now
             revision = project.save_revision(user=request.user)
             revision.publish()
-        if self.session_store['status']['form']['status'] == 'accepted':
+        if self.session_store['status']['form']['status'] == 'applied':
             project.save_revision(user=request.user, submitted_for_moderation = True)
         return redirect('rai_userinput_project_edit', pk = project.pk)
