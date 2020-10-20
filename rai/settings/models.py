@@ -31,6 +31,13 @@ class ListViewSettings(ModelWithJsonField):
     )
     user = models.ForeignKey(dj_settings.AUTH_USER_MODEL, on_delete = models.CASCADE)
 
+    def __str__(self):
+        return "{obj} for user {user} and view {view}\n\n{settings}".format(
+            obj = self.__class__.__name__,
+            user = self.user,
+            view = self.view_name,
+            settings = self.settings
+        )
     
 class AdminMenuSettings(ModelWithJsonField):
     user = models.ForeignKey(dj_settings.AUTH_USER_MODEL, on_delete = models.CASCADE)
