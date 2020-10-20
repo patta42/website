@@ -78,7 +78,7 @@ class ProjectCreateView(MultiFormCreateView):
         # Setting status of project
         if self.session_store['status']['form']['status'] == 'applied':
             now = datetime.datetime.now()
-            next_year = now + relativedelta(years+1)
+            next_year = now + relativedelta(years=+1)
             project.expire_at = next_year
             project.go_live_at = now
             revision = project.save_revision(user=request.user)
