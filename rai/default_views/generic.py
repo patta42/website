@@ -279,14 +279,12 @@ class FilterSettingsView(RAIAdminView):
         Is called by self.post() 
         """
 
-        print ('In upd_f_s')
         # get ListFilterSettings from db or create a new one
         try:
             filter_settings = ListFilterSettings.objects.filter(
                 user = request.user,
                 view_name = self.view_name
             ).get()
-            print ('Filter settings is: {}'.format(filter_settings))
         except ListFilterSettings.DoesNotExist:
             if not request.user.is_staff and not request.user.has_perm('wagtailadmin.access_admin'):
                 return HttpResponseForbidden()
@@ -294,8 +292,6 @@ class FilterSettingsView(RAIAdminView):
                 user = request.user,
                 view_name = self.view_name
             )
-            print ('Filter settings is: {}'.format(filter_settings))
-        print ('Filter settings is: {}'.format(filter_settings))
 
         # remove all entries in POST that are not filter specs
         qd = self.request.POST.copy()
