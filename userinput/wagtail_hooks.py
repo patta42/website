@@ -573,7 +573,7 @@ from rai.files.base import register_collection
 from rai.notifications.base import register_listener
 
 
-from userinput.rai.register import RAIUserInputGroup, RAIRadiationSafetyGroup
+from userinput.rai.register import RAIUserInputGroup, RAIRadiationSafetyGroup, RAIScientificOutputGroup
 from userinput.rai.rubionuser.notifications import RUBIONUserChangedNotification
 from userinput.rai.collections import (
     RUBIONUserDocumentCollection, RUBIONUserOnDemandDocumentCollection
@@ -581,7 +581,7 @@ from userinput.rai.collections import (
 from userinput.rai.views.generic import add_nuclide
 
 rai_register(RAIUserInputGroup)
-rai_register(RAIRadiationSafetyGroup)
+rai_register(RAIScientificOutputGroup)
 register_listener(RUBIONUserChangedNotification)
 register_collection(RUBIONUserDocumentCollection)
 register_collection(RUBIONUserOnDemandDocumentCollection)
