@@ -6,7 +6,7 @@ import datetime
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _l
 
-from rai.actions import ListAction, CreateAction, EditAction, DetailAction, HistoryAction
+from rai.actions import ListAction, CreateAction, EditAction, DetailAction, HistoryAction, DeleteAction
 from rai.base import RAIModelAdmin, RAIAdminGroup
 from rai.default_views import HistoryView
 
@@ -17,7 +17,10 @@ from rai.files.base import (
 from rai.mail.base import register_mail_collection, RAIModelAddressCollection
 from rai.panels.base import register_panels
 
-from userinput.models import RUBIONUser, WorkGroup, Project, Nuclide
+from userinput.models import (
+    RUBIONUser, WorkGroup, Project, Nuclide, FundingSnippet, ThesisSnippet,
+    PublicationSnippet
+)    
 
 import userinput.rai.actions as actions
 
@@ -120,8 +123,45 @@ class RAIUserInputGroup(RAIAdminGroup):
     components = [
         RAIUserData, RAIWorkGroups, RAIProjects, 
     ]
-    menu_label = _l("User data")
+    menu_label = "Nutzerdaten"
 
+class RAIFunding(RAIModelAdmin):
+    model = FundingSnippet
+    identifier = 'scientific_output'
+    sub_identifier = 'funding'
+    menu_label = 'Förderungen'
+    menu_icon = 'money-bill-wave'
+    menu_icon_font = 'fas'
+    item_actions = []
+    group_actions = [actions.RAIFundingListAction]
+
+class RAIThesis(RAIModelAdmin):
+    model = ThesisSnippet
+    identifier = 'scientific_output'
+    sub_identifier = 'thesis'
+    menu_label = 'Abschlussarbeiten'
+    menu_icon = 'book'
+    menu_icon_font = 'fas'
+    item_actions = []
+    group_actions = [actions.RAIThesisListAction]
+
+class RAIPublication(RAIModelAdmin):
+    model = PublicationSnippet
+    identifier = 'scientific_output'
+    sub_identifier = 'publication'
+    menu_label = 'Veröffentlichungen'
+    menu_icon = 'scroll'
+    menu_icon_font = 'fas'
+    item_actions = [DeleteAction]
+    group_actions = [actions.RAIPublicationListAction]
+
+    
+class RAIScientificOutputGroup(RAIAdminGroup):
+    components = [
+        RAIFunding, RAIThesis, RAIPublication
+    ]
+    menu_label = 'Wissenschaftlicher Output'
+    
 class RAIRadiationSafetyDosemeter(RAIModelAdmin):
     model = RUBIONUser
     identifier = 'radiation_safety'
