@@ -16,6 +16,10 @@ from rai.widgets import RAIRadioInput, RAISelectMultiple, RAISelect
 
 from userdata.models import StaffUser
 
+from userinput.models import (
+    Project2FundingRelation, Project2ThesisRelation, Project2PublicationRelation
+)
+
 import userinput.rai.filters as filters
 from userinput.rai.permissions import MovePermission, InactivatePermission
 
@@ -229,8 +233,8 @@ class RAIUserDataListAction(ListAction):
 
     def instructions(self, obj):
         instructions = []
-        for inst in obj.needs_safety_instructions.all():
-            instructions.append(inst)
+        for inst in obj.safety_instructions.all():
+            instructions.append(inst.instruction)
         return instructions
         
 
@@ -399,3 +403,81 @@ class RAIWorkgroupDetailAction(DetailAction):
 class RAIWorkgroupCreateAction(CreateAction):
     edit_handler = workgroup_create_edit_handler
     text_type = 'secondary'
+
+
+class AbstractScientificOutputListAction(ListAction):
+    RelationModel = None
+    related_name = None
+    
+    def get_project(self, obj):
+        rels = self.RelationModel.objects.filter(snippet = obj)
+        return '<br />'.join([r.project_page.title_de for r in rels])
+
+    def get_created_at(self, obj):
+        rels = self.RelationModel.objects.filter(snippet = obj)
+        if rels.count() == 0:
+            return ''
+        
+        for r in rels:
+            project = r.project_page
+            revisions = PageRevision.objects.filter(page = project).order_by('-created_at')
+            for rev in revisions:
+                revision_page = rev.as_page_object()
+                rel_qs = getattr(revision_page, self.related_name)
+                fundings = [p2fr.snippet for p2fr in rel_qs.all()]
+                if obj not in fundings:
+                    next_rev = rev.get_next()
+                    break
+                
+        return 'Hinzugefügt am: {datum} von {user}'.format(datum = next_rev.created_at, user = next_rev.user)
+    
+class RAIFundingListAction(AbstractScientificOutputListAction):
+    RelationModel = Project2FundingRelation
+    related_name = 'related_fundings'
+    item_provides = OrderedDict([
+        ('project', {
+            'label' : 'Projekt',
+            'desc' : 'Das zugehörige Projekt',
+            'callback' : 'get_project',
+        }),
+        ('created_at', {
+            'label' : 'Datum des Hinzufügens',
+            'desc' : 'Datum, an dem die Förderung zum Projekt hinzugefügt wurde.',
+            'callback' : 'get_created_at'
+        }),
+    ])
+
+    
+
+class RAIThesisListAction(AbstractScientificOutputListAction):
+    RelationModel = Project2ThesisRelation
+    related_name = 'related_theses'
+
+    item_provides = OrderedDict([
+        ('project', {
+            'label' : 'Projekt',
+            'desc' : 'Das zugehörige Projekt',
+            'callback' : 'get_project',
+        }),
+        ('created_at', {
+            'label' : 'Datum des Hinzufügens',
+            'desc' : 'Datum, an dem die Abschlussarbeit zum Projekt hinzugefügt wurde.',
+            'callback' : 'get_created_at'
+        }),
+    ])
+
+class RAIPublicationListAction(AbstractScientificOutputListAction):
+    RelationModel = Project2PublicationRelation
+    related_name = 'related_publications'
+    item_provides = OrderedDict([
+        ('project', {
+            'label' : 'Projekt',
+            'desc' : 'Das zugehörige Projekt',
+            'callback' : 'get_project',
+        }),
+        ('created_at', {
+            'label' : 'Datum des Hinzufügens',
+            'desc' : 'Datum, an dem die Publikation zum Projekt hinzugefügt wurde.',
+            'callback' : 'get_created_at'
+        }),
+    ])
