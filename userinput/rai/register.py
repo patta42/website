@@ -193,12 +193,16 @@ class RAIInactiveUserMailCollection(RAIUserMailCollection):
     label = 'alle inaktiven Nutzer'
     def get_objects(self):
         return self.model.objects.inactive()
-    
+
+class RAIGroupLeaderRUBMailCollection(RAIUserMailCollection):
+    label = 'Teilnehmer der Nutzerversammlung'
+    def get_objects(self):
+        return super().get_objects().filter(is_rub = True, is_leader = True)
 
 register_mail_collection(RAIWorkgroupMailCollection)
 register_mail_collection(RAIUserMailCollection)
 register_mail_collection(RAIInactiveUserMailCollection)
-
+register_mail_collection(RAIGroupLeaderRUBMailCollection)
     
 rai_register_documents_on_demand([RubionUserBadgeDocument])
 register_panels([WorkgroupApplicationPanel, ProjectApplicationPanel, UserStatsPanel])
