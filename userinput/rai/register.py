@@ -33,7 +33,7 @@ from userinput.rai.views.generic import MoveToWorkgroupView
 from userinput.rai.views.projects.views import ProjectCreateView
 from userinput.rai.views.rubionuser.views import (
     RUBIONUserEditView, RUBIONUserInactivateView, RUBIONUserHistoryView,
-    RUBIONUserCreateBadgeView, RUBIONUserCreateView
+    RUBIONUserCreateBadgeView, RUBIONUserCreateView, RUBIONUserActivateView
 )
 
 from userinput.rai.views.workgroup.views import WorkgroupCreateView
@@ -70,18 +70,21 @@ class RAIUserData(RAIModelAdmin):
         actions.RUBIONUserDataEditAction,
         DetailAction,
         actions.RUBIONUserInactivateAction,
+        actions.RUBIONUserActivateAction,
         actions.RUBIONUserMoveAction,
         HistoryAction
     ]
     editview = RUBIONUserEditView
     inactivateview = RUBIONUserInactivateView
+    activateview = RUBIONUserActivateView
     moveview = MoveToWorkgroupView
     historyview = RUBIONUserHistoryView
     createview = RUBIONUserCreateView
 
+
 class RAIWorkGroups(RAIModelAdmin):
     model = WorkGroup
-    menu_label = _l('Workgroups')
+    menu_label = 'Arbeitsgruppen'
     menu_icon_font = 'fas'
     menu_icon = 'users'
     createview = WorkgroupCreateView
