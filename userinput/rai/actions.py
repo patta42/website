@@ -48,11 +48,11 @@ class MoveToWorkgroupAction(SpecificAction):
 
 class UserinputInactivateAction(InactivateAction):
     def show(self, request):
-        return super().show(request) and user_has_permission(request, self.get_rai_id(), InactivatePermission)
+        return user_has_permission(request, self.get_rai_id(), InactivatePermission)
 
 class UserinputActivateAction(ActivateAction):
     def show(self, request):
-        return super().show(request) and user_has_permission(request, self.get_rai_id(), InactivatePermission)
+        return user_has_permission(request, self.get_rai_id(), InactivatePermission)
 
     
 def _is_rubion_user_active(instance):
@@ -73,6 +73,10 @@ class RUBIONUserMoveAction(RUBIONUserOnlyWhenActiveMixin, MoveToWorkgroupAction)
     
 class RUBIONUserInactivateAction(RUBIONUserOnlyWhenActiveMixin, UserinputInactivateAction):
     pass
+
+class RUBIONUserActivateAction(RUBIONUserOnlyWhenActiveMixin, UserinputActivateAction):
+    def show_for_instance(self, instance, request=None):
+        return not super().show_for_instance(instance, request)
 
 class RUBIONUserCreateAction(CreateAction):
     edit_handler = rubionuser_create_handler
