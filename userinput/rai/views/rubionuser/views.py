@@ -2,6 +2,7 @@ from pprint import pprint
 
 from .forms import (
     UserAndStaffInactivationForm, WorkgroupInactivationForm,
+    ActivateUserWorkgroupChoiceForm
 )
 
 import datetime
@@ -17,7 +18,7 @@ from django.utils.text import slugify
 from django.views.generic.detail import BaseDetailView
 
 from rai.comments.models import RAIComment
-from rai.default_views import EditView, InactivateView, HistoryView
+from rai.default_views import EditView, InactivateView, HistoryView, ActivateView
 from rai.default_views.multiform_create import  MultiFormCreateView
 from rai.files.models import RAIDocument
 
@@ -100,9 +101,9 @@ class ExtendedRUBIONUserInformationMixin:
 
     _staff_inactivated = False
     def inactivate_staff(self):
-        staff = self.staff
+        staff = self.staff_user
         # inactivate staff user and website user
-        staff.inactivate(user = request.user, inactivate_website_user = True)
+        staff.inactivate(user = self.request.user, inactivate_website_user = True)
         self.success_message('Mitarbeiter erfolgreich inaktiviert.')
 
 
@@ -307,6 +308,63 @@ class RUBIONUserInactivateView(InactivateView, ExtendedRUBIONUserInformationMixi
             return self.redirect_to_default()
                     
 
+class RUBIONUserActivateView(ActivateView):
+    template_name = 'userinput/rubionuser/rai/views/activate.html'    
+
+    workgroup_choice_form = None
+
+    def get_buttons(self):
+        buttons = super().get_buttons().copy()
+        buttons['okay']['label'] = 'Nutzer mit den obigen Einstellungen aktivieren'
+
+        return buttons
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['workgroup_choice_form'] = self.workgroup_choice_form
+        # context['staff_group'] = self.staff_group
+        # context['staff_form'] = self.staff_form
+        # context['group_leader_form'] = self.group_leader_form
+
+        return context
+
+
+    def get(self, request, *args, **kwargs):
+        if not self.workgroup_choice_form:
+            self.workgroup_choice_form = ActivateUserWorkgroupChoiceForm(self.obj)
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        if request.POST.get('action', None) != 'activate':
+            self.warning_message('Aktivierung nicht erfolgreich.')
+            self.debug_message('POST.action not activate') 
+            return self.redirect_to_default()
+
+        self.workgroup_choice_form = ActivateUserWorkgroupChoiceForm(self.obj, request.POST)
+
+        if not self.workgroup_choice_form.is_valid():
+            return self.get(request, *args, **kwargs)
+        new_wg_pk = self.workgroup_choice_form.cleaned_data.get('workgroup_choice')
+        current_wg = self.obj.get_workgroup()
+
+        # move, if necessary
+        if current_wg.pk != new_wg_pk:
+            new_wg = WorkGroup.objects.get(pk = new_wg_pk)
+            self.obj.move(new_wg.get_member_container(), 'last-child')
+        else:
+            new_wg = current_wg
+            
+        # activate wg and make user group_leader, if necessary
+        if new_wg.is_inactivated():
+            new_wg.activate(user = request.user)
+            self.obj.is_leader = True
+
+        # activate user
+        self.obj.activate(user = request.user)
+
+        return self.redirect_to_default()
+
+    
 class RUBIONUserHistoryView(HistoryView):
     pass
 
