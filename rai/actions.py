@@ -119,7 +119,7 @@ class DetailAction(SpecificAction):
             active_action = self
         )
     def show(self, request):
-        return user_can_view(request, self.get_rai_id())
+        return False#user_can_view(request, self.get_rai_id())
   
 
 class EditAction(SpecificAction):
@@ -140,8 +140,8 @@ class EditAction(SpecificAction):
     
     
 class InactivateAction(SpecificAction):
-    label = _l('Inactivate')
-    icon = 'ban'
+    label = 'Inaktivieren'
+    icon = 'lock'
     icon_font = 'fas'
     action_identifier = 'inactivate'
     text_type = 'danger'
@@ -152,12 +152,32 @@ class InactivateAction(SpecificAction):
             active_action = self
         )
 
-    def show(self, request = None):
+    def show(self, request):
         inactivate = getattr(self.raiadmin.model, 'inactivate', None)
         if inactivate and callable(inactivate):
             return True
         return False
 
+class ActivateAction(SpecificAction):
+    label = 'Aktivieren'
+    icon = 'lock-open'
+    icon_font = 'fas'
+    action_identifier = 'activate'
+    text_type = 'danger'
+
+    def get_view(self):
+        return self.raiadmin.activateview.as_view(
+            raiadmin = self.raiadmin,
+            active_action = self
+        )
+
+    def show(self, request):
+        inactivate = getattr(self.raiadmin.model, 'activate', None)
+        if activate and callable(activate):
+            return True
+        return False
+    
+    
 class DeleteAction(SpecificAction):
     label = _l('Delete')
     icon = 'trash'
