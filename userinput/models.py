@@ -361,7 +361,18 @@ class WorkGroup ( UserGeneratedPage2 ):
         for project in self.get_projects():
             if project.expire_at > now:
                 project._close(user = user)
+
+    def activate(self, user = None):
+        self.expire_at = None
+        if user:
+            self.save_revision_and_publish(user=user)
+        else:
+            self.save_revision_and_publish()
         
+                
+    def is_inactivated(self):
+        return self.expire_at is not None and self.expire_at < datetime.datetime.now()
+                
     @classmethod
     def active_filter(self):
         return Q(expire_at__isnull = True) | Q(expire_at__gte = datetime.datetime.now())
