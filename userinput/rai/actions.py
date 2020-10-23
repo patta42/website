@@ -8,7 +8,7 @@ import locale
 
 from rai.actions import (
     ListAction, EditAction, DetailAction, CreateAction,
-    InactivateAction, SpecificAction
+    InactivateAction, ActivateAction, SpecificAction
 )
 import rai.edit_handlers as eh
 from rai.permissions.utils import user_has_permission
@@ -48,7 +48,11 @@ class MoveToWorkgroupAction(SpecificAction):
 
 class UserinputInactivateAction(InactivateAction):
     def show(self, request):
-        return user_has_permission(request, self.get_rai_id(), InactivatePermission)
+        return super().show(request) and user_has_permission(request, self.get_rai_id(), InactivatePermission)
+
+class UserinputActivateAction(ActivateAction):
+    def show(self, request):
+        return super().show(request) and user_has_permission(request, self.get_rai_id(), InactivatePermission)
 
     
 def _is_rubion_user_active(instance):
