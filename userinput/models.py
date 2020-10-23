@@ -1056,6 +1056,17 @@ class RUBIONUser ( UserGeneratedPage2 ):
         if website_user:
             website_user.is_active = False
             website_user.save()
+
+    def activate( self, user=None ):
+        self.expire_at = None
+        if user:
+            self.save_revision_and_publish(user = user)
+        else:
+            self.save_revision_and_publish()
+        website_user = self.linked_user
+        if website_user:
+            website_user.is_active = True
+            website_user.save()
             
     @classmethod
     def active_filter(self):
