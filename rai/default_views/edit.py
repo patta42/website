@@ -12,6 +12,10 @@ from django.template.loader import render_to_string
 
 from django.utils.translation import ugettext_lazy as _
 
+import logging
+
+# Get an instance of a logger
+logger = logging.getLogger('django.request')
 
 class EditView(CreateView, SingleObjectMixin):
     template_name = 'rai/views/default/edit.html'
