@@ -617,7 +617,10 @@ class SafetyInstruction2StaffRelation(AbstractSafetyInstructionRelation):
             ruser = RUBIONUser.objects.get(linked_user = staff.user)
         except RUBIONUser.DoesNotExist:
             ruser = None
-        SafetyInstruction2UserRelation.objects.filter(user = ruser).all().delete()
+        except RUBIONUser.MultipleObjectsReturned:
+            ruser = None
+        if ruser:
+            SafetyInstruction2UserRelation.objects.filter(user = ruser).all().delete()
             
         
     def save_for_ruser(self, ruser = None):
@@ -625,6 +628,8 @@ class SafetyInstruction2StaffRelation(AbstractSafetyInstructionRelation):
             try:
                 ruser = RUBIONUser.objects.get(linked_user = self.staff.user)
             except RUBIONUser.DoesNotExist:
+                ruser = None
+            except RUBIONUser.MultipleObjectsReturned:
                 ruser = None
         if ruser:
             rel = SafetyInstruction2UserRelation(
@@ -640,6 +645,8 @@ class SafetyInstruction2UserRelation(AbstractSafetyInstructionRelation):
     user = ParentalKey(RUBIONUser, related_name = 'safety_instructions')
 
     def save_for_staff(self, staff = None):
+        if not self.user.linked_user:
+            return
         if not staff:
             try:
                 staff = StaffUser.objects.get(user = self.user.linked_user)
@@ -655,10 +662,15 @@ class SafetyInstruction2UserRelation(AbstractSafetyInstructionRelation):
         return staff
 
     def clear_for_staff(self, ruser):
+        if not ruser.linked_user:
+            return
         try:
             staff = StaffUser.objects.get(user = ruser.linked_user)
         except StaffUser.DoesNotExist:
             staff = None
+        except StaffUser.MultipleObjectsReturned:
+            print(ruser)
+            print(ruser.linked_user)
         SafetyInstruction2StaffRelation.objects.filter(staff = staff).all().delete()
     
 @register_snippet
