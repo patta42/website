@@ -147,18 +147,21 @@ $R.listView = {
 		    (a_fallback < b_fallback) ? -1 : (a_fallback > b_fallback) ? 1 : 0;
 	    },
 	    self.sort = function(attribute){
+		console.log('Sorting by', attribute);
 		$(self.base+' li.group-header').remove();
 		$(self.base+' > li').sort( function(a, b){
 		    return self.compareFcn(a,b, attribute);
 		}).appendTo($(self.base));
 	    },
 	    self.sortDesc = function(attribute){
+		console.log('Sorting desc by', attribute);
 		$(self.base+' li.group-header').remove();
 		$(self.base+' > li').sort( function(a, b){
 		    return -1 * self.compareFcn(a, b, attribute);
 		}).appendTo($(self.base));
 	    },
 	    self.group_by = function(attribute){
+		console.log('Grouping by', attribute);
 		var last_group = undefined;
 		$(self.base+ ' > li').each(function(){
 		    
@@ -178,7 +181,21 @@ $R.listView = {
 	    fields 
 		.filter(function(val, idx, arr){return arr.indexOf(val) === idx})
 		.forEach(item => self.addLink(item));
-	    self.sort(fields[0]);
+	    var default_sort = $(self.base).find('[data-rubion-is-default-sort="true"]').first()
+	    if (default_sort.length > 0){
+		var sort_field = default_sort.data('rubion-sortable');
+		var sort_order = default_sort.data('rubion-default-sort-order');
+
+		if (sort_order == 'desc'){
+		    self.sortDesc(sort_field); 
+		} else {
+		    self.sort(sort_field); 
+		}
+		self.group_by(sort_field);
+	    }
+	    else{
+		self.sort(fields[0]);
+	    }
 	}
 	return cls;
     })(),
