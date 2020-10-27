@@ -7,6 +7,7 @@ import datetime
 import locale
 
 from rai.actions import (
+    RAIAction,
     ListAction, EditAction, DetailAction, CreateAction,
     InactivateAction, ActivateAction, SpecificAction
 )
@@ -28,6 +29,7 @@ from userinput.rai.edit_handlers import (
     rubionuser_create_handler, project_create_handler
 )
 
+from userinput.rai.views.rubionuser.views import AddInstructionsDatesView
 from wagtail.core.models import PageRevision
 
 # an  action for moving from one group to another
@@ -436,8 +438,17 @@ class AbstractScientificOutputListAction(ListAction):
                 if obj not in fundings:
                     next_rev = rev.get_next()
                     break
+
+        if not next_rev.user:
+            return 'Hinzugefügt am: {datum} von unbekanntem Nuzter'.format(
+                datum = next_rev.created_at
+            )
                 
-        return 'Hinzugefügt am: {datum} von {user}'.format(datum = next_rev.created_at, user = next_rev.user)
+        return 'Hinzugefügt am: {datum} von {firstname} {lastname}'.format(
+            datum = next_rev.created_at.strftime('%d %B %Y'),
+            firstname = next_rev.user.first_name,
+            lastname = next_rev.user.last_name,
+        )
     
 class RAIFundingListAction(AbstractScientificOutputListAction):
     RelationModel = Project2FundingRelation
@@ -453,14 +464,45 @@ class RAIFundingListAction(AbstractScientificOutputListAction):
             'desc' : 'Datum, an dem die Förderung zum Projekt hinzugefügt wurde.',
             'callback' : 'get_created_at'
         }),
+        ('additional', {
+            'label' : 'Weitere Informationen',
+            'desc' : 'Zusätzliche Informationen zur Förderung',
+            'type' : 'group'
+        }),
+        ('funder', {
+            'label' : 'Förderinstitution',
+            'desc' : 'Die fördernde Institution',
+            'group' : 'additional',
+            'callback' : 'get_funder'
+        }),
+        ('funder_id', {
+            'label' : 'Projektnummer',
+            'desc' : 'Die Projektnummer bei der fördernden Institution',
+            'group' : 'additional',
+            'callback' : 'get_funding_id'
+        }),
+        ('url', {
+            'label' : 'Projekt-Homepage',
+            'desc' : 'Die Homepage des Förder-Projekts',
+            'group' : 'additional',
+            'callback' : 'get_funding_url'
+        }),
+
     ])
 
+    def get_funder(self, obj):
+        return "Gefördert durch: {}".format(obj.agency)
+    def get_funding_id(self, obj):
+        return "Projektnummer: {}".format(obj.project_number)
+    def get_funding_url(self, obj):
+        return "Förder-Projekt-Homepage: {}".format(obj.project_url)
     
-
+    
 class RAIThesisListAction(AbstractScientificOutputListAction):
     RelationModel = Project2ThesisRelation
     related_name = 'related_theses'
-
+    list_item_template = 'userinput/snippets/thesis/rai/list/item-in-list.html'
+    
     item_provides = OrderedDict([
         ('project', {
             'label' : 'Projekt',
@@ -471,7 +513,7 @@ class RAIThesisListAction(AbstractScientificOutputListAction):
             'label' : 'Datum des Hinzufügens',
             'desc' : 'Datum, an dem die Abschlussarbeit zum Projekt hinzugefügt wurde.',
             'callback' : 'get_created_at'
-        }),
+        })
     ])
 
 class RAIPublicationListAction(AbstractScientificOutputListAction):
@@ -489,3 +531,15 @@ class RAIPublicationListAction(AbstractScientificOutputListAction):
             'callback' : 'get_created_at'
         }),
     ])
+
+
+class RAISafetyInstructionAddAction(RAIAction):
+    action_identifier = 'add'
+    icon = 'plus'
+    icon_font = 'fas'
+
+    def get_view(self):
+        return AddInstructionsDatesView.as_view(
+            raiadmin = self.raiadmin,
+            active_action = self
+        )
