@@ -1,0 +1,23 @@
+{% extends 'rai/views/default/default-list-item.html' %}
+{% load i18n userinput_rai_tags %}
+    {% block outertitle %}
+    <h5 class="mb-1">
+      <span  data-rubion-searchable="true" data-rubion-sortable="Titel" data-rubion-searchable-title="Titel">{{object.title}}</span>
+
+    <div class="text-primary" style="display:block;font-size:1rem;">
+      <span data-rubion-searchable="true" data-rubion-searchable-title="Autor">
+	{{object.authors}}
+      </span>,
+      <span>{{object.journal}} ({{object.volume}}), {{object.pages}}</span>
+      <span data-rubion-sortable="Veröffentlichungsjahr" data-rubion-groupby="Veröffentlichungsjahr" data-rubion-group-title="{{object.year}}" data-rubion-is-default-sort="true" data-rubion-default-sort-order="desc">
+	{{object.year}}
+      </span>
+      {% if object.doi %}
+      <span class="text-body" style="display:block;font-size:.8rem">
+	DOI: <a href="https://doi.org/{{object.doi|parse_doi}}" target="_new">{{object.doi|parse_doi}}</a>
+      </span>
+      {% endif %}
+    </div>
+    </h5>
+
+    {% endblock %}
