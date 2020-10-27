@@ -3,9 +3,15 @@
     {% block outertitle %}
     <h5 class="mb-1">
       <div class="text-primary" style="display:block;font-size:1rem;">
-      <span data-rubion-searchable="true"
-      data-rubion-searchable-title="Autor">{{object.author}}</span> <span data-rubion-sortable="Veröffentlichungsjahr">{{object.year}}</span>
-      (<span data-rubion-groupby="Abschlussart" data-rubion-group-title="{{object.get_thesis_type_display}}" data-rubion-sortable="Abschlussart">{{object.get_thesis_type_display}}</span>):
+	<span data-rubion-searchable="true" data-rubion-searchable-title="Autor">
+	  {{object.author}}
+	</span>
+	<span data-rubion-sortable="Veröffentlichungsjahr" data-rubion-is-default-sort="true" data-rubion-default-sort-order="desc" data-rubion-groupby="Veröffentlichungsjahr" data-rubion-group-title="{{object.year}}">
+	  {{object.year}}
+	</span>
+	(<span data-rubion-groupby="Abschlussart" data-rubion-group-title="{{object.get_thesis_type_display}}" data-rubion-sortable="Abschlussart">
+	  {{object.get_thesis_type_display}}
+	</span>):
     </div>
 
       <span  data-rubion-searchable="true" data-rubion-sortable="Titel" data-rubion-searchable-title="Titel">{{object.title}}</span>
