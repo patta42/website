@@ -222,6 +222,9 @@ class WorkGroup ( UserGeneratedPage2 ):
         mc = MemberContainer.objects.child_of(self).first()
         return UGCCreatePage2.objects.child_of(mc).first()
 
+    def get_member_container( self ):
+        return MemberContainer.objects.child_of(self).first()
+    
     def get_head( self ):
         return RUBIONUser.objects.live().descendant_of(self).filter(is_leader=True).first()
     
@@ -2081,7 +2084,12 @@ class PublicationSnippet ( models.Model ):
 
 
     def __str__(self):
-        return self.title
+        return '{author}: {title}, {journal} {year}'.format(
+            title = self.title,
+            author = self.authors,
+            journal = self.journal,
+            year = self.year
+        )
 
 
 @register_snippet
