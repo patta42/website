@@ -4,10 +4,14 @@ from .filters import CoursesTimeFilter, CoursesFilter
 from rai.actions import (
     ListAction, DetailAction, CreateAction
 )
+from rai.permissions.utils import user_can_edit
 
 class CoursesDetailAction(DetailAction):
     label = 'Teilnehmer verwalten'
     icon = 'users'
+    def show(self, request):
+        return user_can_edit(request, self.get_rai_id())
+
 
 class CoursesListAction(ListAction):
     list_filters = [
