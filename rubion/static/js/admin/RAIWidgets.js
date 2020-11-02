@@ -1063,8 +1063,13 @@ $R.Widgets = {
 	$('input[type="checkbox"].check-all').checkall()
 	$('table thead th.select-shown-rows').selectshownrows()
 	$('select.nuclide-select').nuclideselect()
+	$('select.publication-select').publicationselect()
+	$('select.thesis-select').thesisselect()
 	$R.addDomInsertionCallback(function(elem){
 	    $(elem).find('select.nuclide-select').nuclideselect()
+	    $(elem).find('select.publication-select').publicationselect()
+	    $(elem).find('input.doi-input').doiinput()
+	    $(elem).find('select.thesis-select').thesisselect()
 	})
 	$('.ajax-edit').ajaxedit()
 //	$('.rai-comment a[href$="#genericModal"').genericmodal()
@@ -3050,9 +3055,450 @@ $.widget(
 	}
     }
 )
+$.widget(
+    'raiwidgets.modalselect',
+    /* A widget that turns a select into a modal */
+    {
+	options : {
+	    // Text shown if the value of the select is ''
+	    'emptyTxt' : 'Nichts ausgewählt',
+	    // Button text if the value of the select is ''
+	    'addLbl' : 'Hinzufügen',
+	    // Button text if the value of the select is != ''
+	    'chgLbl' : 'Ändern',
+	    // Text of the <label>. If null, will not be updated.
+	    'selectLbl' : null,
+	    // title of the modal
+	    'modaltitle' : 'Auswählen',
+	    
+	},
+	_create : function(){
+	    // visually hide the select:
+	    this.element.css({
+		'position' : 'absolute',
+		'left' : '-10000px',
+		'top' : '-10000px',
+		'width' : '0px',
+		'height' : '0px'
+	    })
+	    /* Update existing and create additional HTML */
+	    
+	    // container for showing the selection
+	    this.$info = $('<div />').insertAfter(this.element)
 
+	    if (this.options['selectLbl'] !== null){
+		$('label[for="'+this.element.attr('id')+'"]').text(this.options['selectLbl']);
+	    }
+	    // reduce form-group's width
+	    var $parentFormgroup = this.element.parents('.form-group').first()
+		.removeClass('col-md-12')
+		.addClass('col-md-8')
+	    var $btnContainer = $('<div class="col-md-4">').insertAfter($parentFormgroup)
+	    var $lbl = $('<label>Aktion</label>').appendTo($btnContainer)
 
+	    this.$openBtn = $('<button type="button" class="btn btn-secondary" />')
+	    var $btn = $('<div />').append(this.$openBtn).appendTo($btnContainer)
 
+	    var self = this;
+	    /* assign callbacks */
+	    this.$openBtn.click(function(){
+		self._showSelectModal()
+	    })
+	    /* Do init stuff */
+
+	    this._updInfo();
+
+	},
+	_updInfo : function(){
+	    // updates the information
+	    if (this.element.val() !== ''){
+		this.$info.html(this.element.find('option:selected').text())
+		this.$openBtn.text(this.options['chgLbl'])
+	    } else {
+		this.$info.html('<em>'+this.options['emptyTxt']+'</em>');
+		this.$openBtn.text(this.options['addLbl'])
+	    }
+	},
+	_showSelectModal : function(){
+	    var self = this
+	    this.$modal = $R.genericModal({
+		'title' : this.options['modaltitle'],
+		cancelBtn :      true,
+		saveBtn :        true,
+		applyBtn :       false,
+		saveLabel :      'Speichern',
+		cancelLabel :    'Abbrechen',
+		scroll :         true,
+		size :           'xl',
+		saveCallback :   function(){ self._onSave() },
+		cancelCallback : function(){ self._onCancel() }
+	    });
+	    
+	    this.$modal.show()
+	    this._setModalBody()
+	},
+	_setModalBody : function(){
+	    this.$modal.setBody(this._mkBodyHTML())
+	},
+	_mkBodyHTML : function(){
+	    // function that creates the HTML of the modal's body
+	    // should be overriden by derived widgets
+	    return $('<div />').append(this._mkSelectionList())
+	},
+	_mkSelectionList : function(){
+	    // function that creates the HTML of the selection
+	    // list used instead of the select
+	    var $selectionList = $('<ul class="list-group" />');
+
+	    var self = this
+	    // adding the options
+	    this.element.find('option').each(function(){
+		if ($(this).attr('value') !== ''){
+		    $('<li />')
+			.addClass('list-group-item existingSnippet hoverLight')
+			.attr('data-pk', $(this).attr('value'))
+			.text($(this).text()).appendTo($selectionList)
+			.click(function(){
+			    $('.existingSnippet').removeClass('selected')
+			    $(this).addClass('selected')
+			    self._trigger('selected', null, {'elem':this})
+			})
+		}
+	    })
+	    var $active = $selectionList.find('li[data-pk="'+this.element.val()+'"]')
+	    if ($active.length > 0){
+		$active.addClass('selected')
+		this._trigger('selected', null, {'elem' : $active[0]})
+	    }
+		
+	    return $selectionList
+	},
+	_onSave : function() {
+	    var $el = $('.existingSnippet.selected').first()
+	    this.element.val($el.data('pk'))
+	    this._updInfo();
+	    this.$modal.dismiss()
+	    
+	},
+	_onCancel : function() {
+	    this.$modal.dismiss()
+	},
+	_onApply : function(){
+
+	}
+    }
+)
+$.widget(
+    'raiwidgets.publicationselect', $.raiwidgets.modalselect,
+    {
+	options : {
+	    'addLbl' : 'Publikation hinzufügen',
+	    'chgLbl' : 'Publikation ändern',
+	    'selectLbl' : 'Ausgewählte Publikation',
+	    'emptyTxt' : 'Keine Publikation ausgewählt',
+	    'URL' : null,
+	    'modaltitle' : 'Publikation auswählen',
+	    'formId': 'newPublForm',
+	    'newTabLbl' : 'Neue Publikation',
+	    'selectTabLbl' : 'Existierende Publikation auswählen',
+	    'newBtnLbl': 'Neue Publikation',
+	    'selectBtnLbl' : 'Ausgewählte Publikation übernehmen',
+	    'widgetselector' : 'select.publication-select'
+	},
+	_create : function(){
+	    this._super()
+	    var self = this;
+	    // get URL from element
+	    this.options['URL'] = $(this.element).data('add-publication-url')
+	    this.options['selected'] = function(){
+		self.checkSelection()
+	    }
+	},
+	_showSelectModal : function(){
+	    this._super()
+	    var self = this
+	    // additionally, get a ref to the save button
+	    this.$saveBtn = this.$modal.getButton('save')
+	    
+	},
+	_setModalBody : function(){
+	    var self = this
+	    $R.get(this.options['URL']).fail().done(
+		function(data){
+		    console.log('srelf', self)
+		    self.$formContent = $(data['html'])
+		    self.$modal.setBody(self._mkBodyHTML())
+		    self._updBtn({target: $('a[id^="modalTabCtl"].active')})
+		}
+	    )
+	},
+	_mkBodyHTML : function(){
+	    var self = this
+	    var $tabCtl = $('<ul />')
+		.addClass('nav nav-tabs')
+		.attr("role", "tablist")
+	    var $newPublLi = $('<li />')
+		.addClass("nav-item")
+		.appendTo($tabCtl)
+		.append($('<a />')
+			.attr('id','modalTabCtl_newPubl')
+			.addClass("nav-link active")
+			.attr('data-toggle','tab')
+			.attr('href','#modalTab_newPubl')
+			.attr('role', "tab")
+			.attr('aria-controls', "modalTab_newPubl")
+			.attr('aria-selected',"true")
+			.text(this.options['newTabLbl'])
+			.on('shown.bs.tab', function(e){
+			    self._updBtn(e)
+			})
+		       )
+	    var $selectPublLi = $('<li />')
+		.addClass("nav-item")
+		.appendTo($tabCtl)
+		.append($('<a />')
+			.attr('id','modalTabCtl_selPubl')
+			.addClass("nav-link")
+			.attr('data-toggle','tab')
+			.attr('href','#modalTab_selPubl')
+			.attr('role', "tab")
+			.attr('aria-controls', "modalTab_selPubl")
+			.attr('aria-selected', "false")
+			.text(this.options['selectTabLbl'])
+			.on('shown.bs.tab', function(e){
+			    self._updBtn(e)
+			})
+		       )
+
+	    var $tabcontent = $('<div />')
+		.addClass('tab-content')
+		.append(this._mkSelectionList())
+		.append(this._mkNewForm())
+
+	    return $('<div />').append($tabCtl).append($tabcontent)
+	},
+	_mkSelectionList : function(){
+	    // wraps the selection list in a tab
+	    console.log(this)
+	    var $selectionTab = $('<div />')
+		.attr('id',"modalTab_selPubl")
+		.attr('role',"tabpanel")
+		.attr('aria-labelledby',"modalTabCtl_selPubl")
+		.addClass("tab-pane fade")
+		.append(this._super())
+	    return $selectionTab
+	    
+	},
+	_mkNewForm : function(){
+	    var $selectionTab = $('<div />')
+		.attr('id',"modalTab_newPubl")
+		.attr('role',"tabpanel")
+		.attr('aria-labelledby',"modalTabCtl_newPubl")
+		.addClass("tab-pane fade active show")
+	    this.$newForm = $('<form novalidate />')
+		.attr('id', this.options['formId'])
+		.append(this.$formContent)
+		.appendTo($selectionTab)
+	    var self = this
+	    this.$formContent.find('input').change(
+		function(){
+		    self.checkNewForm()
+		}
+	    )
+	    return $selectionTab
+	},
+	_updBtn : function(e){
+	    console.log(e.target)
+	    if($(e.target).attr('aria-controls') == 'modalTab_selPubl'){
+		this.$saveBtn
+		    .text(this.options['selectBtnLbl'])
+		    .data('action' , 'select')
+		this.checkSelection()
+	    }
+	    if($(e.target).attr('aria-controls') == 'modalTab_newPubl'){
+		this.$saveBtn
+		    .text(this.options['newBtnLbl'])
+		    .data('action' , 'new')
+		this.checkNewForm()
+	    }
+	},
+	_onSave : function(){
+	    if (this.$saveBtn.data('action') == 'select'){
+		this._super()
+	    }
+	    if (this.$saveBtn.data('action') == 'new'){
+		var self = this
+		$R.post(
+		    this.options['URL'],
+		    {
+			data : this.$newForm.serialize()
+		    }
+		).fail().done(function(data){
+		    // we might have an error in the form:
+		    if (data['errors'] == true){
+			self.$newForm.html(
+			    '<form id="'+self.options['formId']+'">'
+				+data['html']
+				+'</form>') 
+		    } else {
+			if(data['new'] == true){
+			    // we got a new publication. Enter it everywhere.
+			    $(self.options['widgetselector']).append(
+				$('<option value="'+data['pk']+'">'+data['title']+'</option>')
+			    )
+			    
+			}
+			self.element.val(data['pk'])
+			self._updInfo();
+			self.$modal.dismiss()
+
+		    }
+		})
+	    }
+	    
+	},
+	checkNewForm : function(){
+	    var okay = false
+	    this.$newForm.find('input[required]').each(function(){
+		if ($(this).val().trim() !== ''){
+		    okay = true
+		}
+	    })
+	    this.$saveBtn.attr('disabled', !okay)
+	    return okay
+	},
+	checkSelection : function(){
+	    this.$saveBtn.attr('disabled', $('.existingSnippet.selected').length == 0)
+	}
+    }
+)
+
+$.widget(
+    'raiwidgets.thesisselect', $.raiwidgets.publicationselect,
+    {
+	options : {
+	    'addLbl' : 'Abschlussarbeit hinzufügen',
+	    'chgLbl' : 'Abschlussarbeit ändern',
+	    'selectLbl' : 'Ausgewählte Abschlussarbeit',
+	    'emptyTxt' : 'Keine Abschlussarbeit ausgewählt',
+	    'URL' : null,
+	    'modaltitle' : 'Abschlussarbeit auswählen',
+	    'formId': 'newThesisForm',
+	    'newTabLbl' : 'Neue Abschlussarbeit',
+	    'selectTabLbl' : 'Existierende Abschlussarbeit auswählen',
+	    'newBtnLbl': 'Neue Abschlussarbeit',
+	    'selectBtnLbl' : 'Ausgewählte Abschlussarbeit übernehmen',
+	    'widgetselector' : 'select.thesis-select'
+
+	    	    
+	}
+    }
+)
+
+$.widget(
+    'raiwidgets.doiinput',
+    {
+	options : {
+	    DOIURL : 'https://data.crossref.org/',
+	    rexp : new RegExp('^(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?![%"#? ])\\S)+)$'),
+	},
+	_create : function(){
+	    this.insertBtn()
+	    var self = this
+	    this.$form = $(this.element).parents('form').first()
+	    $(this.element).keyup(
+		function(){
+		    if (self.check()){
+			self.$btn.attr('disabled', false)
+		    }
+		}
+	    )
+	    
+	},
+	insertBtn : function(){
+	    var self = this
+	    var $flex = $('<div class="d-flex" />')
+	    $(this.element).wrap($flex)
+	    this.$btn = $('<button type="button" class="btn btn-primary" disabled><i class="fas fa-download"></i></button>')
+		.insertAfter($(this.element))
+		.click(function(){
+		    self.fetch_doi()
+		})
+	    
+	},
+	check : function(){
+	    return this.options['rexp'].exec(this.element.val().trim())
+	},
+	fetch_doi : function(){
+	    var opts = {
+		method : 'GET',
+		url : this.options.DOIURL+this.element.val().trim(),
+		headers : {
+		    'Accept' : 'application/vnd.citationstyles.csl+json;q=1.0'
+		}
+	    }
+	    var self = this
+	    this.$btn.html(
+		'<i class="fas fa-cog fa-spin"></i>'
+	    )
+	    $.ajax(opts).fail(
+		function(){
+		    self.$btn.html(
+			'<i class="fas fa-download"></i>'
+		    )
+		    
+		}
+	    ).done(
+		function(data){
+		    // fill fields:
+		    self.$form.find('input[name="title"]').val(data['title'])
+		    self.$form.find('input[name="journal"]').val(
+			data['container-title-short'] || data['container-title']
+		    )
+		    self.$form.find('input[name="volume"]').val(data['volume'])
+		    self.$form.find('input[name="pages"]').val(
+			data['page'] || data['article-number'] || ''
+		    )
+
+		    // make FirstAuthor et al.:
+		    var authors = self._get_author(data['author'][0])
+		    if (data['author'].length == 2){
+			authors += ' & ' + self._get_author(data['author'][1])
+		    } else if (data['author'].length > 2){
+			authors +=' et al.'
+		    }
+		    self.$form.find('input[name="authors"]').val(authors)
+		    var year = '';
+		    if (data['published-print']){
+			year = data['published-print']['date-parts'][0][0];
+		    }
+		    else if (data['published-online']) {
+			year = data['published-online']['date-parts'][0][0];
+		    }
+		    else if (data['created']) {
+			year = data['created']['date-parts'][0][0];
+		    }
+		    self.$form.find('input[name="year"]').val(year).change()
+
+		    self.$btn.html(
+			'<i class="fas fa-download"></i>'
+		    )
+		}
+	    )
+	},
+	_get_initials : function(first_name){
+	    var parts = first_name.split(" ");
+	    var ret = '';
+	    for (var i=0; i<parts.length; i++){
+		ret += parts[i][0];
+	    }
+	    return ret;
+	},
+	_get_author : function(author){
+	    return author['family'] +' '+ this._get_initials(author['given'])
+	}
+    }
+)
 $.widget(
     'raiwidgets.nuclideselect',
     {
