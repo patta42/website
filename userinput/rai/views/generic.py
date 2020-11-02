@@ -3,9 +3,13 @@ from django.template.response import TemplateResponse
 
 from rai.default_views import InactivateView
 
-from userinput.models import WorkGroup, Nuclide
+from userinput.models import WorkGroup, Nuclide, PublicationSnippet, ThesisSnippet
 from userinput.rai.forms import MoveToWorkgroupForm, AddNuclideForm
+from userinput.rai.widgets import DOIInput
 
+
+from rai.forms import rai_modelform_factory
+from rai.widgets import RAISelect
 
 class MoveToWorkgroupView(InactivateView):
 
@@ -86,3 +90,79 @@ def add_nuclide(request):
                 return JsonResponse({'status': 200, 'errors': False, 'pk' : nuclide.pk, 'nuclide' : str(nuclide)})
         else:
             return JsonResponse({'status': 200, 'errors' : True, 'html' : form.as_p()})
+
+
+def add_publication(request):
+    if not request.is_ajax():
+        raise Http404('Page does not exist')
+    form_kls = rai_modelform_factory(
+            PublicationSnippet,
+            fields = ['doi','authors','title','journal', 'year', 'volume', 'pages'],
+            widgets = {'doi' : DOIInput}
+    )
+    if request.method == 'GET':
+        form = form_kls()
+        return JsonResponse({'status':200, 'html' : form.as_p()})
+    if request.method == 'POST':
+        form = form_kls(request.POST)
+        if form.is_valid():
+            instance = form.save(commit = False)
+            instance.doi = instance.doi.strip()
+
+            # Check if publication already exists:
+            newpub = True
+            pub = PublicationSnippet.objects.filter(doi__iexact = instance.doi)
+            if pub.count() > 0:
+                newpub = False
+                instance = pub[0]
+            else:
+                instance.save()
+                
+            return JsonResponse({
+                'errors': False,
+                'status':200,
+                'pk': instance.pk,
+                'title': str(instance),
+                'new' : newpub
+            })
+        else:
+            return JsonResponse({'errors': True, 'status':200, 'html': form.as_p()})
+
+def add_thesis(request):
+    if not request.is_ajax():
+        raise Http404('Page does not exist')
+    form_kls = rai_modelform_factory(
+        ThesisSnippet,
+        fields = ['author','title','year', 'thesis_type', 'url'],
+        widgets = {'thesis_type' : RAISelect }
+    )
+    if request.method == 'GET':
+        form = form_kls()
+        return JsonResponse({'status':200, 'html' : form.as_p()})
+    if request.method == 'POST':
+        form = form_kls(request.POST)
+        if form.is_valid():
+            instance = form.save(commit = False)
+            instance.title = instance.title.strip()
+
+            # Check if publication already exists:
+            newpub = True
+            pub = PublicationSnippet.objects.filter(title__iexact = instance.title)
+            if pub.count() > 0:
+                newpub = False
+                instance = pub[0]
+            else:
+                instance.save()
+                
+            return JsonResponse({
+                'errors': False,
+                'status':200,
+                'pk': instance.pk,
+                'title': str(instance),
+                'new' : newpub
+            })
+        else:
+            return JsonResponse({'errors': True, 'status':200, 'html': form.as_p()})
+
+
+                
