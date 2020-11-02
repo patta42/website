@@ -440,12 +440,18 @@ class AbstractScientificOutputListAction(ListAction):
                     break
 
         if not next_rev.user:
-            return 'Hinzugefügt am: {datum} von unbekanntem Nuzter'.format(
-                datum = next_rev.created_at
+            return format_html(
+                'Hinzugefügt am: {day}. {month} <span data-rubion-sortable="Hinzugefügt im Jahr" data-rubion-groupby="Hinzugefügt im Jahr" data-rubion-group-title="Hinzugefügt in {year}">{year}</span> von unbekanntem Nuzter',
+                year = next_rev.created_at.year,
+                day = next_rev.created_at.day,
+                month = next_rev.created_at.strftime('%B'),
             )
-                
-        return 'Hinzugefügt am: {datum} von {firstname} {lastname}'.format(
-            datum = next_rev.created_at.strftime('%d %B %Y'),
+        
+        return format_html(
+            'Hinzugefügt am: {day}. {month} <span data-rubion-sortable="Hinzugefügt im Jahr" data-rubion-groupby="Hinzugefügt im Jahr" data-rubion-group-title="Hinzugefügt in {year}">{year}</span> von {firstname} {lastname}',
+            year = next_rev.created_at.year,
+            day = next_rev.created_at.day,
+            month = next_rev.created_at.strftime('%B'),
             firstname = next_rev.user.first_name,
             lastname = next_rev.user.last_name,
         )
@@ -519,6 +525,8 @@ class RAIThesisListAction(AbstractScientificOutputListAction):
 class RAIPublicationListAction(AbstractScientificOutputListAction):
     RelationModel = Project2PublicationRelation
     related_name = 'related_publications'
+    list_item_template = 'userinput/snippets/publication/rai/list/item-in-list.html'
+    
     item_provides = OrderedDict([
         ('project', {
             'label' : 'Projekt',
