@@ -5,7 +5,13 @@ from .forms import (
     RUBIONUserWorkgroupForm, ProjectWorkgroupForm, ProjectMethodsForm,
     ProjectStatusForm, ProjectNuclidesForm
 )
+
+#from django.urls import reverse
+
 from userinput.models import RUBIONUser, Project
+from userinput.rai.widgets import (
+    UserinputPublicationWidget, UserinputThesisWidget
+)
 
 import rai.edit_handlers as eh
 from rai.widgets import (
@@ -91,12 +97,38 @@ project_edit_handler = eh.RAIPillsPanel([
         ], heading = 'Einstellungen')
     ], heading = 'Laufzeiten & Verlängerung'),
     eh.RAIObjectList([
-        eh.RAIInlinePanel('related_publications', panels = [
-            eh.RAIFieldPanel('snippet')
-        ], heading="Publikationen"),
-        eh.RAIInlinePanel('related_theses', panels = [
-            eh.RAIFieldPanel('snippet')
-        ] , heading="Abschlussarbeiten"),
+        eh.RAIInlinePanel(
+            'related_publications',
+            panels = [
+                eh.RAIFieldRowPanel(
+                    [
+                        eh.RAIFieldPanel(
+                            'snippet',
+                            classname = 'col-md-12',
+                            widget = UserinputPublicationWidget,
+                            label="Bekannte Publikation"
+                        )
+                    ],
+                    heading = 'Ausgewählte Publikation')
+            ],
+            heading="Publikation",
+            add_button_label = 'Weitere Publikation hinzufügen'),
+        eh.RAIInlinePanel(
+            'related_theses',
+            panels = [
+                eh.RAIFieldRowPanel(
+                    [
+                        eh.RAIFieldPanel(
+                            'snippet',
+                            classname = 'col-md-12',
+                            widget = UserinputThesisWidget,
+                            label="Ausgewählte Abschlussarbeit"
+                        )
+                    ],
+                    heading="Abschlussarbeiten")
+            ],
+            heading = 'Abschlussarbeit',
+            add_button_label = 'Weitere Abschlussarbeit hinzufügen'),
         #eh.RAIInlinePanel('related_publications'),
     ], heading="wissenschaftliche Resultate")
 ])
