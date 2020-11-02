@@ -260,6 +260,11 @@ rubionuser_edit_handler = eh.RAIPillsPanel([
     RUBIONUserInfoPanel(heading = 'Übersicht'), 
     eh.RAIObjectList([
         eh.RAICollapsablePanel([
+            eh.RAIFieldPanel('is_validated'),
+            eh.RAIFieldPanel('has_agreed'),
+            eh.RAIFieldPanel('is_rub')
+        ], heading = 'Verwaltungsdaten'),
+        eh.RAICollapsablePanel([
             eh.RAIFieldPanel('dosemeter', widget=RAISelect, classname="col-md-12"),
             eh.RAIInlinePanel('safety_instructions', panels = [
                 eh.RAIFieldPanel('instruction', label="Unterweisung"),
