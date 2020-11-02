@@ -573,15 +573,18 @@ from rai.files.base import register_collection
 from rai.notifications.base import register_listener
 
 
-from userinput.rai.register import RAIUserInputGroup, RAIRadiationSafetyGroup, RAIScientificOutputGroup
+from userinput.rai.register import (
+    RAIUserInputGroup, RAIRadiationSafetyGroup, RAIScientificOutputGroup
+)
 from userinput.rai.rubionuser.notifications import RUBIONUserChangedNotification
 from userinput.rai.collections import (
     RUBIONUserDocumentCollection, RUBIONUserOnDemandDocumentCollection
 )
-from userinput.rai.views.generic import add_nuclide
+from userinput.rai.views.generic import add_nuclide, add_publication, add_thesis
 
 rai_register(RAIUserInputGroup)
 rai_register(RAIScientificOutputGroup)
+rai_register(RAIRadiationSafetyGroup)
 register_listener(RUBIONUserChangedNotification)
 register_collection(RUBIONUserDocumentCollection)
 register_collection(RUBIONUserOnDemandDocumentCollection)
@@ -591,5 +594,7 @@ register_collection(RUBIONUserOnDemandDocumentCollection)
 @hooks.register('register_rai_url')
 def register_rai_urls():
     return [
-        path('nuclides/add', add_nuclide, name="userinput_add_nuclide")
+        path('nuclides/add', add_nuclide, name="userinput_add_nuclide"),
+        path('publication/add', add_publication, name="userinput_add_publication"),
+        path('thesis/add', add_thesis, name="userinput_add_thesis")
     ]
