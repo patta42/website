@@ -20,7 +20,7 @@ class UserinputPublicationWidget(RAISelect):
         super().__init__(attrs = attrs)
 
 class UserinputThesisWidget(RAISelect):
-    required_css_classes = ['publication-select', 'custom-select']
+    required_css_classes = ['thesis-select', 'custom-select']
     
     def __init__(self, attrs = None):
         if not attrs:
