@@ -3339,7 +3339,19 @@ $.widget(
 			self.$newForm.html(
 			    '<form id="'+self.options['formId']+'">'
 				+data['html']
-				+'</form>') 
+				+'</form>')
+			// style the errors
+			console.log('Styling...')
+			self.$newForm.find('ul.errorlist').each(
+			    function(){
+				var $ul = $(this)
+				var $p = $ul.next('p').first()
+				var $div = $('<div class="alert alert-danger" />')
+				    .insertBefore($ul)
+				    .append($ul)
+				    .append($p)
+			    }
+			)
 		    } else {
 			if(data['new'] == true){
 			    // we got a new publication. Enter it everywhere.
@@ -3389,8 +3401,6 @@ $.widget(
 	    'newBtnLbl': 'Neue Abschlussarbeit',
 	    'selectBtnLbl' : 'Ausgewählte Abschlussarbeit übernehmen',
 	    'widgetselector' : 'select.thesis-select'
-
-	    	    
 	}
     }
 )
