@@ -137,8 +137,8 @@ class GroupLeaderForm(forms.Form):
     )
 
     def clean(self):
-        cleanded_data = super().clean()
-
+        cleaned_data = super().clean()
+        
         return cleaned_data
 
 
