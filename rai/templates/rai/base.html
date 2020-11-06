@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="de">
   <head>
-    <title>RUBIONtail - {% block pagetitle %}{% endblock %}</title>
+    <title>RUBIONtail - {% block pagetitle %}Startseite{% endblock %}</title>
     <script>
     window.setLoadStatus = function(status, callback){
         var statusEl = document.getElementById('loadscreen_status')
@@ -93,6 +93,10 @@ window.addScript('Lade Editor-Erweiterungen', '{% static 'js/admin/RUBIONeditor.
 	{% endblock %}
       </div>
       <ul class="navbar-nav px-3 app-nav align-items-center">
+	{% if request.user.is_superuser %}
+	<li class="nav-item icon" id="nav_item_admin_tools">
+	</li>
+	{% endif %}
 	<li class="nav-item icon">
 	  <a class="nav-link" href="{% url "rai_mail_compose" %}"><i class="fas fa-envelope"></i></a>
 	</li>
@@ -144,6 +148,9 @@ window.addScript('Lade Editor-Erweiterungen', '{% static 'js/admin/RUBIONeditor.
 	  <div class="page-content">
 	    {% block content %}{% endblock %}
 	  </div>
+	  <footer>
+	  </footer>
+
 	</main>
       </div>
     </div>
@@ -207,6 +214,10 @@ window.addScript('Lade Editor-Erweiterungen', '{% static 'js/admin/RUBIONeditor.
       )
 window.addScript('Lade initialisierungscode', '{% static 'js/admin/init.js' %}', 'js')
     </script>
-
+    {% if request.user.is_superuser %}
+    <script>
+window.addScript('Lade Admin-Tools', '{% static 'js/admin/RAIadmin.js' %}', 'js')
+    </script>
+    {% endif %}
   </body>
 </html>
