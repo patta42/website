@@ -9,8 +9,11 @@ def get_attendee_choices():
     return tuple(choices)
 
 def get_attendee_class( identifier ):
+    if identifier.startswith("['"):
+        # strange identifiers like this occur since we use rai. Don't know why
+        identifier = identifier.replace('[','').replace("'","").replace(']','')
+
     for ATT in ATTENDEE_TYPES:
         if ATT.identifier == identifier:
             return ATT
-
     return None
