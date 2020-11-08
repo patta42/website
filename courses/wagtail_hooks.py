@@ -180,8 +180,9 @@ modeladmin_register(CoursesModelAdminGroup)
 from rai.base import rai_register
 from rai.mail.base import register_mail_template
 
-from courses.rai.mail import CourseResultMail
+from courses.rai.mail import CourseResultMail, CourseResult2ndExamMail 
 from courses.rai.register import RAITeachingGroup
 
 rai_register(RAITeachingGroup)
 register_mail_template(CourseResultMail)
+register_mail_template(CourseResult2ndExamMail)
