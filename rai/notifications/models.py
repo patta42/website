@@ -23,3 +23,10 @@ class NotificationTemplate(models.Model):
         blank = True,
         max_length = 512
     )
+    def __str__ (self):
+        from rai.notifications.internals import REGISTERED_NOTIFICATIONS
+        noti = REGISTERED_NOTIFICATIONS.get(self.notification_id, None)
+        if noti:
+            return noti.title
+        else:
+            return "unbekannt"
