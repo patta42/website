@@ -18,6 +18,7 @@
 {% endblock %}
 
 {% block content %}
+{% block content_before_list %}{% endblock %}
 <ul class="list-group" id="mainlist" data-rubion-original-object-count="{{original_object_count}}">
   {% for object in objects %}
       {% render_object_in_list object item_template %}
