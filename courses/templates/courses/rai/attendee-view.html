@@ -47,6 +47,11 @@ Teilnehmer verwalten {{ object }}
 	      <span class="mr-1"><i class="fas fa-poll fa-fw"></i></span>
 	      Klausurergebnis senden
 	    </button>
+	    <button class="btn dropdown-item" type="button" data-action="get-and-post" data-action-url="{% url "rai_courses_ajax_send_2nd_results" %}">
+	      <span class="mr-1"><i class="fas fa-poll fa-fw"></i></span>
+	      Nachklausurergebnis senden
+	    </button>
+
 	    <button class="btn dropdown-item" type="button" data-action="post_form" data-form-url="{% url "rai_mail_compose" %}" data-field-values="['email']" data-form-field-names="['to']">
 	      <span class="mr-1"><i class="fas fa-envelope fa-fw"></i></span>
 	      E-Mail senden
@@ -82,6 +87,7 @@ Teilnehmer verwalten {{ object }}
       <th class="pl-1">Nachname, Vorname, Informationen</th>
       <th class="pl-1 select-shown-rows" data-select-shown-rows-id="attendee_type">Teilnehmer-Typ</th>
       <th class="pl-1">Note</th>
+      <th class="pl-1">Note (<abbr title="Nachklausur">NK</abbr>)</th>
       <th  style="text-align:center">Bestanden</th>
       <th class="pl-1 select-shown-rows" data-select-shown-rows-id="waitlist">Warteliste</th>
       <th class="pl-1">Aktion</th>
@@ -136,6 +142,9 @@ Teilnehmer verwalten {{ object }}
   </td>
   <td class="pl-1 pr-2">
     <input autocomplete="off" type="text" class="form-control ajax-edit" name="result_{{a.data.pk}}" data-ajax-url="{% url "rai_courses_attendee_ajax_edit" a.data.pk "result" %}" data-ajax-field="result" data-ajax-pk="{{a.data.pk}}" size="3" value="{{a.data.result}}">
+  </td>
+  <td class="pl-1 pr-2">
+    <input autocomplete="off" type="text" class="form-control ajax-edit" name="result_2nd__{{a.data.pk}}" data-ajax-url="{% url "rai_courses_attendee_ajax_edit" a.data.pk "result_2nd" %}" data-ajax-field="result_2nd" data-ajax-pk="{{a.data.pk}}" size="3" value="{{a.data.result_2nd}}">
   </td>
   <td style="text-align:center">
     <div class="custom-control custom-checkbox">
