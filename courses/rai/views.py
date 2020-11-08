@@ -1,6 +1,7 @@
-from .mail import CourseResultMail
+from .mail import CourseResultMail, CourseResult2ndExamMail
 from .forms import ResultsUploadForm, AttendeesMoveChooseCourseForm
 
+from pprint import pprint
 from courses.models import CourseAttendee, CourseInformationPage, Course, Course2AttendeeRelation
 from courses.pdfhandling import CourseNamePlate, CourseCertificate
 
@@ -26,7 +27,6 @@ from website.models import SentMail
 
 class CourseAttendeeView(RAIAdminView, PageMenuMixin, SingleObjectMixin):
     template_name = 'courses/rai/attendee-view.html'
-
 
     def get_actions(self):
         return self.get_group_actions() + self.get_item_actions()
@@ -85,15 +85,16 @@ class DeleteAttendees(RAIView, PageMenuMixin):
 
     def post(self, request, *args, **kwargs):
         self.pks = request.POST.getlist('pk')
+        print('self.pks is: {}'.format(self.pks))
         if request.POST.get('action', None) == 'delete':
             for pk in self.pks:
                 at = CourseAttendee.objects.get(pk = pk)
                 at.delete()
             if len(self.pks) > 1:
-                self.success_message('{} Teilnehmer wurden gelöscht'.format(len(self.pk)))
+                self.success_message('{} Teilnehmer wurden gelöscht'.format(len(self.pks)))
             else:
                 self.success_message('Ein Teilnehmer wurde gelöscht.')
-            redirect(self.next)
+            return redirect(self.next)
         else:
             return self.get(request, *args, **kwargs)
 
@@ -157,15 +158,18 @@ class CourseCreateView(MultiFormCreateView):
         instance = parent.add_child(instance = instance)
         fs = self.session_store['settings']['formsets']
         attendee_types = fs.get('attendee_types', [])
+        pprint(self.session_store)
+        pprint(attendee_types)
         for at in attendee_types:
-            rel = Course2AttendeeRelation(
-                attendee = at['attendee'],
-                price = at.get('price', 0),
-                max_attendees = at.get('max_attendees', None),
-                waitlist = at.get('waitlist', False),
-                course = instance
-            )
-            rel.save()
+            if not at.get('DELETE'):
+                rel = Course2AttendeeRelation(
+                    attendee = at['attendee'].replace('[','').replace(']','').replace("'",''),
+                    price = at.get('price', 0),
+                    max_attendees = at.get('max_attendees', None),
+                    waitlist = at.get('waitlist', False),
+                    course = instance
+                )
+                rel.save()
         
         self.success_message('Veranstaltung vom {} angelegt.'.format(title))
         return redirect('rai_courses_course_list')
@@ -346,3 +350,44 @@ def send_results_view(request):
             'n_mails' : len(attendee_pks)
         })
     
+def send_2nd_results_view(request):
+    if not request.is_ajax():
+        return HttpResponseNotFound()
+    noti = NotificationTemplate.objects.get(notification_id = CourseResult2ndExamMail.identifier)
+    if request.method == 'GET':
+        # get means get the HTML for the modal to add text to the mail
+        return JsonResponse({
+            'status' : 200,
+            'en' : noti.template_en,
+            'de' : noti.template
+        })
+        
+    if request.method == 'POST':
+        from rai.notifications.internals import REGISTERED_NOTIFICATIONS
+        attendee_pks = request.POST.getlist('attendee_pk')
+        lang = request.POST.get('lang', 'de')
+        tpl_updated = request.POST.get('tpl_'+lang, '')
+        noti_obj = REGISTERED_NOTIFICATIONS[noti.notification_id]
+        translation.activate(lang)
+        for pk in attendee_pks:
+            attendee = CourseAttendee.objects.get(pk = pk).specific
+            kwargs = { 'at' : attendee }
+            text = noti_obj.render_template(tpl_updated, **kwargs)
+            if lang == 'de':
+                subject = noti.subject
+            else:
+                subject = noti.subject_en
+            to = [attendee.email]
+            mail = EmailMessage(
+                subject,
+                text,
+                settings.RUBION_MAIL_FROM,
+                to
+            )
+            mail.send(fail_silently = False)
+            sentmail = SentMail.from_email_message(mail)
+            sentmail.save()
+        return JsonResponse({
+            'status' : 200,
+            'n_mails' : len(attendee_pks)
+        })
