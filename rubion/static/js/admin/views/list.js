@@ -82,6 +82,7 @@ $R.listView = {
 	    if (base !== undefined){
 		self.base = base;
 	    }
+	    self.sortOnInit = $(self.base).data('rubion-sort-on-init') != false;
 	    self.dropdown = '#btnSortOrder';
 	    if (dropdown !== undefined){
 		self.dropdown = dropdown;
@@ -181,20 +182,22 @@ $R.listView = {
 	    fields 
 		.filter(function(val, idx, arr){return arr.indexOf(val) === idx})
 		.forEach(item => self.addLink(item));
-	    var default_sort = $(self.base).find('[data-rubion-is-default-sort="true"]').first()
-	    if (default_sort.length > 0){
-		var sort_field = default_sort.data('rubion-sortable');
-		var sort_order = default_sort.data('rubion-default-sort-order');
-
-		if (sort_order == 'desc'){
-		    self.sortDesc(sort_field); 
-		} else {
-		    self.sort(sort_field); 
+	    if (self.sortOnInit){
+		var default_sort = $(self.base).find('[data-rubion-is-default-sort="true"]').first()
+		if (default_sort.length > 0){
+		    var sort_field = default_sort.data('rubion-sortable');
+		    var sort_order = default_sort.data('rubion-default-sort-order');
+		    
+		    if (sort_order == 'desc'){
+			self.sortDesc(sort_field); 
+		    } else {
+			self.sort(sort_field); 
+		    }
+		    self.group_by(sort_field);
 		}
-		self.group_by(sort_field);
-	    }
-	    else{
-		self.sort(fields[0]);
+		else{
+		    self.sort(fields[0]);
+		}
 	    }
 	}
 	return cls;
