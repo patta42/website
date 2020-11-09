@@ -19,12 +19,12 @@
 
 {% block content %}
 {% block content_before_list %}{% endblock %}
-<ul class="list-group" id="mainlist" data-rubion-original-object-count="{{original_object_count}}">
+<ul class="list-group" id="mainlist" data-rubion-original-object-count="{{original_object_count}}"{% block list_options %}{% endblock %}>
   {% for object in objects %}
       {% render_object_in_list object item_template %}
   {% endfor %}
 </ul>
-
+{% block content_after_list %}{% endblock %}
 {% endblock %}
 {% block modals %}
 {{ block.super }}
