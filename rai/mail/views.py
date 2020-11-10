@@ -58,7 +58,7 @@ class EMailView(RAIView, PageMenuMixin):
                 msg.attach(att.title, att.file.read())
             msg.send()
             copy = SentMail.from_email_message(msg)
-            #copy.save()
+            copy.save()
 
     def handle_files(self, request):
         self.attachements = []
