@@ -572,7 +572,7 @@ class CourseCertificate(RUBIONPDF):
         new_pdf = PdfFileReader(self.buffer)
         new_buf = BytesIO()
         output = PdfFileWriter()
-        for n_page in range(new_pdf.getNumPages()-1):
+        for n_page in range(new_pdf.getNumPages()):
             page = new_pdf.getPage(n_page)
             page.mergePage(tpl_page)
             output.addPage(page)
