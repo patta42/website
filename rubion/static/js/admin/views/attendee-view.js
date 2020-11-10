@@ -235,11 +235,14 @@ $.widget(
 	    
 	    this.gmodal = $R.genericModal({
 		title : 'Spalten mit Matrikelnummer und Note durch Klicken auswählen',
-		applyBtn : false,
+		applyBtn : true,
+		applyLabel : 'Für Nachklausur übernehmen',
+		saveLabel : 'Für Klausur übernehmen',
 		body : $table,
 		size : 'xxl',
 		scroll : true,
-		saveCallback : function(){self._save($table)}
+		saveCallback : function(){self._save('result')},
+		applyCallback : function(){self._save('result_2nd')}
 	    })
 	    var self = this,
 		indexes = []
@@ -270,6 +273,7 @@ $.widget(
 	    }
 
 	    var saveBtn = this.gmodal.getButton('save').prop('disabled', true)
+	    var applyBtn = this.gmodal.getButton('apply').prop('disabled', true)
 	    
 	    $table.find('th, td').click(
 		
@@ -327,13 +331,14 @@ $.widget(
 		    })
 		    if (nSelectedCols == maxSelectedCols){
 			saveBtn.prop('disabled', false)
+			applyBtn.prop('disabled', false)
 		    }
 		}
 	    )
 	    this.gmodal.show()
 	    this.$table = $table
 	},
-	_save : function(){
+	_save : function(field){
 	    var self = this
 	    this.$table.find('[data-selected-col="0"]').each(
 		function(){
@@ -356,7 +361,7 @@ $.widget(
 		    }
 		    $('[data-studentid="'+id+'"]').first()
 			.closest('tr')
-			.find('[data-ajax-field="result"]')
+			.find('[data-ajax-field="'+field+'"]')
 			.first().val(mark).trigger('change')
 		    
 		}
