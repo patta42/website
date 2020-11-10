@@ -1503,3 +1503,6 @@ button .additional-form-data{
 .existingSnippet.selected{
     background:rgba(0, 53, 96,.25);
 }
+.bootstrap-datetimepicker-widget.dropdown-menu{
+    width:15rem;
+}
