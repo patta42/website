@@ -1,0 +1,15 @@
+{% extends 'rai/views/default/default-list-item.html' %}
+{% block outertitle %}
+<h5 class="mb-1" style="font-size:1rem"> 
+  <div style="font-size:1.2rem" data-rubion-searchable="true" data-rubion-searchable-title="Betreff">{{ object.subject }}</div>
+  <div class="text-primary text-small">An: <span data-rubion-searchable="true">{{ object.to }}</span></div>
+  <div class="text-muted">Versendet am: {{ object.sent_at|date:"d. E Y" }} um {{ object.sent_at|date:"H:i" }}</div>
+</h5>
+{% endblock %}
+{% block additional_content %}
+<div class="hide-show-widget" data-hide-show-initial="hidden">
+  <pre>
+    {{ object.body }}
+  </pre>
+</div>
+{% endblock %}
