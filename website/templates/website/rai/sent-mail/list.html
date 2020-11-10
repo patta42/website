@@ -1,0 +1,99 @@
+{% extends 'rai/views/default/list.html' %}
+{% block page_header_inner %}
+<h1 class="h4 d-inline-block mr-3">
+  <span class="d-block">
+    <span class="text-muted font-weight-lighter mb-1" style="font-size:12pt">
+      <i class="{{icon_font|default:"fas"}} fa-{{icon|default:"list-alt"}}"></i> {{ action_label|default:"Liste" }}
+    </span>
+  </span>
+  {{ title }}
+</h1>
+{% endblock %}
+
+{% block list_options %}data-rubion-sort-on-init="false"{% endblock %}
+{% block content_before_list %}
+<div class="alert alert-secondary">
+  <h5 class="alert-heading">E-Mail-Liste durchsuchen <a href="help::website:sent_mail:list"><i class="fas fa-question-circle" data-toggle="modal" data-target="#helpModal"></i></a></h5>
+  <form action="." methode="GET" class="form-inline depending-field" data-depends-on='{"searchoptions": ["simple"]}' autocomplete="off"{% if search == "advanced" %} style="display:none"{% endif %}>
+    <div class="d-flex">
+      <input type="hidden" name="l" value="{{limit}}"/>
+      <input style="width:50vw" type="text" class="form-control" id="id_q" name="qs" aria-describedby="qHelp" placeholder="Empfänger oder Betreff durchsuchen"{% if qs %} value="{{qs}}"{% endif %}>
+    
+      <button type="submit" name="search" value="simple" class="btn btn-primary ml-3">Suchen</button>
+    </div>
+  </form>
+  <form action="." methode="GET" class="depending-field" data-depends-on='{"searchoptions": ["advanced"]}' {% if not search or search == "simple" %} style="display:none"{% endif %}>
+    <input type="hidden" name="l" value="{{limit}}"/>
+    <div class="bg-white pr-2 pb-2">
+      <div class="form-row">
+	<div class="col">
+	  <div class="form-group">
+	    <label for="id_subject">Betreff:</label>
+	    <input type="text" class="form-control" id="id_subject" name="subject" aria-describedby="subjectHelp"{% if subject %} value="{{subject}}"{%endif%}>
+	    <small id="subjectHelp" class="form-text text-muted">Durchsucht
+	      den Betreff</small>
+	  </div>
+	</div>
+	<div class="col">
+	  <div class="form-group">
+	    <label for="id_to">Empfänger:</label>
+	    <input type="text" class="form-control" {% if to %}value="{{to}}" {% endif %}id="id_to" name="to" aria-describedby="helpTo">
+	    <small id="helpTo" class="form-text text-muted">Durchsucht Empfänger.</small>
+	  </div>
+	</div>
+<!--      </div>
+      <div class="form-row">-->
+	<div class="col-2">
+	  <div class="form-group">
+	    <label for="id_subject">Versendet zwischen:</label>
+	    <div class="input-group date" data-target-input="nearest" id="dtp1">
+	      <input type="text" class="form-control datetimepicker-input" id="id_startDate" name="startDate" aria-describedby="subjectStartDate" data-target="#dtp1"{% if startDate %} value="{{startDate}}"{% endif %}>
+	      <div class="input-group-append" data-toggle="datetimepicker" data-target="#dtp1">
+		<div class="input-group-text">
+		  <i class="fas fa-calendar"></i>
+		</div>
+	      </div>
+	    </div>
+	    <small id="subjectStartDate" class="form-text text-muted">Frühestes Datum (leer lassen für seit Beginn der Aufzeichnungen)</small>
+	  </div>
+	</div>
+	<div class="col-2">
+	  <div class="form-group">
+	    <label for="id_subject">und:</label>
+	    <div class="input-group date" data-target-input="nearest" id="dtp2">
+	      <input type="text" class="form-control" id="id_endDate" name="endDate" aria-describedby="subjectStartDate"  data-target="#dtp2"{% if endDate %} value="{{endDate}}"{% endif %}>
+	      <div class="input-group-append" data-toggle="datetimepicker" data-target="#dtp2">
+		<div class="input-group-text">
+		  <i class="fas fa-calendar"></i>
+		</div>
+	      </div>
+	    </div>
+	    <small id="subjectStartDate" class="form-text text-muted">Spätestes Datum (leer lassen für bis heute)</small>
+	  </div>
+	</div>
+      </div>
+      <div class="col mb-2">
+	<button type="submit" name="search" value="advanced" class="btn btn-primary ml-3">Suchen</button>
+      </div>
+      
+    </div>
+    
+    
+  </form>
+  <div class="btn-group btn-group-toggle mt-2" data-toggle="buttons">
+    <label class="btn btn-outline-secondary btn-sm{% if search == "simple" or not search%} active{%endif%}">
+      <input type="radio" name="searchoptions" id="simpleSearchBtn" value="simple"{% if search == "simple" or not search%} checked{%endif%}> Einfache Suche
+    </label>
+    <label class="btn btn-outline-secondary btn-sm{% if search == "advanced" %} active{%endif%}">
+      <input type="radio" name="searchoptions" id="advancedSearchBtn" value="advanced"{% if search == "advanced" %} checked{%endif%}> Erweiterte Suche
+    </label>
+  </div>
+
+</div>
+{% if objects.count == 0%}
+<div class="alert alert-warning m-3">Keine Ergebnisse gefunden.</div>
+{% else %}
+{{pagination}}
+{% endif %}
+{% endblock %}
+{% block content_after_list %}{% if objects.count > 0%}<div class="mt-2">{{pagination}}</div>{% endif %}{% endblock %}
