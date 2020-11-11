@@ -1,9 +1,11 @@
 from .mail import CourseResultMail, CourseResult2ndExamMail
-from .forms import ResultsUploadForm, AttendeesMoveChooseCourseForm
+from .forms import (
+    ResultsUploadForm, AttendeesMoveChooseCourseForm, CreditPointsForm
+)
 
 from pprint import pprint
 from courses.models import CourseAttendee, CourseInformationPage, Course, Course2AttendeeRelation
-from courses.pdfhandling import CourseNamePlate, CourseCertificate
+from courses.pdfhandling import CourseNamePlate, CourseCertificate, CourseCPCertificate
 
 from django.conf import settings
 from django.core.mail import EmailMessage
@@ -16,7 +18,7 @@ from django.template.response import TemplateResponse
 from django.utils import translation
 from django.utils.text import slugify
 from django.utils.safestring import mark_safe
-
+from django.views import View
 
 import pandas as pd
 from rai.default_views.generic import RAIView, RAIAdminView,  SingleObjectMixin, PageMenuMixin
@@ -391,3 +393,50 @@ def send_2nd_results_view(request):
             'status' : 200,
             'n_mails' : len(attendee_pks)
         })
+
+class CreditPointsView(View):
+    def post(self, request):
+        action = request.POST.get('action', None)
+        attendee_pks = request.POST.getlist('attendee_pks')
+        if not action:
+            if not request.is_ajax():
+                return HttpResponse(status = 405)
+            attendee_pks = request.POST.getlist('attendee_pks')
+            form = CreditPointsForm(initial = { 'attendee_pks' : ','.join(attendee_pks)})
+            return JsonResponse({'status' : 200, 'html' : form.as_p()})
+        if action == 'check':
+            if not request.is_ajax():
+                return HttpResponse(status = 405)
+
+            qd = request.POST.copy()
+            form = CreditPointsForm(request.POST)
+            if not form.is_valid():
+                
+                return JsonResponse({
+                    'status' : 200,
+                    'errors': True,
+                    'errorlist' : form.errors,
+                    'html' : form.as_p()
+                })
+            else:
+                return JsonResponse({
+                    'status' : 200,
+                    'errors': False,
+                })
+        if action == 'do':
+            attendee_pks = request.POST.get('attendee_pks').split(',')
+            form = CreditPointsForm(request.POST)
+            if form.is_valid():
+                pdf = CourseCPCertificate(
+                    attendee_pks,
+                    form.cleaned_data['exam_type'],
+                    form.cleaned_data['datum'],
+                    form.cleaned_data['credit_points'],
+                    form.cleaned_data['sws'],
+                )
+                resp = HttpResponse(
+                    pdf.for_content_file(endpage = False),
+                    content_type='application/pdf'
+                )
+                resp['Content-Disposition'] = "attachment; filename=CPs.pdf"
+                return resp
