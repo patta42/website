@@ -534,7 +534,7 @@ $.widget(
 		    if ($checkedRows.length == 0){
 			$R.infoDialog(
 			    'Bitte Einträge auswählen',
-			    $('<div><strong>Es sind keine Einträge ausgewählt.</strong><p>Bitte nutze die Kästchen auf der Seite der Tabelle um Einträge auszuwählen.</p></div>')
+			    $('<div><strong>Es sind keine Einträge ausgewählt.</strong><p>Bitte nutze die Kästchen auf der linken Seite der Tabelle, um Einträge auszuwählen.</p></div>')
 			)
 			return
 		    }
@@ -573,7 +573,7 @@ $.widget(
 	    if ($rows.length == 0){
 		$R.infoDialog(
 		    'Bitte Einträge auswählen',
-		    $('<div><strong>Es sind keine Einträge ausgewählt.</strong><p>Bitte nutze die Kästchen auf der Seite der Tabelle um Einträge auszuwählen.</p></div>')
+		    $('<div><strong>Es sind keine Einträge ausgewählt.</strong><p>Bitte nutze die Kästchen auf der linken Seite der Tabelle, um Einträge auszuwählen.</p></div>')
 		)
 		return
 	    }
@@ -591,6 +591,7 @@ $.widget(
 	    
 	    $rows.each(
 		function(){
+		    console.log('Working on ', $(this), fieldValues)
 		    for (var c = 0; c < fieldValues.length; c++){
 			var $row = $(this),
 			    value = $row.find('[data-field-name="'+fieldValues[c]+'"]').first().data('field-value'),
@@ -598,7 +599,6 @@ $.widget(
 			    .attr('name', formFieldNames[c])
 			    .val(value)
 			    .appendTo($form)
-			
 		    }
 		}
 	    )
@@ -609,9 +609,69 @@ $.widget(
 		this.modal = $R.waitDialog({
 		    onShown : function(){self._sendRequest($elem, $form)}
 		})
+	    } else if ($elem.data('post-method') == 'ajax-show-modal'){
+		var self = this
+		$R.post($elem.data('form-url'), {data : $form.serialize()}).done(
+		    function(data){
+			if (data['status'] == 200) {
+			    self.modal = $R.genericModal({
+				'title' : 'Angaben zur Klausur',
+				'applyBtn' : false,
+				'saveLabel' : 'PDF erzeugen',
+				'saveCallback' : function(evt){
+				    evt.preventDefault()
+				    self._sendExamInfo()
+				}
+				
+			    })
+			    var $body = $('<form id="examInfoForm">'+data['html']+'</form>').attr('action', $elem.data('form-url'))
+			    $body.find('fieldset').addClass('p-0 m-0')
+			    self.modal.getBody().html($body)
+
+			    self.modal.show()
+			}
+		    }
+		)
 	    } else {
 		$form.submit()
 	    }
+	},
+	_sendExamInfo : function(evt){
+	    console.log('In send ei')
+	    var $form = $('#examInfoForm')
+	    var self = this
+	    $R.post($form.attr('action'), {data: $form.serialize()}).done(
+		function(data){
+		    console.log(data)
+		    if (data.errors){
+			var $body = $('<div />')
+			var $f = $('<form id="examInfoForm">'+data['html']+'</form>').attr('action', $form.attr('action'))
+			var $alert = $('<div class="alert alert-danger">Es sind Fehler aufgetreten.</div>')
+			$f.find('fieldset').addClass('p-0 m-0')
+			$f.find('.errorlist').each(
+			    function(){
+				var $ul = $(this)
+				var $div = $('<div class="alert alert-danger" />')
+				$ul.wrap($div)
+			    }
+			)
+			self.modal.getBody().html($body.append($alert).append($f))
+		    } else {
+			$form.find('input[name="action"]').val('do')
+			self.modal.dismiss()
+			self.modal = $R.waitDialog({
+			    onShown : function(){
+				self._sendRequest(
+				    $('<foo />').data('form-url', $form.attr('action')),
+				    $form.append(
+					$('<input type="hidden" name="csrfmiddlewaretoken" value="'+$R.getCookie('csrftoken')+'" />')
+				    )
+				)
+			    }
+			})
+		    }
+		}
+	    )
 	},
 	_sendRequest : function($elem, $form){
 	    var request = new XMLHttpRequest();
