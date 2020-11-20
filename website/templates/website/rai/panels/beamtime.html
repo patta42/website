@@ -1,0 +1,10 @@
+  {% for c, it in beamtimes.items %} 
+  <li>
+    <span class="accelerator">{{ c }}</span>
+    <div class="beamtime-wrapper">
+      {% for bt in it %}
+      <span class="beamtime" title="{{ bt.summary}}" {% if bt.desc %}data-toggle="popover" data-content="{{bt.desc}}" {% endif %}style="left:{{bt.startPercent}}%; width: {{bt.durationPercent}}%;background-color:#0f0">{{ bt.summary }}</span>
+      {% endfor %}
+    </div>
+  </li>
+  {% endfor %}
