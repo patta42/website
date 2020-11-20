@@ -1,0 +1,18 @@
+{% extends 'rai/panels/panel-wrapper.html' %}
+{% load static %}
+{% block panelposition %}{% endblock %}
+{% block panelwidth %}{% endblock %}
+{% block panelheight %}{% endblock %}
+
+{# Beamtime panel #}
+
+{% block paneltitle %}{{title}}{% endblock %}
+
+{% block panelcontent %}
+<script>
+window.addScript('Lade Logik für Beamtimepanel', '{% static "website/admin/panels/beamtime.js" %}', 'js')
+</script>
+<h5 class="card-title" data-beamtime-fetch-url="{% url "website_beamtimes_get" %}">{{date}}</h5>
+<ul class="beamtime-list">
+</ul>
+{% endblock %}
