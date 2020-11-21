@@ -3,7 +3,8 @@
     <span class="accelerator">{{ c }}</span>
     <div class="beamtime-wrapper">
       {% for bt in it %}
-      <span class="beamtime" title="{{ bt.summary}}" {% if bt.desc %}data-toggle="popover" data-content="{{bt.desc}}" {% endif %}style="left:{{bt.startPercent}}%; width: {{bt.durationPercent}}%;background-color:#0f0">{{ bt.summary }}</span>
+      <span class="beamtime" title="{{bt.summary}}" data-html="true" data-toggle="popover" data-content="<div><strong>{{bt.start|date:"H:i"}}-{{bt.end|date:"H:i"}}</strong></div>
+<div>{{bt.desc|default:""|linebreaks}}</div>" style="left:{{bt.startPercent}}%; width: {{bt.durationPercent}}%;background-color:{{bt.bgcolor}};color:{{bt.fgcolor}}">{{ bt.summary }}</span>
       {% endfor %}
     </div>
   </li>
