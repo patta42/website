@@ -102,13 +102,38 @@ def _percent_for_display(t1, t2 = None):
 
 
 def _get_beamtimes(date = None):
-    _CATEGORIES = ['4 - 4 MV (NT 06)', '3 - 500 kV (NT 06)', '2 - 100 kV (NT 07)', '1 - 100 kV (NI 05)']
+    _CATEGORIES = [
+        '4 - 4 MV (NT 06)',
+        '3 - 500 kV (NT 06)',
+        '2 - 100 kV (NT 07)',
+        '1 - 100 kV (NI 05)'
+    ]
+    _APPLICATION_CATEGORIES = [
+        'Analyse-Research',
+        'Implantation-Research',
+        'Modifikation-Research',
+        '1 - Implantation-Industry',
+        '2 - Service-Engineering'
+    ]
     _CATNAMES = {
         '4 - 4 MV (NT 06)' : 'Tandem',
         '3 - 500 kV (NT 06)' : '500 kV',
         '2 - 100 kV (NT 07)' : '100 kV',
         '1 - 100 kV (NI 05)' : 'Med-Implanter'
     }
+    _CAT_COLORS = {
+        'Tandem' : '#FF3300',
+        '500 kV' : '#666600',
+        '100 kV' : '#ff6600',
+        'Med-Implanter' : '#FF9900',
+        'Analyse-Research' : '#CC3333',
+        'Implantation-Research' : '#00FFFF',
+        'Modifikation-Research' : '#0066ff',
+        '1 - Implantation-Industry' : '#00ff00',
+        '2 - Service-Engineering' : '#990000'
+    }
+
+
     cal = caldav.Calendar(client = client, url = settings.EGROUPWARE_CAL_URLS['beamtime'])
     tz = pytz.timezone('Europe/Berlin')
     td = date or datetime.datetime.today(tzinfo = tz)
@@ -130,10 +155,16 @@ def _get_beamtimes(date = None):
             except AttributeError:
                 continue
             cat = None
+            ccat = None
             for c in categories:
                 if c in _CATEGORIES:
                     cat = _CATNAMES[c]
+                if c in _APPLICATION_CATEGORIES:
+                    ccat = c
+                if cat and ccat:
                     break
+            if not ccat:
+                ccat = cat
             rr = []
             if cat:
                 try:
@@ -145,14 +176,15 @@ def _get_beamtimes(date = None):
                             desc = event.description.value
                         except AttributeError:
                             desc = None
-                            
+
                         beamtimes[cat].append({
                             'summary' : event.summary.value,
                             'start' : event.dtstart.value,
                             'end' : event.dtend.value,
                             'desc' : desc, 
                             'startPercent' : _percent_for_display(event.dtstart.value),
-                            'durationPercent' : _percent_for_display(event.dtstart.value, event.dtend.value)
+                            'durationPercent' : _percent_for_display(event.dtstart.value, event.dtend.value),
+                            'bgcolor' : _CAT_COLORS[ccat] 
                         })
                 if rr:
                     try:
@@ -181,7 +213,8 @@ def _get_beamtimes(date = None):
                                 'end' : event.dtend.value,
                                 'desc' : desc,
                                 'startPercent' : _percent_for_display(event.dtstart.value),
-                                'durationPercent' : _percent_for_display(event.dtstart.value, event.dtend.value)
+                                'durationPercent' : _percent_for_display(event.dtstart.value, event.dtend.value),
+                                'bgcolor' : _CAT_COLORS[ccat] 
                             })    
     return beamtimes
                         
