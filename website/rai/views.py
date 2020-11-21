@@ -132,8 +132,9 @@ def _get_beamtimes(date = None):
         '1 - Implantation-Industry' : '#00ff00',
         '2 - Service-Engineering' : '#990000'
     }
-
-
+    _CAT_FGCOLORS = {
+        '2 - Service-Engineering' : '#fff'
+    }
     cal = caldav.Calendar(client = client, url = settings.EGROUPWARE_CAL_URLS['beamtime'])
     tz = pytz.timezone('Europe/Berlin')
     td = date or datetime.datetime.today(tzinfo = tz)
@@ -184,7 +185,8 @@ def _get_beamtimes(date = None):
                             'desc' : desc, 
                             'startPercent' : _percent_for_display(event.dtstart.value),
                             'durationPercent' : _percent_for_display(event.dtstart.value, event.dtend.value),
-                            'bgcolor' : _CAT_COLORS[ccat] 
+                            'bgcolor' : _CAT_COLORS[ccat],
+                            'fgcolor' : _CAT_FGCOLORS.get(ccat, '#000') 
                         })
                 if rr:
                     try:
@@ -214,7 +216,8 @@ def _get_beamtimes(date = None):
                                 'desc' : desc,
                                 'startPercent' : _percent_for_display(event.dtstart.value),
                                 'durationPercent' : _percent_for_display(event.dtstart.value, event.dtend.value),
-                                'bgcolor' : _CAT_COLORS[ccat] 
+                                'bgcolor' : _CAT_COLORS[ccat] ,
+                                'fgcolor' : _CAT_FGCOLORS.get(ccat, '#000')
                             })    
     return beamtimes
                         
