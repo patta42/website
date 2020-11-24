@@ -646,6 +646,8 @@ class RAIQueryInlinePanel(RAIBaseFormEditHandler):
             exclude=[self.name]
         )
 
+    def get_comparison(self):
+        return []
     
     def render(self):
         formset = render_to_string(self.template, {
