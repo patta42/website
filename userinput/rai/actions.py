@@ -12,13 +12,15 @@ from rai.actions import (
     InactivateAction, ActivateAction, SpecificAction
 )
 import rai.edit_handlers as eh
-from rai.permissions.utils import user_has_permission
+from rai.permissions.utils import user_has_permission, user_can_create
 from rai.widgets import RAIRadioInput, RAISelectMultiple, RAISelect
 
 from userdata.models import StaffUser
 
 from userinput.models import (
-    Project2FundingRelation, Project2ThesisRelation, Project2PublicationRelation
+    Project2FundingRelation, Project2ThesisRelation, Project2PublicationRelation,
+    Project, WorkGroup
+    
 )
 
 import userinput.rai.filters as filters
@@ -30,10 +32,22 @@ from userinput.rai.edit_handlers import (
 )
 
 from userinput.rai.views.rubionuser.views import AddInstructionsDatesView
+from userinput.rai.views.workgroup.views import WorkgroupDecisionView
+from userinput.rai.views.projects.views import ProjectDecisionView
+
 from wagtail.core.models import PageRevision
 
 # an  action for moving from one group to another
 # used by projects and rubionuser
+
+def _awaits_approval(page):
+    '''shorthand for page models indicating whether they await approval'''
+    return (
+        PageRevision.objects
+        .filter(submitted_for_moderation = True)
+        .filter(page = page).exists()
+    )
+
 class MoveToWorkgroupAction(SpecificAction):
     label = 'Anderer Gruppe zuordnen'
     icon = 'arrow-alt-circle-right'
@@ -51,11 +65,21 @@ class MoveToWorkgroupAction(SpecificAction):
 class UserinputInactivateAction(InactivateAction):
     def show(self, request):
         return user_has_permission(request, self.get_rai_id(), InactivatePermission)
+    def show_for_instance(self, instance, request = None):
+        return (
+            super().show_for_instance(instance, request) and not (_awaits_approval(instance)
+            )
+        )
+
 
 class UserinputActivateAction(ActivateAction):
     def show(self, request):
         return user_has_permission(request, self.get_rai_id(), InactivatePermission)
-
+    def show_for_instance(self, instance, request = None):
+        return (
+            super().show_for_instance(instance, request)
+            and not (_awaits_approval(instance))
+        )
     
 def _is_rubion_user_active(instance):
     return (
@@ -259,6 +283,8 @@ class RAIProjectListAction(ListAction):
     ]
 class RAIProjectEditAction(EditAction):
     edit_handler = project_edit_handler
+    def show_for_instance(self, instance, request = None):
+        return not (_awaits_approval(instance))
 
 class RAIProjectCreateAction(CreateAction):
     edit_handler = project_create_handler
@@ -270,6 +296,12 @@ class RAIWorkgroupListAction(ListAction):
         filters.WorkgroupStatusFilter
     ]
     item_provides = OrderedDict([
+        ('awaits_approval', {
+            'label' : 'Antrag gestellt',
+            'desc'  : 'Zeigt an, ob für die AG aktuell erst ein Aufnahmeantrag gestellt wurde.',
+            'type' : ['badge', 'badge-warning'],
+            'callback' : 'awaits_approval'
+        }),
         ('group_leader', {
             'label' : 'Gruppenleiter',
             'desc' : 'Der Leiter der Arbeitsgruppe',
@@ -404,8 +436,15 @@ class RAIWorkgroupListAction(ListAction):
                 )
         return list(set(nuclides))
 
+    def awaits_approval(self, obj):
+        if PageRevision.objects.filter(page = obj, submitted_for_moderation = True).exists():
+            return 'Antrag auf Aufnahme gestellt'
+        
 class RAIWorkgroupEditAction(EditAction):
     edit_handler = workgroup_edit_handler
+
+    def show_for_instance(self, instance, request = None):
+        return not (_awaits_approval(instance))
 
 class RAIWorkgroupDetailAction(DetailAction):
     edit_handler = workgroup_edit_handler
@@ -418,48 +457,68 @@ class RAIWorkgroupCreateAction(CreateAction):
 class AbstractScientificOutputListAction(ListAction):
     RelationModel = None
     related_name = None
-    
+    list_filters = [
+        filters.ScientificOutputDuplicateFilter
+    ]
+    def is_duplicate(self, obj):
+        if obj.is_duplicate:
+            return 'Duplikat'
+        
     def get_project(self, obj):
         rels = self.RelationModel.objects.filter(snippet = obj)
-        return '<br />'.join([r.project_page.title_de for r in rels])
+        return mark_safe('<br />'.join([r.project_page.title_de for r in rels]))
 
     def get_created_at(self, obj):
         rels = self.RelationModel.objects.filter(snippet = obj)
         if rels.count() == 0:
             return ''
-        
+        print(obj)
         for r in rels:
             project = r.project_page
             revisions = PageRevision.objects.filter(page = project).order_by('-created_at')
+            oldest_rev = None
             for rev in revisions:
                 revision_page = rev.as_page_object()
                 rel_qs = getattr(revision_page, self.related_name)
-                fundings = [p2fr.snippet for p2fr in rel_qs.all()]
-                if obj not in fundings:
-                    next_rev = rev.get_next()
-                    break
-
-        if not next_rev.user:
+                snippets = [p2fr.snippet for p2fr in rel_qs.all()]
+                if obj not in snippets:
+                    try:
+                        next_rev = rev.get_next()
+                        if not oldest_rev or oldest_rev.created_at > next_rev.created_at:
+                            oldest_rev = next_rev
+                        break
+                    except PageRevision.DoesNotExist:
+                        pass
+                    
+        if not oldest_rev.user:
             return format_html(
-                'Hinzugefügt am: {day}. {month} <span data-rubion-sortable="Hinzugefügt im Jahr" data-rubion-groupby="Hinzugefügt im Jahr" data-rubion-group-title="Hinzugefügt in {year}">{year}</span> von unbekanntem Nuzter',
-                year = next_rev.created_at.year,
-                day = next_rev.created_at.day,
-                month = next_rev.created_at.strftime('%B'),
+                'Zuerst hinzugefügt am: {day}. {month} <span data-rubion-sortable="Hinzugefügt im Jahr" data-rubion-groupby="Hinzugefügt im Jahr" data-rubion-group-title="Hinzugefügt in {year}">{year}</span> <a data-toggle="modal" data-target="#helpModal" href="help::scientific_output:{type}:created_at"><i class="fas fa-question-circle"></i></a> von unbekanntem Nuzter <a data-toggle="modal" data-target="#helpModal" href="help::scientific_output:{type}:unknown_user"><i class="fas fa-question-circle"></i></a>',
+                year = oldest_rev.created_at.year,
+                day = oldest_rev.created_at.day,
+                month = oldest_rev.created_at.strftime('%B'),
+                type = obj.__class__.__name__
             )
         
         return format_html(
-            'Hinzugefügt am: {day}. {month} <span data-rubion-sortable="Hinzugefügt im Jahr" data-rubion-groupby="Hinzugefügt im Jahr" data-rubion-group-title="Hinzugefügt in {year}">{year}</span> von {firstname} {lastname}',
-            year = next_rev.created_at.year,
-            day = next_rev.created_at.day,
-            month = next_rev.created_at.strftime('%B'),
-            firstname = next_rev.user.first_name,
-            lastname = next_rev.user.last_name,
+            'Zuerst hinzugefügt am: {day}. {month} <span data-rubion-sortable="Hinzugefügt im Jahr" data-rubion-groupby="Hinzugefügt im Jahr" data-rubion-group-title="Hinzugefügt in {year}">{year}</span> von {firstname} {lastname} <a data-toggle="modal" data-target="#helpModal" href="help::scientific_output:{type}:created_at"><i class="fas fa-question-circle"></i></a>',
+            year = oldest_rev.created_at.year,
+            day = oldest_rev.created_at.day,
+            month = oldest_rev.created_at.strftime('%B'),
+            firstname = oldest_rev.user.first_name,
+            lastname = oldest_rev.user.last_name,
+            type = obj.__class__.__name__
         )
     
 class RAIFundingListAction(AbstractScientificOutputListAction):
     RelationModel = Project2FundingRelation
     related_name = 'related_fundings'
     item_provides = OrderedDict([
+        ('is_duplicate', {
+            'label' : 'Duplikat',
+            'desc' : 'Zeigt an, ob die Förderung ein Duplikat ist',
+            'type' : ['badge', 'badge-danger'],
+            'callback' : 'is_duplicate'
+        }),
         ('project', {
             'label' : 'Projekt',
             'desc' : 'Das zugehörige Projekt',
@@ -510,6 +569,12 @@ class RAIThesisListAction(AbstractScientificOutputListAction):
     list_item_template = 'userinput/snippets/thesis/rai/list/item-in-list.html'
     
     item_provides = OrderedDict([
+        ('is_duplicate', {
+            'label' : 'Duplikat',
+            'desc' : 'Zeigt an, ob die Förderung ein Duplikat ist',
+            'type' : ['badge', 'badge-danger'],
+            'callback' : 'is_duplicate'
+        }),
         ('project', {
             'label' : 'Projekt',
             'desc' : 'Das zugehörige Projekt',
@@ -551,3 +616,30 @@ class RAISafetyInstructionAddAction(RAIAction):
             raiadmin = self.raiadmin,
             active_action = self
         )
+
+
+class WorkgroupDecisionAction(InactivateAction):
+    action_identifier = 'decision'
+    icon = 'question'
+    icon_font = 'fas'
+    label = 'Aufnahmeantrag entscheiden'
+
+    def get_view(self):
+        if self.raiadmin.model == Project:
+            view_class = ProjectDecisionView
+        if self.raiadmin.model == WorkGroup:
+            view_class = WorkgroupDecisionView
+            
+        return view_class.as_view(
+            raiadmin = self.raiadmin,
+            active_action = self
+        )
+
+    def show(self, request):
+        return user_can_create(request, self.get_rai_id())
+
+    def show_for_instance(self, instance, request = None):
+        return _awaits_approval(instance)
+    
+class ProjectDecisionAction(WorkgroupDecisionAction):
+    pass
