@@ -21,3 +21,8 @@ def ru_full_academic_name(obj):
             obj.first_name,
             obj.last_name
         )
+    else:
+        return '{} {}'.format(
+            obj.first_name,
+            obj.last_name
+        )
