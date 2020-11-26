@@ -1,0 +1,63 @@
+{% load userdata_staff_tags %}
+<div class="information-panel" style="border-left: 4px #003560 solid; padding-left:1rem">
+  <h4>Informationen zu {{self.instance.title}}</h4>
+  <div>
+    <address>
+      {% if self.instance.email %}
+      <i class="fas fa-envelope"></i> {{self.instance.email}}<br />
+      {% endif %}
+      {% if self.instance.phone %}
+      <i class="fas fa-phone"></i> {{self.instance.phone}}<br />
+      {% endif %}
+    </address>
+  </div>
+  <div>
+    Benötigte Unterweisungen: 
+    {% for si_rel in self.instance.safety_instructions.all %}
+    {% if si_rel.as_required %}
+    <span class="badge badge-secondary" title="Nur bei Bedarf">{{si_rel.instruction}}</span>
+    {% else %}
+    <span class="badge badge-info">{{si_rel.instruction}}</span>
+    {% endif %}
+    {% empty %}
+    Keine
+    {% endfor %}
+  </div>
+  <h6 class="mt-2">Letzte Unterweisungen:</h6>
+  <dl class="ml-3">
+    {% for si_rel in self.instance.safety_instructions.all %}
+    {% get_last_instruction self.instance si_rel.instruction as last_instruction %}
+    <dt{% if si_rel.as_required %} class="text-muted" title="Nur bei Bedarf"{% endif %}>{{ si_rel.instruction }}:</dt>
+    <dd style="width:20rem"{% if si_rel.as_required %} title="Nur bei Bedarf"{%endif%}>
+      {% if last_instruction %}
+      {% get_last_instruction_percentage last_instruction.date si_rel.instruction as percentage %}
+      {{last_instruction.date }}
+      <div style="float:right">{{si_rel.instruction.is_valid_for}} Jahr(e)</div>
+      <div class="progress">
+	{% if si_rel.as_required %}
+	<div class="progress-bar bg-secondary" role="progressbar" style="width:{{percentage}}%" aria-valuenow="{{percentage}}" aria-valuemin="0" aria-valuemax="100">
+	  {% if percentage == 100 %}
+	  nicht mehr gültig
+	  {% else %}
+	  {{percentage}} %
+	  {% endif %}
+	</div>
+	{% else %}
+	<div class="progress-bar bg-{% if percentage <= 80 %}success{% elif percentage <= 95 %}warning{% else %}danger{% endif %}" role="progressbar" style="width:{{percentage}}%" aria-valuenow="{{percentage}}" aria-valuemin="0" aria-valuemax="100">
+	  {% if percentage == 100 %}
+	  nicht mehr gültig
+	  {% else %}
+	  {{percentage}} %
+	  {% endif %}
+	</div>
+	{% endif %}
+      </div>
+      
+    {% else %}
+      <span class="text-danger">Noch nie</span>
+    {% endif %}
+    </dd>
+    {% endfor %}
+  </dl>
+
+</div>
