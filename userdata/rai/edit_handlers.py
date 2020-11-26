@@ -1,3 +1,4 @@
+from .definitions import StaffUserInfoPanel
 from .forms import UserSourceSelectionForm
 
 from django.db.models import Max
@@ -97,6 +98,7 @@ create_staff_edit_handler = RAIMultiFormEditHandler([
 ])
 
 edit_staff_user_handler = eh.RAIPillsPanel([
+    StaffUserInfoPanel(heading = 'Übersicht'), 
     eh.RAIObjectList([
         eh.RAICollapsablePanel([
             eh.RAIFieldRowPanel([
