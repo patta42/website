@@ -1,6 +1,11 @@
+from django.conf import settings
+from django.core.mail import EmailMessage
+from django.utils import translation
+
 from rai.notifications.base import NotificationTemplateMixin
 from wagtail.core import hooks
 
+from website.models import SentMail
 
 class RAIMailAddressCollection:
     label = None
@@ -61,8 +66,35 @@ class MailWithTemplate(NotificationTemplateMixin):
         @hooks.register('rai_notification')
         def register_notification():
             return self
-
-
+        
+    def send(self, to, **kwargs):
+        languages = kwargs.pop('lang', None)
+        template = kwargs.pop('tpl', None)
+        if not languages:
+            languages = ['de','en']
+        else:
+            languages = [languages]
+        texts = []
+        subjects = []
+        for lang in languages:
+            translation.activate(lang)
+            tpl = template or self.get_template(lang = lang)
+            texts.append(self.render_template(tpl, **kwargs))
+            subjects.append(self.get_subject(lang = lang))
+        text = '\n---\n'.join(texts)
+        subject = ' | '.join(subjects)
+        if len(texts) > 1:
+            text = '[english text below]\n\n' + text
+        mail = EmailMessage(
+            subject,
+            text,
+            settings.RUBION_MAIL_FROM,
+            to
+        )
+        mail.send(fail_silently = False)
+        sentmail = SentMail.from_email_message(mail)
+        sentmail.save()
+                         
 def register_mail_template(TemplateMailClass):
     mail = TemplateMailClass()
     mail.register()
