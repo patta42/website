@@ -3,7 +3,7 @@ from .forms import (
     ResultsUploadForm, AttendeesMoveChooseCourseForm, CreditPointsForm
 )
 
-from pprint import pprint
+
 from courses.models import CourseAttendee, CourseInformationPage, Course, Course2AttendeeRelation
 from courses.pdfhandling import CourseNamePlate, CourseCertificate, CourseCPCertificate
 
@@ -15,7 +15,6 @@ from django.http import HttpResponseNotFound, JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.template.response import TemplateResponse
-from django.utils import translation
 from django.utils.text import slugify
 from django.utils.safestring import mark_safe
 from django.views import View
@@ -160,8 +159,6 @@ class CourseCreateView(MultiFormCreateView):
         instance = parent.add_child(instance = instance)
         fs = self.session_store['settings']['formsets']
         attendee_types = fs.get('attendee_types', [])
-        pprint(self.session_store)
-        pprint(attendee_types)
         for at in attendee_types:
             if not at.get('DELETE'):
                 rel = Course2AttendeeRelation(
@@ -370,25 +367,11 @@ def send_2nd_results_view(request):
         lang = request.POST.get('lang', 'de')
         tpl_updated = request.POST.get('tpl_'+lang, '')
         noti_obj = REGISTERED_NOTIFICATIONS[noti.notification_id]
-        translation.activate(lang)
         for pk in attendee_pks:
             attendee = CourseAttendee.objects.get(pk = pk).specific
-            kwargs = { 'at' : attendee }
-            text = noti_obj.render_template(tpl_updated, **kwargs)
-            if lang == 'de':
-                subject = noti.subject
-            else:
-                subject = noti.subject_en
-            to = [attendee.email]
-            mail = EmailMessage(
-                subject,
-                text,
-                settings.RUBION_MAIL_FROM,
-                to
-            )
-            mail.send(fail_silently = False)
-            sentmail = SentMail.from_email_message(mail)
-            sentmail.save()
+            kwargs = { 'at' : attendee, 'lang' : lang, 'tpl' : tpl_updated }
+            noti_obj.send([attendee.email], **kwargs)
+
         return JsonResponse({
             'status' : 200,
             'n_mails' : len(attendee_pks)
