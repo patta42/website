@@ -1,16 +1,22 @@
+from .forms import ReallyRejectForm
+
 import datetime
 from dateutils import relativedelta
+
 from django.utils.text import slugify
 from django.shortcuts import redirect
+from django.template.response import TemplateResponse
 
 from instruments.models import MethodPage
 
+from rai.default_views.decision import AbstractDecisionView
 from rai.default_views.multiform_create import  MultiFormCreateView
 
 from userinput.models import (
     Project, WorkGroup, ProjectContainer, Nuclide, Project2MethodRelation,
-    Project2NuclideRelation
+    Project2NuclideRelation, UserComment, RUBIONUser
 )
+from userinput.rai.projects.notifications import ProjectAcceptedNotification
 
 class ProjectCreateView(MultiFormCreateView):
     def prepare_formsets(self, formsets, prefix):
@@ -86,3 +92,62 @@ class ProjectCreateView(MultiFormCreateView):
         if self.session_store['status']['form']['status'] == 'applied':
             project.save_revision(user=request.user, submitted_for_moderation = True)
         return redirect('rai_userinput_project_edit', pk = project.pk)
+
+
+    
+class ProjectDecisionView(AbstractDecisionView):
+    
+    info_template = 'userinput/project/rai/decision-info.html'
+    reject_confirmation_template = 'userinput/project/rai/reject-confirmation.html'
+    
+    def get_info_context(self):
+        context = super().get_info_context()
+        qs = UserComment.objects.filter(page = self.obj)
+        if qs.exists():
+            comment = qs[0]
+            context['comment'] = comment.text
+        else:
+            context['comment'] = None
+
+        return context
+
+    def reject(self, request):
+        context = self.get_context_data()
+        if request.POST.get('formflag', None):
+            self.success_message('Das Projekt wurde abgelehnt.')
+            self.obj.delete()
+            return redirect('rai_mail_compose')
+        else:
+            form = ReallyRejectForm()
+            del(context['buttons']['okay'])
+            context['buttons']['cancel']['value'] = self.active_action.get_url_name()
+            context['buttons']['cancel']['urlparams'] = self.obj.pk
+            context['rev'] = self.obj.revisions.filter(submitted_for_moderation = True).order_by('-created_at').first()
+            context['reject_form'] = form
+            return TemplateResponse(
+                request,
+                self.reject_confirmation_template,
+                context
+            )
+            
+    def accept(self, request):
+        noti = ProjectAcceptedNotification()
+        rev = self.obj.revisions.filter(submitted_for_moderation = True).order_by('-created_at').first()
+        ruser = RUBIONUser.objects.filter(linked_user = rev.user).first()
+        if not ruser: # application has been filed by an admin-account, for example
+            ruser = self.obj.get_workgroup().get_head()
+        kwargs = {
+            'project' : self.obj,
+            'applicant' : ruser
+        }
+        lang = ruser.preferred_language
+        if lang:
+            kwargs['lang'] = lang
+            
+        noti.send([ruser.email], **kwargs)
+        rev.approve_moderation()
+        self.obj.save_revision(user = request.user)
+        self.success_message('Das Projekt wurde angenommen.')
+
+        return self.redirect_to_default()
+        
