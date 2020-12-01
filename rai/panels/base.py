@@ -12,14 +12,16 @@ class FrontPanel:
     pos_x = 1
     pos_y = 1
     title = ''
+    desc = ''
     identifier = 'rai.basefrontpanel'
     multiple_allowed = False
     
-    def __init__(self, rows = 1, cols = 1, position = None, request = None):
-        self.rows = rows
-        self.cols = cols
+    def __init__(self, rows = 1, cols = 1, width = None, height = None, position = None, request = None, settings = {}):
+        self.rows = height or rows
+        self.cols = width or cols
         self.position = position
         self.request = request
+        self.settings = {}
     
     def get_context(self):
         context = {
@@ -29,7 +31,9 @@ class FrontPanel:
             'max_width' : self.max_cols,
             'max_height' : self.max_rows,
             'min_width' : self.min_cols,
-            'min_height' : self.min_rows
+            'min_height' : self.min_rows,
+            'identifier' : self.identifier,
+            'settings' : self.settings
         }
         return context
     
@@ -49,6 +53,9 @@ class EmptyPanel(FrontPanel):
     identifier = 'rai.emptypanel'
     template = 'rai/panels/empty.html'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.position = 999
     def get_available_panels(self):
         from .internals import REGISTERED_PANELS
         panels = []
