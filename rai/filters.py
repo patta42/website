@@ -17,6 +17,11 @@ class RAIFilter:
     def get_queryset(self):
         return self.qs
 
+    def get_default_value(self):
+        for opt in self.options:
+            if opt.default:
+                return opt.value
+            
 class RAIFilterOption:
     def __init__ ( self, label, value, help_text = None, default = False ):
         self.label = label
