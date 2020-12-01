@@ -19,9 +19,12 @@ class RAIFilter:
 
     @classmethod
     def get_default_value(Kls):
+        defaults = []
         for opt in Kls.options:
             if opt.default:
-                return opt.value
+                defaults.append(opt.value)
+
+        return defaults
             
 class RAIFilterOption:
     def __init__ ( self, label, value, help_text = None, default = False ):
