@@ -17,8 +17,9 @@ class RAIFilter:
     def get_queryset(self):
         return self.qs
 
-    def get_default_value(self):
-        for opt in self.options:
+    @classmethod
+    def get_default_value(Kls):
+        for opt in Kls.options:
             if opt.default:
                 return opt.value
             
