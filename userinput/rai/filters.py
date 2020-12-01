@@ -100,7 +100,7 @@ class ProjectStatusFilter(RAIStatusFilter):
     ]
 
 class WorkgroupStatusFilter(RAIStatusFilter):
-    label = _l('Workgroupt status')
+    label = _l('Workgroup status')
     filter_id = 'workgroup_status'
     help_text = _l('Filters work groups by their active/inactive status.')
     options = [
@@ -108,3 +108,25 @@ class WorkgroupStatusFilter(RAIStatusFilter):
         RAIFilterOption(_l('active'), 'active', help_text=_l('Show only active work groups.'), default = True),
         RAIFilterOption(_l('inactive'), 'inactive', help_text=_l('Show only inactive work groups.'))
     ]
+
+class ScientificOutputDuplicateFilter(RAIFilter):
+    label = 'Duplikate auflisten'
+    filter_id = 'duplicates'
+    help_text = 'Sollen Duplikate angezeigt werden?'
+    is_mutual_exclusive = True
+    options = [
+        RAIFilterOption('alle', 'all', help_text='Alle anzeigen'),
+        RAIFilterOption('keine Duplikate', 'origs', help_text='Keine Duplikate anzeigen', default = True),
+        RAIFilterOption('nur Duplikate', 'duplicates', help_text='Nur Duplikate anzeigen'),
+    ]
+
+    def get_queryset(self):
+        self.value = self.value[0]
+        if self.value == 'all':
+            return self.qs
+        if self.value == 'origs':
+            return self.qs.filter(is_duplicate = False)
+        if self.value == 'duplicates':
+            return self.qs.filter(is_duplicate = True)
+        return self.qs
+    
