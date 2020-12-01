@@ -324,7 +324,8 @@ class FilterSettingsView(RAIAdminView):
                 value = flt.get('value', [])
             except AttributeError:
                 value = []
-                
+            if not value:
+                value = Fl.get_default_value() or []
             filt.update({
                 'type' : 'radio' if Fl.is_mutual_exclusive else 'checkbox',
                 'value' : value 
