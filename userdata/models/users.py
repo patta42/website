@@ -450,7 +450,13 @@ class StaffUser ( TranslatedPage ):
             ruser = None
             for si_rel in self.safety_instructions.all():
                 ruser = si_rel.save_for_ruser(ruser = ruser)
-                
+
+    @staticmethod
+    def get_from_user(user):
+        if not user:
+            return None
+        return StaffUser.objects.get(user = user)
+    
     class Meta:
         verbose_name = _('staff member')
         verbose_name_plural = _('staff members')
