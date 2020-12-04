@@ -346,11 +346,9 @@ class CreateNotificationHelper( models.Model ):
 @register_snippet
 class StaffNotification( models.Model ):
     # Show to which Staff member
-    # Had to set the related_name property to get rid of a clash which I did
-    # not understand
     staff = models.ForeignKey(
         StaffUser,
-        related_name = 'staff',
+        related_name = 'staff_notifications',
         on_delete=models.CASCADE
     )
     
