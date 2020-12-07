@@ -1,0 +1,68 @@
+<div class="information-panel" style="border-left: 4px #003560 solid; padding-left:1rem">
+  <div>
+    <h4>Informationen zu {{self.instance.title_trans}}</h4>
+    <address>
+      {% if self.instance.department %}{{self.instance.department}}<br />{% endif %}
+      {{self.instance.institute}}<br />
+      {{self.instance.university}}<br />
+      {{self.instance.homepage}}
+    </address>
+  </div>
+  <div>
+    <h5>Gruppenleiter</h5>
+    {% with head=self.instance.get_head.specific %}
+    <address>
+      <strong>{{head}}</strong><br />
+      <i class="fas fa-envelope"></i> {{head.email}}<br />
+      <i class="fas fa-phone"></i> {{head.phone|default:"nicht angegeben"}}
+    </address>
+    {% endwith %}
+  </div>
+  <div>
+    <h5>
+      <a class="hideshowbutton" aria-expanded="false" data-toggle="collapse" href="#active_members_collapsable">
+	<span class="downBtn mr-1"><i class="fas fa-angle-down"></i></span>
+	<span class="upBtn mr-1"><i class="fas fa-angle-up"></i></span>
+	Aktive Mitglieder
+      </a>
+      
+    </h5>
+    <ul id="active_members_collapsable" class="collapse list-group">
+      {% for member in self.instance.get_members %}
+      <li class="list-group-item mb-0 d-flex">
+	{% include "userinput/rubionuser/rai/shared/user-info.html" with user=member%}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div>
+    <h5>
+      <a class="hideshowbutton" aria-expanded="false" data-toggle="collapse" href="#active_projects_collapsable">
+	<span class="downBtn mr-1"><i class="fas fa-angle-down"></i></span>
+	<span class="upBtn mr-1"><i class="fas fa-angle-up"></i></span>
+	Aktive Projekte
+      </a>
+    </h5>
+    <ul id="active_projects_collapsable" class="collapse list-group">
+      {% if self.instance.get_projects %}
+      {% for project in self.instance.get_projects %}
+      <li class="list-group-item mb-0">
+	<span style="font-size:larger">{{project.specific.title_trans}}</span><br />
+	Verwendete Methoden:
+	{% for met2pr_rel in project.specific.related_methods.all %}
+	{{met2pr_rel.page.specific.title_trans}}{% if not forloop.last %}, {%endif%}
+	{% endfor %}<br />
+	Verwendete Nuklide:
+	{% for nuc2pr_rel in project.related_nuclides.all %}
+	<sup>{{nuc2pr_rel.snippet.mass}}</sup>{{nuc2pr_rel.snippet.element}}
+	{% empty %}
+	Keine
+	{% endfor %}
+      </li>
+      {% endfor %}
+      {% else %}
+      <li>Keine</li>
+      {% endif %}
+    </ul>
+  </div>
+</div>
