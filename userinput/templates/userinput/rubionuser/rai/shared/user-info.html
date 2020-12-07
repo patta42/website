@@ -1,0 +1,50 @@
+{% load userinput_rai_tags %}
+<div style="flex-grow:1">
+  <h6>{{user.title_trans}} {% if user.is_leader %}<span class="badge badge-info">Leiter der Arbeitsgruppe</span>{% endif %}</h6>
+  <p class="text-muted mb-1">Dosimeter: {{user.get_dosemeter_display}}<br />
+    {% for si_rel in user.needs_safety_instructions.all %}
+    <span class="badge badge-info">{{si_rel}}</span>
+    {% endfor %}
+  </p>
+  <h6 class="mt-2">Letzte Unterweisungen:</h6>
+  <dl class="ml-3">
+    {% for si_rel in user.safety_instructions.all %}
+    {% get_last_instruction user si_rel.instruction as last_instruction %}
+    <dt{% if si_rel.as_required %} class="text-muted" title="Nur bei Bedarf"{% endif %}>{{ si_rel.instruction }}:</dt>
+    <dd style="width:20rem"{% if si_rel.as_required %} title="Nur bei Bedarf"{%endif%}>
+      {% if last_instruction %}
+      {% get_last_instruction_percentage last_instruction.date si_rel.instruction as percentage %}
+      {{last_instruction.date }}
+      <div style="float:right">{{si_rel.instruction.is_valid_for}} Jahr(e)</div>
+      <div class="progress">
+	{% if si_rel.as_required %}
+	<div class="progress-bar bg-secondary" role="progressbar" style="width:{{percentage}}%" aria-valuenow="{{percentage}}" aria-valuemin="0" aria-valuemax="100">
+	  {% if percentage == 100 %}
+	  nicht mehr gültig
+	  {% else %}
+	  {{percentage}} %
+	  {% endif %}
+	</div>
+	{% else %}
+	<div class="progress-bar bg-{% if percentage <= 80 %}success{% elif percentage <= 95 %}warning{% else %}danger{% endif %}" role="progressbar" style="width:{{percentage}}%" aria-valuenow="{{percentage}}" aria-valuemin="0" aria-valuemax="100">
+	  {% if percentage == 100 %}
+	  nicht mehr gültig
+	  {% else %}
+	  {{percentage}} %
+	  {% endif %}
+	</div>
+	{% endif %}
+      </div>
+      
+    {% else %}
+      <span class="text-danger">Noch nie</span>
+    {% endif %}
+    </dd>
+    {% endfor %}
+  </dl>
+
+</div>
+<div>
+  <a href="{% url "rai_userinput_rubionuser_edit" user.pk %}" class="btn
+  btn-outline-secondary btn-sm">Editieren</a>
+</div>
