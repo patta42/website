@@ -1,5 +1,5 @@
 
-from .definitions import RUBIONUserInfoPanel, WorkgroupInformationPanel
+from .definitions import RUBIONUserInfoPanel, WorkgroupInformationPanel, ProjectInformationPanel
 from .forms import (
     GroupLeaderForm,  WorkgroupStatusForm, RUBIONUserSourceForm,
     RUBIONUserWorkgroupForm, ProjectWorkgroupForm, ProjectMethodsForm,
@@ -38,6 +38,7 @@ from website.rai.edit_handlers import SentMailPanel
 
 
 project_edit_handler = eh.RAIPillsPanel([
+    ProjectInformationPanel(heading = 'Übersicht'),
     eh.RAIUserDataPanel([
         eh.RAIObjectList([
             eh.RAICollapsablePanel([
@@ -265,13 +266,6 @@ rubionuser_edit_handler = eh.RAIPillsPanel([
             eh.RAIFieldPanel('is_rub')
         ], heading = 'Verwaltungsdaten'),
         eh.RAICollapsablePanel([
-            eh.RAIFieldPanel('dosemeter', widget=RAISelect, classname="col-md-12"),
-            eh.RAIInlinePanel('safety_instructions', panels = [
-                eh.RAIFieldPanel('instruction', label="Unterweisung"),
-                eh.RAIFieldPanel('as_required', label="Nur bei Bedarf"),
-            ], show_all_options = True, heading="Benötigte Sicherheitsunterweisungen"),
-        ], heading = 'Strahlenschutz'),
-        eh.RAICollapsablePanel([
             eh.RAIInputGroupCollectionPanel([
                 eh.RAIFieldPanel('needs_key'),
                 eh.RAIFieldPanel('key_number')
@@ -300,6 +294,16 @@ rubionuser_edit_handler = eh.RAIPillsPanel([
         ], heading = 'Persönliche Nutzerdaten')
         
     ], heading = 'Daten'),
+    eh.RAICollapsablePanel([
+        eh.RAIObjectList([
+            eh.RAIFieldPanel('dosemeter', widget=RAISelect, classname="col-md-12"),
+        ]),
+        eh.RAIInlinePanel('safety_instructions', panels = [
+            eh.RAIFieldPanel('instruction', label="Unterweisung"),
+            eh.RAIFieldPanel('as_required', label="Nur bei Bedarf"),
+        ], show_all_options = True, heading="Benötigte Sicherheitsunterweisungen"),
+    ], heading = 'Strahlenschutz'),
+        
     eh.RAIObjectList([
         OnDemandFileListPanel('automatic_documents', heading = 'Automatsch erzeugte Dateien'), 
         FileListPanel('documents', collection = RUBIONUserDocumentCollection, heading = 'Verknüpfte Dateien'),
