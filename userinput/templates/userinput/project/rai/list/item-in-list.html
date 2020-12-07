@@ -6,25 +6,37 @@
 {% endblock %}
 {% block sortfields %}{%trans "Project"%}{% endblock %}
 {% block title_sortname %}{% trans "Project" %}{% endblock %}
+{% block search_header_title %}Projektname{% endblock %}
 {% block additional_content %}
 {% with group=object.get_workgroup %} 
-  <p class="mb-1 text-primary" data-rubion-searchable="true">
+  <p class="mb-1 text-primary" data-rubion-searchable="true" data-rubion-searchable-title="Arbeitsgruppe">
     {{group}}
   </p>
 <p class="mb-1">
-  Gruppenleiter: <span class="text-primary" data-rubion-searchable="true">{% include 'userinput/rubionuser/rai/shared/full-user-name.html' with object=group.get_head %}</span>
+  Gruppenleiter: <span class="text-primary" data-rubion-searchable="true" data-rubion-searchable-title="Gruppenleiter">{% include 'userinput/rubionuser/rai/shared/full-user-name.html' with object=group.get_head %}</span>
 </p>
 {% endwith %}
 <p class="mb-1">
-  {% trans "Start" %}: {{object.first_published_at}},  
-  {% trans "Expire" %}: {{object.expire_at}} 
+ Beginn: {{object.first_published_at}},  
+ läuft bis: {{object.expire_at}} 
 </p>
-
+<p class="mb-1">
+  Verwendete Nuklide:
+  {% if object.related_nuclides.all.count == 0 %}
+  keine
+  {% else %}
+  <ul>
+    {% for nuc in object.related_nuclides.all %}
+    <li>{{nuc.snippet}}: Maximale Bestellmenge (MBq): {{nuc.max_order|default:"Keine Angabe"}}, Aktivität pro Experiment (MBq): {{nuc.amount_per_experiment|default:"Keine Angabe"}}, Raum: {{nuc.room|default:"unbekannt"}}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</p>
   {% if last_revision %}
   <small class="text-muted">
-    {% trans "Last update:" %}
+    Letzte Änderung
     {{last_revision.created_at}}
-    {% trans "by" %}
+    durch
     {{ last_revision.user.last_name }}, {{ last_revision.user.first_name }}
   </small>
   {% endif %}
