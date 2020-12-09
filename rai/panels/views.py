@@ -29,14 +29,11 @@ def change_settings(request):
             keys = ['position', 'width', 'height', 'settings']
             p_settings = _get_panel_settings_for_user(request.user)
             settings = _parse_p_settings(p_settings)
-            print('Anfrage: {}'.format(request.POST))
-            print('Liste: {}'.format(request.POST.getlist('data')))
-            print('\nvorher: {}'.format(settings))
 
             panel_id = request.POST.get('panelId', None)
             data = []
             if panel_id:
-                data[0] = {'panelId' : panel_id}
+                data.append({'panelId' : panel_id})
                 for k in keys:
                     v = request.POST.get(k, None)
                     if v:
@@ -47,7 +44,10 @@ def change_settings(request):
             if not data:
                 return HttpResponse(status = 400)
             else:
-                data = json.loads(data)
+                try:
+                    data = json.loads(data)
+                except TypeError:
+                    pass
             for item in data:
                 panel_setting = None
                 for setting in settings:
