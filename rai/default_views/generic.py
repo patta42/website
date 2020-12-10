@@ -609,24 +609,29 @@ class PageMenuMixin:
                 })
         return actions
 
-    def get_item_actions(self):
+    def get_item_actions(self, for_list = False):
         actions = []
         request = getattr(self, 'request', None)
         for Action in self.raiadmin.item_actions:
             action = Action(self.raiadmin)
             if action.action_identifier != self.active_action.action_identifier and action.show(request):
-                actions.append({
+                ac = {
                     'icon' : action.icon,
                     'icon_font' : action.icon_font,
                     'label' : action.label,
-                    'url' : action.get_href(self.obj.id),
                     'btn_type' : getattr(action,'btn_type', None),
                     'text_type': getattr(action,'text_type', None),
                     'show_for_instance': action.show_for_instance,
                     'object' : getattr(self, 'obj', True),
                     'is_ajax' : getattr(action, 'is_ajax', False),
                     'get_params' : getattr(action, 'get_params', False)
-                })
+                }
+                if for_list:
+                    ac.update({'urlname': action.get_url_name()}),
+                else:
+                    ac.update({'url': action.get_href(self.obj.id)}),
+
+                actions.append(ac)
         return actions
 
     def get_actions(self):
