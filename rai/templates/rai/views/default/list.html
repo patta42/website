@@ -1,5 +1,5 @@
 {% extends 'rai/views/default/common.html' %}
-{% load rai_tags i18n %}
+{% load rai_tags i18n static %}
 
 {% block pagetitle %}
   Liste der {{title}}
@@ -41,4 +41,26 @@
   {{ settings_form }}
 </form>
 {% include 'rai/generic/modal_footer.html' with id="listSettingsModal" cancel_button=True save_button=True%}
+{% for action in item_actions %}
+{% if action.is_ajax %}
+{{ action.get_additional_html }}
+{% endif %}
+{% endfor %}
+{% endblock %}
+
+{% block additional_js %}
+{{ block.super }}
+{% for action in item_actions %}
+{% if action.is_ajax %}
+{% if action.get_additional_js %}
+<script>
+  {% for file in action.get_additional_js %}
+  window.addScript('Lade zusätzliche JS-Bibliothek', '{% static file %}', 'js');
+  {% endfor %}
+</script>
+{% endif %}
+
+{% endif %}
+{% endfor %}
+
 {% endblock %}
