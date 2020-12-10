@@ -159,6 +159,11 @@ def show_for_instance(context, action, instance):
     request = context.get('request', None)
     return action['show_for_instance'](instance, request)
 
+@register.simple_tag(takes_context = True)
+def get_ajax_params(context, action, instance):
+    request = context.get('request', None)
+    return action.get_params(instance, request)
+
 @register.filter
 def save_htmldiff(change):
     try:
