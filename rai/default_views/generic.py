@@ -624,7 +624,8 @@ class PageMenuMixin:
                     'text_type': getattr(action,'text_type', None),
                     'show_for_instance': action.show_for_instance,
                     'object' : getattr(self, 'obj', True)
-                    
+                    'is_ajax' : getattr(action, 'is_ajax', False),
+                    'get_params' : getattr(action, 'get_params', False)
                 })
         return actions
 
