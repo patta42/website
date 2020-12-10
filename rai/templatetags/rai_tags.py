@@ -162,7 +162,10 @@ def show_for_instance(context, action, instance):
 @register.simple_tag(takes_context = True)
 def get_ajax_params(context, action, instance):
     request = context.get('request', None)
-    return action.get_params(instance, request)
+    if action['get_params']:
+        return action['get_params'](instance, request)
+    else:
+        return {'classes':[], 'additional':{}}
 
 @register.filter
 def save_htmldiff(change):
