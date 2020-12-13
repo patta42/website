@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _l
 
 from rai.actions import ListAction, CreateAction, EditAction, DetailAction, HistoryAction, DeleteAction
-from rai.base import RAIModelAdmin, RAIAdminGroup
+from rai.base import RAIModelAdmin, RAIAdminGroup, RAIAdmin
 from rai.default_views import HistoryView
 
 from rai.files.base import (
@@ -94,6 +94,7 @@ class RAIWorkGroups(RAIModelAdmin):
     ]
     default_action = actions.RAIWorkgroupListAction
     item_actions = [
+        actions.WorkgroupDecisionAction,
         actions.RAIWorkgroupEditAction,
         actions.RAIWorkgroupDetailAction,
         actions.UserinputInactivateAction,
@@ -111,6 +112,7 @@ class RAIProjects(RAIModelAdmin):
     group_actions = [actions.RAIProjectListAction, actions.RAIProjectCreateAction]
     default_action = actions.RAIProjectListAction
     item_actions = [
+        actions.ProjectDecisionAction,
         actions.RAIProjectEditAction,
         DetailAction,
         actions.UserinputInactivateAction,
@@ -164,6 +166,33 @@ class RAIScientificOutputGroup(RAIAdminGroup):
         RAIFunding, RAIThesis, RAIPublication
     ]
     menu_label = 'Wissenschaftlicher Output'
+
+class RAISafetyInstructions(RAIAdmin):
+    menu_icon = 'hard-hat'
+    menu_icon_font = 'fas'
+    menu_label = 'Unterweisungen eintragen'
+    item_actions = []
+    group_actions = [
+        actions.RAISafetyInstructionAddAction,
+    ]
+    default_action = actions.RAISafetyInstructionAddAction
+    identifier = 'radiation_safety'
+    sub_identifier = 'instructions-add'
+
+class RAIInvalidSafetyInstruction(RAIAdmin):
+    menu_icon = 'exclamation-triangle'
+    menu_icon_font = 'fas'
+    menu_label = 'ablaufende Unterweisungen'
+    item_actions = [
+        actions.SafetyInstructionsSendMailToUserAction,
+        actions.SafetyInstructionsEditUserAction
+    ]
+    group_actions = [
+        actions.RAISafetyInstructionListAction
+    ]
+    default_action = actions.RAISafetyInstructionListAction
+    identifier = 'radiation_safety'
+    sub_identifier = 'instructions-invalid'
     
 class RAIRadiationSafetyDosemeter(RAIModelAdmin):
     model = RUBIONUser
@@ -181,7 +210,6 @@ class RAIRadiationSafetyKeys(RAIModelAdmin):
     menu_icon = 'key'
     menu_icon_font = 'fas'
 
-    
 class RAINuclides(RAIModelAdmin):
     model = Nuclide
     identifier = 'radiation_safety'
@@ -192,6 +220,8 @@ class RAINuclides(RAIModelAdmin):
     
 class RAIRadiationSafetyGroup(RAIAdminGroup):
     components = [
+        RAISafetyInstructions,
+        RAIInvalidSafetyInstruction,
         RAIRadiationSafetyDosemeter,
         RAIRadiationSafetyKeys,
         RAINuclides
