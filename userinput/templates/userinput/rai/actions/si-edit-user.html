@@ -1,0 +1,16 @@
+{% if is_single %}
+<a href="{% url urlname pk %}" class="btn btn-sm btn-outline-secondary">
+  <i class="{{action.icon_font}} fa-{{action.icon}}"></i> {{action.label}}
+</a>
+{% else %}
+<div class="btn-group">
+  <button data-toggle="dropdown" class="btn btn-sm btn-outline-secondary dropdown-toggle"><i class="{{action.icon_font}} fa-{{action.icon}}"></i> {{action.label}}</button>
+  <div class="dropdown-menu">
+    {% for btn in buttons %}
+    <a href="{% url btn.name btn.pk %}" class="dropdown-item">
+      <i class="{{btn.icon_font|default:action.icon_font}} fa-{{btn.icon|default:action.icon}} fa-fw"></i> {{btn.label}}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
