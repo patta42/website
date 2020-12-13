@@ -2,6 +2,7 @@ from pprint import pprint
 
 from collections import OrderedDict
 
+from django.template.loader import render_to_string
 from django.utils.html import mark_safe, format_html
 import datetime
 import locale
@@ -9,7 +10,8 @@ import locale
 from rai.actions import (
     RAIAction,
     ListAction, EditAction, DetailAction, CreateAction,
-    InactivateAction, ActivateAction, SpecificAction
+    InactivateAction, ActivateAction, SpecificAction,
+    SendMailAction
 )
 import rai.edit_handlers as eh
 from rai.permissions.utils import user_has_permission, user_can_create
@@ -31,7 +33,7 @@ from userinput.rai.edit_handlers import (
     rubionuser_create_handler, project_create_handler
 )
 
-from userinput.rai.views.rubionuser.views import AddInstructionsDatesView
+from userinput.rai.views.rubionuser.views import AddInstructionsDatesView, SafetyInstructionView
 from userinput.rai.views.workgroup.views import WorkgroupDecisionView
 from userinput.rai.views.projects.views import ProjectDecisionView
 
@@ -581,7 +583,7 @@ class RAIThesisListAction(AbstractScientificOutputListAction):
             'callback' : 'get_project',
         }),
         ('created_at', {
-            'label' : 'Datum des Hinzufügens',
+            'label' : 'Datum des Hinzuügens',
             'desc' : 'Datum, an dem die Abschlussarbeit zum Projekt hinzugefügt wurde.',
             'callback' : 'get_created_at'
         })
@@ -610,9 +612,21 @@ class RAISafetyInstructionAddAction(RAIAction):
     action_identifier = 'add'
     icon = 'plus'
     icon_font = 'fas'
+    label = 'Hinzufügen'
 
     def get_view(self):
         return AddInstructionsDatesView.as_view(
+            raiadmin = self.raiadmin,
+            active_action = self
+        )
+
+class RAISafetyInstructionListAction(ListAction):
+    list_item_template = 'userinput/safety_instructions/rai/item-in-list.html'
+    list_filters = [
+        filters.RUBIONUserSafetyInstructionfilter
+    ]
+    def get_view(self):
+        return SafetyInstructionView.as_view(
             raiadmin = self.raiadmin,
             active_action = self
         )
@@ -643,3 +657,50 @@ class WorkgroupDecisionAction(InactivateAction):
     
 class ProjectDecisionAction(WorkgroupDecisionAction):
     pass
+
+class SafetyInstructionsSendMailToUserAction(SendMailAction):
+    def get_params(self, obj, request):
+        if obj.rubion_user:
+            user = obj.rubion_user
+        else:
+            user = obj.rubion_staff
+        return super().get_params(user, request)
+    
+class SafetyInstructionsEditUserAction(EditAction):
+    label = 'Bearbeiten'
+    def show_for_instance(self, instance, request = None):
+        return instance.rubion_user is not None or instance.rubion_staff is not None 
+    def get_url_for_registration(self):
+        return []
+
+    def get_action_button(self, obj, context):
+        c = context.flatten()
+        tpl = 'userinput/rai/actions/si-edit-user.html'
+        if obj.rubion_user and obj.rubion_staff:
+            c['is_single'] = False
+            c['buttons'] = []
+            c['buttons'].append({
+                'label' : 'Mitarbeitereintrag',
+                'name' : 'rai_userdata_staffuser_edit',
+                'pk' : obj.rubion_staff.pk,
+                'icon' : 'users-cog'
+            })
+            c['buttons'].append({
+                'label' : 'Nutzereintrag',
+                'name' : 'rai_userinput_rubionuser_edit',
+                'pk' : obj.rubion_user.pk,
+                'icon' : 'user'
+            })
+        else:
+            c['is_single'] = True
+            if obj.rubion_user:
+                c['urlname'] = 'rai_userinput_rubionuser_edit'
+                c['pk'] = obj.rubion_user.pk
+            else:
+                c['urlname'] = 'rai_userdata_staffuser_edit'
+                c['pk'] = obj.rubion_staff.pk
+        return render_to_string(tpl, c)
+    
+    def get_view(self):
+        pass
+    
