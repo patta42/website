@@ -624,7 +624,10 @@ class PageMenuMixin:
                     'show_for_instance': action.show_for_instance,
                     'object' : getattr(self, 'obj', True),
                     'is_ajax' : getattr(action, 'is_ajax', False),
-                    'get_params' : getattr(action, 'get_params', False)
+                    'get_params' : getattr(action, 'get_params', False),
+                    'get_additional_html' : getattr(action, 'get_additional_html', False),
+                    'get_additional_js' : getattr(action, 'get_additional_js', False),
+                    'get_action_button' : getattr(action, 'get_action_button', None),
                 }
                 if for_list:
                     ac.update({'urlname': action.get_url_name()}),
@@ -651,8 +654,10 @@ class PageMenuMixin:
                 'proceed_button': self.proceed_button,
                 'proceed_button_label' : self.proceed_button_label,
                 'icons_only' : self.icons_only,
-                'request' : self.request
-#                'settings_menu' : self.get_settings_menu()    
+                'request' : self.request,
+                'settings_menu' : self.get_settings_menu()    
             }
         )
 
+    def get_settings_menu(self):
+        return None
