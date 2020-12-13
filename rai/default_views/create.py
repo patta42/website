@@ -19,13 +19,16 @@ class CreateView(RAIAdminView, PageMenuMixin):
         return self.get_group_actions()
     
     def get_settings_menu(self):
-        settings_action = self.active_action.settings_action
-        return {
-            'icon' : settings_action.icon,
-            'icon_font' : settings_action.icon_font,
-            'label' : settings_action.label,
-            
-        }
+        try:
+            settings_action = self.active_action.settings_action
+            return {
+                'icon' : settings_action.icon,
+                'icon_font' : settings_action.icon_font,
+                'label' : settings_action.label,
+                
+            }
+        except AttributeError:
+            return {}
 
     def prepare_edit_handler(self):
         if hasattr(self.active_action, 'edit_handler'):
