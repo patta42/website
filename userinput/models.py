@@ -1323,7 +1323,12 @@ class Project ( UserGeneratedPage2 ):
     @property
     def under_revision( self ):
         return self.has_unpublished_changes
-
+    @property
+    def is_active( self ):
+        return not self.under_revision and (
+            self.expire_at is None or self.expire_at >  datetime.datetime.today()
+        )
+    
     # --- TranslatedFields
 
     summary = TranslatedField('summary')
@@ -2027,6 +2032,10 @@ class FundingSnippet( models.Model ):
         null = True,
         verbose_name = _('project url'),
     )
+    is_duplicate = models.BooleanField(
+        default = False
+    )
+    
     def __str__(self):
         return self.title_en
         
@@ -2139,9 +2148,14 @@ class ThesisSnippet( models.Model ):
         blank = True,
         null = True,
         verbose_name = _('internet address')
-        
     )
-
+    is_duplicate = models.BooleanField(
+        default = False
+    )
+    # created_at = models.DateTimeField(
+    #     auto_now_add = True,
+    #     null = True
+    # )
     def __str__(self):
         return self.title
 
