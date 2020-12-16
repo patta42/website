@@ -8,7 +8,7 @@ from instruments.models import InstrumentPage
 
 from rai.filters import RAIFilter, RAIFilterOption, RAIStatusFilter
 
-
+from userdata.models import SafetyInstructionsSnippet
 
 class RUBIONUserStatusFilter(RAIStatusFilter):
     label = _l('User status')
@@ -20,7 +20,47 @@ class RUBIONUserStatusFilter(RAIStatusFilter):
         RAIFilterOption(_l('inactive'), 'inactive', help_text=_l('Show inactive users only.'))
     ]
 
+class SafetyInstructionFilterMeta(type):
+    """
+    Meta class for filters using safety instructions
+    """
+    def __new__(cls, name, bases, dct):
+        Kls = super().__new__(cls, name, bases, dct)
+        
+        options = [ RAIFilterOption(
+            si.title_de_short,
+            si.pk,
+            help_text = ''#Zeige Nutzer, die {si} benötigen'.format(
+            #    si = si.title_de
+            #)
+        ) for si in SafetyInstructionsSnippet.objects.order_by('title_de_short')]
+            
+        Kls.options = options
+        return Kls
+    
 
+    
+
+class RUBIONUserSafetyInstructionfilter(RAIFilter, metaclass=SafetyInstructionFilterMeta):
+    """
+    Filters the users by the SafetyInstructions they need.
+    """
+    label = 'Benötigte Sicherheitsunterweisungen'
+    filter_id = 'user_safety_instructions'
+    is_mutual_exclusive = False
+    help_text = 'Zeigt nur Nutzer, die die entsprechende Unterweisung benötigen.'
+
+    def __init__(self, qs, value):
+        super().__init__(qs, value = value)
+
+        # convert string values to integers 
+        if self.value is not None:
+            values = [int(val) for val in self.value]
+            self.value = values
+
+    def get_queryset(self):
+        return self.qs.filter(safety_instructions__instruction__pk__in = self.values)
+                    
 class RUBIONUserInstrumentFilterMeta(type):
     """ 
     Meta class for RUBIONUserInstrumentFilter
@@ -40,6 +80,8 @@ class RUBIONUserInstrumentFilterMeta(type):
         Kls.options = options
         return Kls
 
+
+    
 class RUBIONUserInstrumentFilter(RAIFilter, metaclass = RUBIONUserInstrumentFilterMeta):
     label = _l('Used instruments')
     filter_id = 'user_instrument'
@@ -89,15 +131,34 @@ class RUBIONUserInstrumentFilter(RAIFilter, metaclass = RUBIONUserInstrumentFilt
             
         return self.qs.exclude(pk__in = exclude)
 
+
+
 class ProjectStatusFilter(RAIStatusFilter):
     label = _l('Project status')
     filter_id = 'project_status'
     help_text = _l('Filters projects by their active/inactive status.')
     options = [
-        RAIFilterOption(_l('all'), 'all', help_text=_l('Show all projects (independent from their status).')),
-        RAIFilterOption(_l('active'), 'active', help_text=_l('Show only active projects.'), default = True),
-        RAIFilterOption(_l('inactive'), 'inactive', help_text=_l('Show only inactive projects.'))
+        RAIFilterOption('alle', 'all', help_text='Alle Projekte.'),
+        RAIFilterOption('aktiv', 'active', help_text='Aktive Projekte', default = True),
+        RAIFilterOption('abgelaufen', 'expired', 'Abgelaufene aber nicht abgeschlossene Projekte.'),
+        RAIFilterOption('aktive und abgelaufen', 'active+expired', help_text='Aktive und abgelaufene Projekte.', default = True),
+        RAIFilterOption('abgeschlossen', 'closed', help_text='Abgeschlossene Projekte')
     ]
+    
+    def get_queryset(self):
+        # value is a list
+        self.value = self.value[0]
+        if self.value == 'all':
+            return self.qs
+        if self.value == 'active':
+            return self.qs.active().filter(locked = False)
+        if self.value == 'expired':
+            return self.qs.inactive().filter(locked = False)
+        if self.value == 'active+expired':
+            return self.qs.filter(locked=False)
+        if self.value == 'closed':
+            return self.qs.filter(locked=True)
+
 
 class WorkgroupStatusFilter(RAIStatusFilter):
     label = _l('Workgroup status')
