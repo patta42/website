@@ -370,6 +370,7 @@ class WorkGroup ( UserGeneratedPage2 ):
 
     def activate(self, user = None):
         self.expire_at = None
+        self.locked = False
         if user:
             self.save_revision_and_publish(user=user)
         else:
@@ -377,7 +378,7 @@ class WorkGroup ( UserGeneratedPage2 ):
         
                 
     def is_inactivated(self):
-        return self.expire_at is not None and self.expire_at < datetime.datetime.now()
+        return self.locked and (self.expire_at is not None and self.expire_at < datetime.datetime.now())
                 
     @classmethod
     def active_filter(self):
