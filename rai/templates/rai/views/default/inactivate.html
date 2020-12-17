@@ -1,0 +1,21 @@
+{% extends 'rai/views/default/shared/form-view.html' %}
+{% load i18n %}
+{% block title_action %}Inaktivieren:{% endblock %}
+{% block heading %}{% if object.specific.title_de %}{{ object.specific.title_de }}{% else %}{{object}}{% endif %}{% endblock %}
+{% block innerformcontent %}
+<div class="alert alert-danger mt-5 confirmation">
+  <h4 class="alert-heading">Bestätigung erforderlich</h4>
+  <p class="mx-5 mt-5">
+    Bitte bestätige das Inaktivieren von
+  </p>
+  <p class="ml-5 mr-5 h3">
+    {% if object.title_trans %}{{object.title_trans}}{% else %}{{object}}{% endif %}
+  </p>
+  <p class="ml-5 mt-3">Zwar kann die Inaktivierung rückgängig gemacht werden, es wird jedoch eine E-Mail an die betreffenden Personen verschickt.</p>
+  
+  <hr class="mt-5">
+  {% for button in buttons.values %}
+  {% include 'rai/views/default/shared/inactivate-button.html' %}
+  {% endfor %}
+</div>
+{% endblock %}
