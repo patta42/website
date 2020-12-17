@@ -355,6 +355,7 @@ class WorkGroup ( UserGeneratedPage2 ):
         # inactivate this group.
         now = datetime.datetime.now()
         self.expire_at = now
+        self.locked = True
         if user:
             self.save_revision_and_publish(user=user)
         else:
