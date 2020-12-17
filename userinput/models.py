@@ -157,9 +157,11 @@ class WorkGroup ( UserGeneratedPage2 ):
 
     @property
     def is_active( self ):
+        return not self.locked 
+
+    @property
+    def has_active_projects( self ):
         return self.get_projects().filter(expire_at__gte = datetime.datetime.now()).exists()
-
-
     
     def add_member_container( self ):
         # Generates a container for the workgroup members
@@ -386,6 +388,7 @@ class WorkGroup ( UserGeneratedPage2 ):
             return '{}, {}, {}, {}'.format( self.title_trans, self.institute, self.department, self.university )
         else:
             return '{}, {}, {}'.format( self.title_trans, self.institute, self.university )
+
 
 class RUBIONUser ( UserGeneratedPage2 ):
     '''
@@ -1188,9 +1191,6 @@ class RUBIONUser ( UserGeneratedPage2 ):
     ])
 
         
-    
-
-
 class Project ( UserGeneratedPage2 ):
     
     # --- Settings 
@@ -1735,6 +1735,7 @@ class Project ( UserGeneratedPage2 ):
             
     def inactivate(self, user = None):
         self._close(user)
+        
     def activate(self, user = None):
         self.locked = False
         self.expire_at = datetime.datetime.now() + relativedelta (years = +1)
@@ -1764,7 +1765,6 @@ class Project ( UserGeneratedPage2 ):
             'userinput/project_child.html',
             { 
                 'page' : self,
-                
             }
         )
 
