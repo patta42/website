@@ -1064,7 +1064,7 @@ class RUBIONUser ( UserGeneratedPage2 ):
 
     def inactivate ( self, user = None ):
         self.expire_at = datetime.datetime.now()
-
+        self.locked = True
         if user:
             self.save_revision_and_publish( user = user )
         else:
@@ -1077,6 +1077,7 @@ class RUBIONUser ( UserGeneratedPage2 ):
 
     def activate( self, user=None ):
         self.expire_at = None
+        self.locked = False
         if user:
             self.save_revision_and_publish(user = user)
         else:
