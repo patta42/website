@@ -381,7 +381,10 @@ class StaffUser ( TranslatedPage ):
         super( StaffUser, self ).clean()
         self.title = "%s, %s" % ( self.last_name, self.first_name )
         self.title_de = "%s, %s" % ( self.last_name, self.first_name )
-        self.slug = "%s-%s" % ( self.last_name, self.first_name )
+        if self.slug:
+            self.slug = slugify(self.slug)
+        else:
+            self.slug = slugify("%s-%s" % ( self.last_name, self.first_name ))
 
     def has_connections(self):
         return self.orcid is not None or self.researchgate is not None or self.gnd is not None
