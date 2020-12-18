@@ -1,0 +1,64 @@
+<div class="information-panel" style="border-left: 4px #003560 solid; padding-left:1rem">
+  <div>
+    <h4>Informationen zum Projekt »{{self.instance.title_trans}}«</h4>
+    {% with ag=self.instance.get_workgroup.specific %}
+    <h5>
+      <a class="hideshowbutton" aria-expanded="false" data-toggle="collapse" href="#ag_address_full">
+	<span class="downBtn mr-1"><i class="fas fa-angle-down"></i></span>
+	<span class="upBtn mr-1"><i class="fas fa-angle-up"></i></span>
+	Arbeitsgruppe
+      </a>
+    </h5>
+    <address class="ml-2">
+      <h6>{{ag.title_trans}} <a href="{% url "rai_userinput_workgroup_edit" ag.pk %}">(Editieren)</a></h6>
+      {% with head=ag.get_head.specific %}
+      <strong>{% include 'userinput/rubionuser/rai/shared/full-user-name.html' with object=head %}</strong>
+      <div id="ag_address_full" class="collapse">
+	<i class="fas fa-envelope"></i> {{head.email}}<br />
+	<i class="fas fa-phone"></i> {{head.phone|default:"nicht angegeben"}}<br />
+      {% endwith %}
+	{% if ag.department %}{{ag.department}}<br />{% endif %}
+	{{ag.institute}}<br />
+	{{ag.university}}<br />
+	{{ag.homepage}}
+      </div>
+    </address>
+    <div>
+      <h5>
+	<a class="hideshowbutton" aria-expanded="false" data-toggle="collapse" href="#ag_overview_nuclides">
+	<span class="downBtn mr-1"><i class="fas fa-angle-down"></i></span>
+	<span class="upBtn mr-1"><i class="fas fa-angle-up"></i></span>
+
+	Benutzte Nuklide (in diesem Projekt)
+	</a>
+      </h5>
+      <ul class="list-group collapse" id="ag_overview_nuclides">
+	{% for nuc in self.instance.related_nuclides.all %}
+	<li class="list-group-item">
+	  {% include "userinput/rai/shared/nuclide-info.html" %}
+	</li>
+	{% empty %}
+	<li class="list-group-item">keine</li>
+	{% endfor %}
+      </ul>
+    </div>
+    <div>
+      <h5>
+	<a class="hideshowbutton" aria-expanded="false" data-toggle="collapse" href="#active_members_collapsable">
+	  <span class="downBtn mr-1"><i class="fas fa-angle-down"></i></span>
+	  <span class="upBtn mr-1"><i class="fas fa-angle-up"></i></span>
+	  Mitglieder der AG
+	</a>
+      </h5>
+      <ul id="active_members_collapsable" class="collapse list-group">
+	{% for member in ag.get_members %}
+	<li class="list-group-item mb-0 d-flex">
+	  {% include "userinput/rubionuser/rai/shared/user-info.html" with user=member%}
+	</li>
+	{% endfor %}
+      </ul>
+    </div>
+    {% endwith %}
+  </div>
+  
+</div>
