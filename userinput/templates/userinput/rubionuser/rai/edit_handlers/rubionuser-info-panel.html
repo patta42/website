@@ -1,3 +1,4 @@
+{% load userinput_rai_tags %}
 <div class="information-panel" style="border-left: 4px #003560 solid; padding-left:1rem">
   <div class="d-flex align-items-start">
     <h4>Informationen zu {{self.instance.title_trans}}</h4>
@@ -18,15 +19,56 @@
   <div>
     Benötigte Unterweisungen: 
     {% for si_rel in self.instance.safety_instructions.all %}
+    {% if si_rel.as_required %}
+    <span class="badge badge-secondary" title="Nur bei Bedarf">{{si_rel.instruction}}</span>
+    {% else %}
     <span class="badge badge-info">{{si_rel.instruction}}</span>
+    {% endif %}
     {% empty %}
     Keine
     {% endfor %}
   </div>
+  <h6 class="mt-2">Letzte Unterweisungen:</h6>
+  <dl class="ml-3">
+    {% for si_rel in self.instance.safety_instructions.all %}
+    {% get_last_instruction self.instance si_rel.instruction as last_instruction %}
+    <dt{% if si_rel.as_required %} class="text-muted" title="Nur bei Bedarf"{% endif %}>{{ si_rel.instruction }}:</dt>
+    <dd style="width:20rem"{% if si_rel.as_required %} title="Nur bei Bedarf"{%endif%}>
+      {% if last_instruction %}
+      {% get_last_instruction_percentage last_instruction.date si_rel.instruction as percentage %}
+      {{last_instruction.date }}
+      <div style="float:right">{{si_rel.instruction.is_valid_for}} Jahr(e)</div>
+      <div class="progress">
+	{% if si_rel.as_required %}
+	<div class="progress-bar bg-secondary" role="progressbar" style="width:{{percentage}}%" aria-valuenow="{{percentage}}" aria-valuemin="0" aria-valuemax="100">
+	  {% if percentage == 100 %}
+	  nicht mehr gültig
+	  {% else %}
+	  {{percentage}} %
+	  {% endif %}
+	</div>
+	{% else %}
+	<div class="progress-bar bg-{% if percentage <= 80 %}success{% elif percentage <= 95 %}warning{% else %}danger{% endif %}" role="progressbar" style="width:{{percentage}}%" aria-valuenow="{{percentage}}" aria-valuemin="0" aria-valuemax="100">
+	  {% if percentage == 100 %}
+	  nicht mehr gültig
+	  {% else %}
+	  {{percentage}} %
+	  {% endif %}
+	</div>
+	{% endif %}
+      </div>
+      
+    {% else %}
+      <span class="text-danger">Noch nie</span>
+    {% endif %}
+    </dd>
+    {% endfor %}
+  </dl>
   {% with wg=self.instance.get_workgroup.specific %}
   <h6 class="text-primary mt-3">
-    Arbeitsgruppe: {{wg.title_trans}}
+    Arbeitsgruppe: {{wg.title_trans}} 
     (Leitung: {{wg.get_head.specific.title_trans}})
+    <a href="{% url "rai_userinput_workgroup_edit" wg.pk %}">(Editieren)</a>
   </h6>
   <div>
     <address>
@@ -48,62 +90,12 @@
   <ul class="list-group collapse" id="workgroup_members_collapsable">
     {% for member in self.instance.get_workgroup.specific.get_members %}
     {% if self.instance.specific != member.specific %}
-    <li class="list-group-item mb-0">
-      <h6>{{member.specific.title_trans}}</h6>
-      <p class="text-muted mb-1">Dosimeter: {{member.get_dosemeter_display}}<br />
-	{% for si_rel in member.needs_safety_instructions.all %}
-	<span class="badge badge-info">{{si_rel}}</span>
-	{% endfor %}
-      </p>
+    <li class="list-group-item mb-0 d-flex">
+      {% include "userinput/rubionuser/rai/shared/user-info.html" with user=member%}
     </li>
     {% endif %}
     {% endfor %}
   </ul>
-  <h5 class="text-primary">
-    <a class="hideshowbutton" href="#workgroup_project_collapsable" data-toggle="collapse" aria-expanded="false">
-      <span class="downBtn mr-1"><i class="fas fa-angle-down"></i></span>
-      <span class="upBtn mr-1"><i class="fas fa-angle-up"></i></span>
-      Aktive Projekte der Arbeitsgruppe
-    </a>
-  </h5>
-  <ul class="list-group collapse" id="workgroup_project_collapsable">
-    {% for project in self.instance.get_workgroup.specific.get_projects %}
-    <li class="list-group-item mb-0">
-      <h6>{{ project.title_trans }}</h6>
-      <p class="mt-025 mb-2 text-secondary">Läuft bis: {{project.expire_at|default:"Kein Auslaufdatum gesetzt"}}</p>
-      <div class="d-flex">
-	<div class="w-50">
-	  <p class="mt-025 mb-2 text-secondary">
-	    <span style="font-size:larger; " >Genutzte Methoden</span>
-	    <ul class="mb-2 text-secondary">
-	      {% for method_rel in project.related_methods.all %}
-	      <li>{{method_rel.page.title_trans}}</li>
-	      {% endfor %}
-	    </ul>
-	  </p>
-	</div>
-	<div class="w-50">
-	  <span class="text-secondary" style="font-size:larger">Genutzte Nuklide:</span>
-	  <ul class="text-secondary">
-	    {% for nuclide_rel in project.related_nuclides.all %}
-	    <li>{{nuclide_rel.snippet.mass}}-{{nuclide_rel.snippet.element}}
-	      <dl class="text-muted inline text-secondary">
-		<dt class="text-secondary">maximale Bestellmenge (in MBq):</dt>
-		<dd class="text-secondary">{{nuclide_rel.max_order|default:"Nicht angegeben"}}</dd>
-		<dt class="text-secondary">pro Experiment (in MBq):</dt>
-		<dd class="text-secondary">{{nuclide_rel.amount_per_experiment}}</dd>
-		<dt class="text-secondary">Raum:</dt>
-		<dd class="text-secondary">{{nuclide_rel.room|default:"nicht angegeben"}}</dd>
-	      </dl>
-	    </li>
-	    
-	    {% empty %}
-	    <li>Keine</li>
-	    {% endfor %}
-	  </ul>
-	  
-	</div>
-    </li>
-    {% endfor %}
-  </ul>
+  {% include 'userinput/rai/shared/project-list.html' with object=self.instance projects=projects combine=True  activeTitle="Aktive Projekte der Arbeitsgruppe" closedTitle="Abgeschlossene Projekte der Arbeitsgruppe"%}
+
 </div>
