@@ -102,8 +102,9 @@ edit_staff_user_handler = eh.RAIPillsPanel([
     eh.RAIObjectList([
         eh.RAICollapsablePanel([
             eh.RAIFieldRowPanel([
-                eh.RAIFieldPanel ('last_name', classname="col-md-5"),
-                eh.RAIFieldPanel ('first_name', classname="col-md-5"),
+                eh.RAIFieldPanel ('grade', classname="col-md-2"),
+                eh.RAIFieldPanel ('last_name', classname="col-md-4"),
+                eh.RAIFieldPanel ('first_name', classname="col-md-4"),
                 eh.RAIFieldPanel ('sex', classname="col-md-2", widget=RAISelect),
                 eh.RAIFieldPanel ('email', classname="col-md-4"),
                 eh.RAIFieldPanel ('room', classname="col-md-4"),
