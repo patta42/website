@@ -112,6 +112,9 @@ class RAIDocumentOnDemand:
         return 'rai/automatic_files/'+self.identifier+'/<pk>/'
     def create_url_name(self):
         return 'rai_automatic_files_'+self.identifier
+    def register_listeners(self):
+        # register to any signals here. 
+        pass
     def register(self):
         print('Registering {}'.format(self))
         @hooks.register('rai_document_on_demand')
@@ -126,7 +129,7 @@ class RAIDocumentOnDemand:
                     name = self.create_url_name()
                 )
             ]
-        
+        self.register_listeners()
 
 def rai_register_document_on_demand(kls):
     cls = kls()
