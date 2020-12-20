@@ -116,7 +116,6 @@ class RAIDocumentOnDemand:
         # register to any signals here. 
         pass
     def register(self):
-        print('Registering {}'.format(self))
         @hooks.register('rai_document_on_demand')
         def register_with_wagtail():
             return (self.identifier, self)
