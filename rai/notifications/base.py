@@ -3,6 +3,8 @@ from pprint import pprint
 from .models import NotificationTemplate
 
 from django.core.exceptions import ImproperlyConfigured
+from django.core.mail import EmailMessage
+from django.conf import settings as DJANGO_SETTINGS 
 from django.db.models.signals import pre_save, post_save
 from django.template import Template, Context
 from django.template.loader import get_template
@@ -14,6 +16,7 @@ from wagtail.core import hooks
 from wagtail.core.models import Page 
 from wagtail.core.signals import page_published, page_unpublished
 
+from website.models import SentMail
 
 class RAIListener:
     model = None
@@ -55,6 +58,7 @@ class RAIListener:
             if self.signal == 'page_published':
                 revisions = self.new_instance.revisions.order_by('-created_at')
                 self.old_instance = revisions[1].as_page_object()
+                self.changing_user = revisions[0].user
             else:
                 self.old_instance = self.model.objects.get(pk = self.new_instance.pk)
         if self.trigger_check():
@@ -65,9 +69,17 @@ class RAIListener:
         trigger_check is called to decide whether the listener should
         execute self.process()
 
-        subclasses should implement this and return True or False
+        this method reads the corresponding setting, checks if django runs in debug mode and
+        returns True or False, accordingly. Subclasses should call this and implememnt their 
+        own logic.
         """
-        pass
+        if DJANGO_SETTINGS.DEBUG:
+            return True
+        
+        from .register import UseRAINotifications
+        setting =  UseRAINotifications()
+        return setting.value 
+        
         
     def process(self):
         # subclasses should implement this
@@ -77,11 +89,12 @@ class RAIFieldChangedListenerMixin:
     fields = []
 
     def trigger_check(self):
-        for field in self.fields:
-            old = getattr(self.old_instance, field)
-            new = getattr(self.new_instance, field)
-            if  old != new: 
-                return True
+        if super().trigger_check():
+            for field in self.fields:
+                old = getattr(self.old_instance, field)
+                new = getattr(self.new_instance, field)
+                if  old != new: 
+                    return True
         return False
                 
 class NotificationTemplateMixin:
@@ -91,7 +104,8 @@ class NotificationTemplateMixin:
     template_name_en = None
         
     context_definition = {}
-
+    mails_to_send = []
+    
     def register_template(self):
         """
         Adds the notification template to the database to allow
@@ -198,10 +212,26 @@ class NotificationTemplateMixin:
                 }
             })
         return options
+    def add_mail(self, receivers, text, subject):
+        self.mails_to_send.append({
+            'receivers' : receivers,
+            'text' : text,
+            'subject' : subject
+        })
 
+    def process(self):
+        for mailinfo in self.mails_to_send:
+            mail = EmailMessage(
+                mailinfo['subject'],
+                mailinfo['text'],
+                DJANGO_SETTINGS.RUBION_MAIL_FROM,
+                mailinfo['receivers']
+            )
+            mail.send()
+            SentMail.from_email_message(mail).save()
     
     
-class RAINotification(RAIListener, NotificationTemplateMixin):
+class RAINotification(NotificationTemplateMixin, RAIListener):
     title = None
     label = None
     help_text = None
