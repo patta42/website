@@ -48,6 +48,7 @@ class RAIListener:
 
     def signal_received(self, **kwargs):
         self.new_instance = kwargs['instance']
+        self.signal_kwargs = kwargs 
         if issubclass(self.new_instance.__class__, Page):
             self.new_instance = self.new_instance.specific
         if self.needs_old_instance:
