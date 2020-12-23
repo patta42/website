@@ -22,10 +22,11 @@ class RAIListener:
     needs_old_instance = True
     old_instance = None
 
+    
     def register(self):
         self.register_signal()
         
-    def register_signal(self):
+    def register_signal(self, weak = True):
         """
         Registers the signal
         """
@@ -41,7 +42,8 @@ class RAIListener:
         if signal:
             signal.connect(
                 self.signal_received, sender=self.model,
-                dispatch_uid = self.identifier
+                dispatch_uid = self.identifier,
+                weak = weak
             )
 
     def signal_received(self, **kwargs):
@@ -116,7 +118,19 @@ class NotificationTemplateMixin:
                 template_en = template_string_en
             )
             nt.save()
-            
+
+    def get_template(self, lang = 'de'):
+        nt = NotificationTemplate.objects.get(notification_id = self.identifier)
+        if lang == 'de':
+            return nt.template
+        if lang == 'en':
+            return nt.template_en
+    def get_subject(self, lang = 'de'):
+        nt = NotificationTemplate.objects.get(notification_id = self.identifier)
+        if lang == 'de':
+            return nt.subject
+        if lang == 'en':
+            return nt.subject_en
     def _get_query_from_definition(self, definition):
         cb = definition.get('preview_options_callback', None)
         
