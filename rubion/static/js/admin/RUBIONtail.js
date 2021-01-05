@@ -1,5 +1,6 @@
 
 
+
 $R = {
     urlParam : function(name){
 	var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
@@ -14,9 +15,15 @@ $R = {
     function(name) { 
         $R['is' + name] = function(obj) {
               return toString.call(obj) == '[object ' + name + ']';
-    }; 
-});
-
+	}; 
+    }
+);
+$R.swap = function(a,p1,p2){
+    var tmp  = a[p1];
+    a[p1] = a[p2];
+    a[p2] = tmp;
+    return a;
+}
 $R.generic = {
     Modal : (function(elem){
 	
@@ -737,13 +744,39 @@ $R.message = function(type, content, duration){
 	.addClass('alert-'+type)
 	.hide()
 	.appendTo($container)
-	.show(200)
-    window.setTimeout(
-	function(){
-	    $msg.hide(200, function(){$msg.remove()}) 
+    if (duration == 0){
+	$msg.addClass('alert-dismissible')
+	$msg.append($('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>'))
+    }
+    $msg.show(200, function(){
+	if (duration > 0){
+	    window.setTimeout(
+		function(){
+		    $msg.hide(200, function(){$msg.remove()}) 
+		}
+		, duration
+	    )
 	}
-	, duration
-    )
+    })
+}
+$R.copy2clip = function(text, msg){
+    var $txt = $('<input>')
+	.val(text)
+	.appendTo($('body').first())
+	.css({
+	    position : 'absolute',
+	    top : '-10000px',
+	    height : '-10000px',
+	    width : '0px',
+	    height: '0px'
+	});
+    $txt[0].select()
+    $txt[0].setSelectionRange(0,99999);
+    document.execCommand('copy');
+    if (msg !== undefined){
+	$R.message('info', msg)
+    }
+    $txt.remove()
 }
 $(document).on(
     'rubiontail.baseloaded',
