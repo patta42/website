@@ -571,12 +571,18 @@ from rai.base import rai_register
 from rai.files.base import register_collection
 
 from rai.notifications.base import register_listener
-
+from rai.mail.base import register_mail_template
 
 from userinput.rai.register import (
     RAIUserInputGroup, RAIRadiationSafetyGroup, RAIScientificOutputGroup
 )
-from userinput.rai.rubionuser.notifications import RUBIONUserChangedNotification
+from userinput.rai.rubionuser.notifications import (
+    RUBIONUserChangedNotification, RUBIONUserReceivedKeyNotification,
+    RUBIONUserInactivateNotification, RUBIONUserInactivatedByRUBIONNotification,
+    RUBIONUserReactivatedByRUBIONNotification, RUBIONUserChangedWorkGroupNotification
+)
+from userinput.rai.projects.notifications import ProjectAcceptedNotification
+from userinput.rai.workgroup.notifications import WorkgroupAcceptedNotification
 from userinput.rai.collections import (
     RUBIONUserDocumentCollection, RUBIONUserOnDemandDocumentCollection
 )
@@ -585,7 +591,17 @@ from userinput.rai.views.generic import add_nuclide, add_publication, add_thesis
 rai_register(RAIUserInputGroup)
 rai_register(RAIScientificOutputGroup)
 rai_register(RAIRadiationSafetyGroup)
+
 register_listener(RUBIONUserChangedNotification)
+register_listener(RUBIONUserReceivedKeyNotification)
+register_listener(RUBIONUserInactivateNotification)
+register_listener(RUBIONUserInactivatedByRUBIONNotification)
+register_listener(RUBIONUserReactivatedByRUBIONNotification)
+register_listener(RUBIONUserChangedWorkGroupNotification)
+
+register_mail_template(ProjectAcceptedNotification)
+register_mail_template(WorkgroupAcceptedNotification)
+
 register_collection(RUBIONUserDocumentCollection)
 register_collection(RUBIONUserOnDemandDocumentCollection)
 
