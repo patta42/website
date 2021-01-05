@@ -12,9 +12,15 @@ from django.template.loader import get_template
 
 from inspect import getmembers, isfunction, getmodulename, getfile
 
+from userinput.signals import (
+    post_page_move, pre_page_move
+)
+
 from wagtail.core import hooks
 from wagtail.core.models import Page 
-from wagtail.core.signals import page_published, page_unpublished
+from wagtail.core.signals import (
+    page_published, page_unpublished,
+)
 
 from website.models import SentMail
 
@@ -42,6 +48,11 @@ class RAIListener:
             signal = page_published
         if self.signal == 'page_unpublished':
             signal = page_unpublished
+        if self.signal == 'pre_page_move':
+            signal = pre_page_move
+        if self.signal == 'post_page_move':
+            signal = post_page_move
+            
         if signal:
             signal.connect(
                 self.signal_received, sender=self.model,
@@ -59,8 +70,14 @@ class RAIListener:
                 revisions = self.new_instance.revisions.order_by('-created_at')
                 self.old_instance = revisions[1].as_page_object()
                 self.changing_user = revisions[0].user
+            elif self.signal in  ['pre_page_move', 'post_page_move']:
+                self.old_workgroup = kwargs['parent_page_before'].get_parent().specific
+                self.new_workgroup = kwargs['parent_page_after'].get_parent().specific
             else:
                 self.old_instance = self.model.objects.get(pk = self.new_instance.pk)
+            if self.signal == 'post_page_move':
+                revisions = self.new_instance.revisions.order_by('-created_at')
+                self.changing_user = revisions[0].user
         if self.trigger_check():
             self.process()
 
@@ -212,6 +229,7 @@ class NotificationTemplateMixin:
                 }
             })
         return options
+
     def add_mail(self, receivers, text, subject):
         self.mails_to_send.append({
             'receivers' : receivers,
