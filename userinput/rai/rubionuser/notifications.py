@@ -1,15 +1,32 @@
 from rai.notifications.base import RAINotification
 from userdata.models import StaffUser 
-from userinput.models import RUBIONUser
+from userinput.models import RUBIONUser, WorkGroup
 import userinput.templatetags.rubionuser_notification_tags as ru_tags
+import userinput.templatetags.workgroup_notification_tags as wg_tags
 import userdata.templatetags.staff_notification_tags as staff_tags
 
 def get_preview_users():
     return RUBIONUser.objects.active()
 
-class RUBIONUserChangedNotification(RAINotification):
+def get_preview_staff():
+    '''only show staff that has any permissions in RUIONtail'''
+    return StaffUser.objects.filter(rai_group__isnull = False).distinct().order_by('last_name')
+
+class RUBIONUserNotification(RAINotification):
     model = RUBIONUser
     signal = 'page_published'
+
+    def process(self):
+        language = self.new_instance.preferred_language
+        self.add_mail(
+            receivers = [self.new_instance.email],
+            text = self.render_template(self.get_template(lang = language), **self.get_mail_kwargs()),
+            subject = self.get_subject(lang = language)
+        )
+        super().process()
+
+
+class RUBIONUserChangedNotification(RUBIONUserNotification):
     internal = True
     title = 'Nutzer: Nutzerdaten wurden geändert.'
     identifier = 'rubionuser.data_changed'
@@ -30,3 +47,191 @@ class RUBIONUserChangedNotification(RAINotification):
             'preview_options_callback': get_preview_users
         }
     }
+    fields = ['name_db', 'first_name_db', 'academic_title', 'labcoat_size', 'overshoe_size', 'entrance']
+
+    def process(self):
+        return
+    
+
+class RUBIONUserReceivedKeyNotification(RUBIONUserNotification):
+    internal = False
+    title = 'Nutzer: Dem Nutzer wurde ein Schlüssel zugewiesen.'
+    identifier = 'rubionuser.received_key'
+    description = 'Wird versendet, wenn einem Nutzer ein Schlüssel zugewiesen wird.'
+    template_name = 'userinput/rubionuser/rai/notifications/rubionuser-changed.html'
+    help_text = ''
+    context_definition = {
+        'user' : {
+            'tags' : ru_tags,
+            'label' : 'Nutzer',
+            'prefix' : 'user',
+            'preview_options_callback': get_preview_users
+        }
+    }
+    fields = ['key_number']
+    def trigger_check(self):
+        return super().trigger_check() and self.old_instance.key_number == '' and self.new_instance.key_number != ''
+
+    def get_mail_kwargs(self):
+        return { 'user' : self.new_instance }
+    
+
+class RUBIONUserInactivateNotification(RUBIONUserNotification):
+    identifier = 'rubionuser.inactivated_by_AG'
+    description = 'Wird an den Nutzer versendet, wenn er durch die Gruppenleitung (oder eine von ihr beauftragte Person) inaktiviert wurde.'
+    title = 'Nutzer: Nutzer wurde durch AG-Mitglied aus der Arbeitsgruppe entfernt.'
+    internal = False
+    template_name = 'userinput/rubionuser/rai/notifications/rubionuser-changed.html'
+    help_text = ''
+    context_definition = {
+        'user' : {
+            'tags' : ru_tags,
+            'label' : 'inaktivierter Nutzer',
+            'prefix' : 'user',
+            'preview_options_callback': get_preview_users
+        },
+        'iuser' : {
+            'tags' : ru_tags,
+            'label' : 'Nutzer, der die Inaktivierung veranlasst',
+            'prefix' : 'iuser',
+            'preview_options_callback': get_preview_users
+        },
+    }
+    def trigger_check(self):
+        # it seems that `locked` is unified through the PageRevisions, at least of all them seem to have the same value.
+        # We should check for expire_at instead
+        is_locked = super().trigger_check() and self.new_instance.expire_at is not None and self.old_instance.expire_at is None
+        # check inactivating user...
+        try:
+            inactivator = self.changing_user.rubionuser_set.get()
+        except RUBIONUser.DoesNotExist:
+            # changing user is no rubionuser
+            return False
+        
+        return is_locked and inactivator.get_workgroup() == self.old_instance.get_workgroup()
+
+    def get_mail_kwargs(self):
+        return {
+            'user' : self.new_instance,
+            'iuser' : self.changing_user.rubionuser_set.get()
+        }   
+
+
+class RUBIONUserInactivatedByRUBIONNotification(RUBIONUserNotification):
+    identifier = 'rubionuser.inactivated_by_RUBION'
+    description = 'Wird an den Nutzer versendet, wenn er durch das RUBION inaktiviert wurde.'
+    title = 'Nutzer: Nutzer wurde durch RUBION inaktiviert.'
+    internal = False
+    template_name = 'userinput/rubionuser/rai/notifications/rubionuser-changed.html'
+    help_text = ''
+    context_definition = {
+        'user' : {
+            'tags' : ru_tags,
+            'label' : 'inaktivierter Nutzer',
+            'prefix' : 'user',
+            'preview_options_callback': get_preview_users
+        },
+        'staff' : {
+            'tags' : staff_tags,
+            'label' : 'Mitarbeiter, der die Inaktivierung veranlasst',
+            'prefix' : 'staff',
+            'preview_options_callback': get_preview_staff
+        },
+    }
+    
+    def trigger_check(self):
+        is_locked = super().trigger_check() and self.new_instance.expire_at is not None and self.old_instance.expire_at is None
+        # check inactivating user...
+        if self.changing_user.staffuser_set.count() > 0:
+            return is_locked 
+        else:
+            return False
+
+    def get_mail_kwargs(self):
+        return {
+            'user' : self.new_instance,
+            'staff' : self.changing_user.staffuser_set.get()
+        }
+
+
+class RUBIONUserReactivatedByRUBIONNotification(RUBIONUserNotification):
+    identifier = 'rubionuser.reactivated'
+    description = 'Wird an den Nutzer versendet, wenn er re-aktiviert wurde.'
+    title = 'Nutzer: Ein inaktiver Nutzer wurde durch einen RUBION-Mitarbeiter re-aktiviert.'
+    internal = False
+    template_name = 'userinput/rubionuser/rai/notifications/rubionuser-changed.html'
+    help_text = ''
+    context_definition = {
+        'user' : {
+            'tags' : ru_tags,
+            'label' : 're-aktivierter Nutzer',
+            'prefix' : 'user',
+            'preview_options_callback': get_preview_users
+        },
+        'staff' : {
+            'tags' : staff_tags,
+            'label' : 'Mitarbeiter, der die Re-Aktivierung veranlasst',
+            'prefix' : 'staff',
+            'preview_options_callback': get_preview_staff
+        },
+    }
+    def trigger_check(self):
+        was_locked = super().trigger_check() and self.new_instance.expire_at is None and self.old_instance.expire_at is not None
+        # check inactivating user...
+        if self.changing_user.staffuser_set.count() > 0:
+            return was_locked 
+        else:
+            return False
+        
+    def get_mail_kwargs(self):
+        return {
+            'user' : self.new_instance,
+            'staff' : self.changing_user.staffuser_set.get()
+        }
+
+
+class RUBIONUserChangedWorkGroupNotification(RUBIONUserNotification):
+    identifier = 'rubionuser.changed_workgroup'
+    signal = 'post_page_move'
+    description = 'Wird an den Nutzer versendet, wenn er in eine andere AG verschoben wurde.'
+    title = 'Nutzer: In andere AG verschoben.'
+    internal = False
+    template_name = 'userinput/rubionuser/rai/notifications/rubionuser-changed.html'
+    help_text = ''
+    context_definition = {
+        'user' : {
+            'tags' : ru_tags,
+            'label' : 'verschobener Nutzer',
+            'prefix' : 'user',
+            'preview_options_callback': get_preview_users
+        },
+        'staff' : {
+            'tags' : staff_tags,
+            'label' : 'Mitarbeiter, der die Verschiebung veranlasst',
+            'prefix' : 'staff',
+            'preview_options_callback': get_preview_staff
+        },
+        'old_wg' : {
+            'tags' : wg_tags,
+            'label' : 'alte AG',
+            'prefix' : 'old_wg',
+            'preview_model' : WorkGroup
+        },
+        'new_wg' : {
+            'tags' : wg_tags,
+            'label' : 'neue AG',
+            'prefix' : 'new_wg',
+            'preview_model' : WorkGroup
+        }
+
+    }
+
+    def get_mail_kwargs(self):
+        return {
+            'user' : self.new_instance,
+            'staff' : self.changing_user.staffuser_set.get(),
+            'new_wg' : self.new_workgroup,
+            'old_wg' : self.old_workgroup,
+        }
+    def trigger_check(self):
+        return super().trigger_check() and self.old_workgroup != self.new_workgroup
