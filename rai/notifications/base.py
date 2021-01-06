@@ -35,7 +35,7 @@ class RAIListener:
     def register(self):
         self.register_signal()
         
-    def register_signal(self, weak = True):
+    def register_signal(self, weak = False):
         """
         Registers the signal
         """
@@ -121,7 +121,6 @@ class NotificationTemplateMixin:
     template_name_en = None
         
     context_definition = {}
-    mails_to_send = []
     
     def register_template(self):
         """
@@ -231,6 +230,9 @@ class NotificationTemplateMixin:
         return options
 
     def add_mail(self, receivers, text, subject):
+        if not hasattr(self, 'mails_to_send'):
+            self.mails_to_send = []
+            
         self.mails_to_send.append({
             'receivers' : receivers,
             'text' : text,
@@ -245,6 +247,7 @@ class NotificationTemplateMixin:
                 DJANGO_SETTINGS.RUBION_MAIL_FROM,
                 mailinfo['receivers']
             )
+                
             mail.send()
             SentMail.from_email_message(mail).save()
     
@@ -274,3 +277,7 @@ class RAINotification(NotificationTemplateMixin, RAIListener):
 def register_listener(Listener):
     listener = Listener()
     listener.register()
+
+def register_listeners(lst):
+    for l in lst:
+        register_listener(l)
