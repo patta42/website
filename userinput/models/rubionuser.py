@@ -777,7 +777,7 @@ class RUBIONUser (_RUBIONUserModelDefinition, ActiveInactiveMixin ):
         return RUBIONUser.objects.filter(linked_user = user).exists()
         
     @staticmethod
-    def from_user(user):
+    def get_from_user(user):
         try:
             return user.rubionuser_set.get()
         except RUBIONUser.DoesNotExist:
