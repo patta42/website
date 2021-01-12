@@ -10,6 +10,8 @@ from rai.filters import RAIFilter, RAIFilterOption, RAIStatusFilter
 
 from userdata.models import SafetyInstructionsSnippet
 
+from userinput.models import Project
+
 class RUBIONUserStatusFilter(RAIStatusFilter):
     label = _l('User status')
     filter_id = 'user_status'
@@ -100,36 +102,26 @@ class RUBIONUserInstrumentFilter(RAIFilter, metaclass = RUBIONUserInstrumentFilt
         Filters the users by their instrument usage
         """
 
-        # I don't know how to do this on a pure DB level
-        #
-        # Hopefully this does not take too long
-        #
-        # Maybe one way would be to
-        #
-        # get the selected instrument
-        # get the corresponding methods
-        # get the workgroup
-        # get the users
-        # compare the two qs
-        #
-        # Best would be to create a relation 
-        # workgroup <-> user on the DB level
-        exclude = []
+        i2prfield = 'method2instrumentrelation_set__method__project2methodrelation_set__project_page'
+        i2prval = 'method2instrumentrelation__method__project2methodrelation__project_page'
+        instruments = InstrumentPage.objects.filter(pk__in = self.value)
+        project_pks = instruments.prefetch_related(i2prfield).values_list(i2prval, flat = True).distinct()
 
-        
-        
-        for user in self.qs.all():
-            do_exclude = True
-            for instrument in user.get_instruments():
-                
-                if instrument.pk in self.value:
-                    do_exclude = False
-                    break
+        # the paths for the projects
+        project_paths = Project.objects.filter(pk__in = project_pks, locked = False).values_list('path', flat = True)
 
-            if do_exclude:
-                exclude.append(user.pk)
-            
-        return self.qs.exclude(pk__in = exclude)
+        # In the tree, a project is 2 levels deeper than a workgroup, and one level is 4 digits in the
+        # path. Thus, project_path[0:-8] gives the workgroups
+        # use list(set(...)) to include only unique values
+        
+        workgroup_paths = list(set([pp[0:-8] for pp in project_paths]))
+
+        # now make a Q-object from the paths
+        q = Q()
+        for wg in workgroup_paths:
+            q |= Q(path__startswith = wg)
+
+        return self.qs.filter(q)
 
 
 
