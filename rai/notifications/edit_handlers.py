@@ -11,11 +11,15 @@ from rai.edit_handlers import RAIFieldPanel, RAICollectionPanel
 class RAINotificationTemplateField(RAIFieldPanel):
     object_template = 'rai/notifications/edit_handlers/template-field.html'
 
+    
 class RAINotificationContextField(RAIFieldPanel):
     object_template = 'rai/notifications/edit_handlers/template-context-field.html'
     preview_fields_template = 'rai/notifications/edit_handlers/template-context-field-preview-fields.html'
     def render(self):
-        template_tags = REGISTERED_NOTIFICATIONS[self.instance.notification_id].get_template_tags()
+        notification = REGISTERED_NOTIFICATIONS[self.instance.notification_id]
+        if callable(notification):
+            notification = notification()
+        template_tags = notification.get_template_tags()
         return mark_safe(
             render_to_string(
                 self.object_template,
@@ -27,7 +31,11 @@ class RAINotificationContextField(RAIFieldPanel):
         )
 
     def render_preview_fields(self):
-        preview_options = REGISTERED_NOTIFICATIONS[self.instance.notification_id].get_preview_options()
+        notification = REGISTERED_NOTIFICATIONS[self.instance.notification_id]
+        if callable(notification):
+            notification = notification()
+        preview_options = notification.get_preview_options()
+
         return mark_safe(
             render_to_string(
                 self.preview_fields_template,
@@ -41,12 +49,22 @@ class RAINotificationContextField(RAIFieldPanel):
 class RAINotificationTemplateEditor(RAICollectionPanel):
     template = 'rai/notifications/edit_handlers/template-editor.html'
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, lang = 'de', *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if lang == 'de':
+            tpl_name = 'template'
+        else:
+            tpl_name = 'template' + '_' + lang
+        self.lang = lang
         self.children = [
             RAINotificationContextField('notification_id'),
-            RAINotificationTemplateField('template'),
+            RAINotificationTemplateField(tpl_name),
         ]
+
+    def clone_kwargs(self): 
+        kwargs = super().clone_kwargs()
+        kwargs['lang'] = self.lang
+        return kwargs
 
     def render_as_object(self):
         return self.render()
