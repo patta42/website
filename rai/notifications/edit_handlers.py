@@ -51,6 +51,11 @@ class RAINotificationTemplateEditor(RAICollectionPanel):
 
     def __init__(self, lang = 'de', *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # lang might be None
+        if not lang:
+            lang = 'de'
+            
         if lang == 'de':
             tpl_name = 'template'
         else:
