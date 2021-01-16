@@ -9,12 +9,15 @@ def render_template_preview(request):
         if callable(notification):
             notification = notification()
         kwargs = {}
+        lang = request.POST.get('lang', 'de')
+        if lang not in ['de', 'en']:
+            lang = 'de'
         for key, definition in notification.context_definition.items():
             pk = request.POST.get(definition['prefix'], None)
             if pk:
                 kwargs.update({definition['prefix']: pk})
         try:
-            preview = notification.render_preview(request.POST['template'], **kwargs)
+            preview = notification.render_preview(request.POST['template'], lang = lang, **kwargs)
             return JsonResponse({
                 'status' : 200,
                 'preview': preview
