@@ -514,10 +514,26 @@ $.widget('raiwidgets.templateeditor', {
     _create : function(){
 	this.previewUrl = this.element.data('template-editor-preview-url')
 	this.notificationId = this.element.data('template-editor-notification-id')
-	this.$template = this._$('textarea[name=template]').first()
-	
+	this.$template = this._$('textarea[name^="template"]').first()
+	this.lang = this.element.data('template-editor-preview-lang')
 	this.$btnContainer = this._$('.template-editor-button-container').first()
 
+	// update ids etc if there are multiple instances of this on a single page
+	var self = this
+	this._$('a[data-toggle="tab"]').each(function(){
+	    $(this)
+		.attr('id', $(this).attr('id')+'-'+self.uuid)
+		.attr('href', $(this).attr('href')+'-'+self.uuid)
+		.attr('aria-controls', $(this).attr('href')+'-'+self.uuid)
+	})
+    	this._$('div.tab-pane').each(function(){
+	    $(this)
+		.attr('id', $(this).attr('id')+'-'+self.uuid)
+		.attr('aria-labelledby', $(this).attr('href')+'-'+self.uuid)
+	})
+	   
+
+	
 	// assign functionality for buttons and preview field
 	var self = this
 	this.$btnContainer.find('a.dropdown-item').each(function(){
@@ -562,17 +578,17 @@ $.widget('raiwidgets.templateeditor', {
 	    insert = '{{ '+prefix+'|'+filter+' }}'
 	this.$template.val(pre+insert+post)
 	textarea.selectionStart = start + insert.length
-	textarea.selectionStart = start + insert.length
 	this._setPreviewInvalid()
     },
     _getPreview : function(){
-	var data = {}
-	data['template'] = this.$template.val()
-	data['notification_id'] = this.notificationId
+	var data = {};
+	data['template'] = this.$template.val();
+	data['notification_id'] = this.notificationId;
+	data['lang'] = this.lang;
 	this.$previewOptions.each(function(){
 	    data[$(this).attr('name')] = $(this).val()
 	})
-	var self = this
+	var self = this;
 	$R.post(this.previewUrl, {
 	    data : data,
 	    beforeSend : function(){
@@ -591,7 +607,12 @@ $.widget('raiwidgets.templateeditor', {
 		    self.$previewWrapper
 			.removeClass('template-editor-preview-loading')
 			.removeClass('template-editor-preview-not-loaded')
-		    self.$preview.html('<pre>'+data['preview']+'</pre>')
+		    if (data['status'] == '200'){
+			self.$preview.html('<pre>'+data['preview']+'</pre>')
+		    }
+		    if (data['status'] == '500'){
+			self.$preview.html('<div class="alert alert-danger no-triangle"><h4 class="alert-heading">Ein Fehler ist aufgetreten</h4>'+data['error']+'</div>')
+		    }
 		}
 	    )
     }
@@ -999,20 +1020,49 @@ $R.Widgets = {
 			showToday: true,
 			showClear: true,
 			showClose: true
+		    },
+		    tooltips: {
+			today: 'Gehe zu heute',
+			clear: 'Auswahl löschen',
+			close: 'Schließen',
+			selectMonth: 'Monat auswählen',
+			prevMonth: 'Vorheriger Monat',
+			nextMonth: 'Nächster Monat',
+			selectYear: 'Jahr auswählen',
+			prevYear: 'Vorheriges Jahr',
+			nextYear: 'Nächstes Jahr',
+			selectDecade: 'Dekade auswählen',
+			prevDecade: 'Vorherige Dekade',
+			nextDecade: 'Nächste Dekade',
+			prevCentury: 'Vorheriges Jahrhundert',
+			nextCentury: 'Nächstes Jahrhundert',
+			incrementHour: 'Erhöhe Stunde',
+			pickHour: 'Stunde auswählen',
+			decrementHour:'Verringere Stunde',
+			incrementMinute: 'Erhöhe Minute',
+			pickMinute: 'Minute auswählen',
+			decrementMinute:'Verringere Minute',
+			incrementSecond: 'Erhöhe Sekunde',
+			pickSecond: 'Sekunde auswählen',
+			decrementSecond:'Verringere Sekunde'
 		    }
 			
 		}
 	    )
 	
 	$('.input-group.date').datetimepicker({
-	    format : 'YYYY-MM-DD'
+	    format : 'YYYY-MM-DD',
+	    locale : 'de'
 	})
 	    
 	$('.input-group.date-time').datetimepicker({
-	    format : 'YYYY-MM-DD HH:mm'
+	    format : 'YYYY-MM-DD HH:mm',
+	    locale : 'de'
 	})
 	$('.input-group.time').datetimepicker({
-	    format : 'HH:mm'
+	    format : 'HH:mm',
+	    locale : 'de'
+	    
 	})
 	$('.rai-comment').commenthandlers()
 	$('.show-hide-controller').showhidecontroller()
@@ -1046,7 +1096,7 @@ $R.Widgets = {
 	$('.tree-view-select').treeviewselect()
 	bsCustomFileInput.init()
 	$('a.ajaxify').ajaxify()
-	$('.panel-grid-wrapper').panelgrid()
+	$('.rai-page-chooser').pagechooser()
 
 	$('.dropdown [data-toggle="dropdown"]').on('click', function(e) {
             $(this).dropdown('toggle');
@@ -1072,6 +1122,7 @@ $R.Widgets = {
 	    $(elem).find('select.thesis-select').thesisselect()
 	})
 	$('.ajax-edit').ajaxedit()
+	$('.post-and-hide').postandhide()
 //	$('.rai-comment a[href$="#genericModal"').genericmodal()
     },
 
@@ -1237,7 +1288,7 @@ $.widget(
 	    this.$btn = $('<a href="#"></a>')
 		.append(this.$btnText)
 		.append(this.$btnIconWrapper)
-		.click(function(){self._toggle()})
+		.click(function(evt){evt.preventDefault();self._toggle()})
 	    
 	    if (this.options['buttonPos'] == 'before'){
 		this.$btn.insertBefore(this.element)
@@ -1249,9 +1300,12 @@ $.widget(
 	    } else {
 		this.element.addClass('hswidget-shown')
 	    }
-	    this._toggle()
+	    this._toggle(0)
 	},
-	_toggle : function(){
+	_toggle : function(delay){
+	    if (delay===undefined){
+		delay = 200
+	    }
 	    var label, $icon;
 	    if (this.element.hasClass('hswidget-shown')){
 		label = this.options.labelShow
@@ -1259,14 +1313,14 @@ $.widget(
 		this.element
 		    .removeClass('hswidget-shown')
 		    .addClass('hswidget-hidden')
-		    .hide(200)
+		    .hide(delay)
 	    } else {
 		label = this.options.labelHide
 		$icon = this.$hideIcon
 		this.element
 		    .removeClass('hswidget-hidden')
 		    .addClass('hswidget-shown')
-		    .show(200)
+		    .show(delay)
 	    }
 	    this.$btnText.text(label);
 	    this.$btnIconWrapper.empty().append($icon)
@@ -1281,7 +1335,9 @@ $.widget('raiforms.dependingfield', {
 	var self = this;
 	for (var item in dependsObj) {
 	    var $item = $('[name='+item+']')
+	    console.log('$item', $item, 'item', item)
 	    $item.change(function(evt){
+		console.log('in change evt', $(this))
 		self._toggle($(this), dependsObj[item])
 	    }).each(
 		function(){
@@ -1291,16 +1347,18 @@ $.widget('raiforms.dependingfield', {
 	}
     },
     _toggle : function($elem, values){
+
 	var self = this, $fg;
 	if (self.element.hasClass('form-group')){
 	    $fg = self.element;
 	} else {
 	    $fg = self.element.find('.form-group')
 	}
-	$elem = $elem.filter(':checked')
+	if($elem[0].tagName != "SELECT"){
+	    $elem = $elem.filter(':checked')
+	}
 	var checked = $elem.prop('checked') ? ':checked' : ':unchecked'
 	if (values.indexOf($elem.val()) > -1 || values.indexOf(checked) > -1 ){
-	    
 	    $fg.addClass('required')
 	    self.element.show(200);
 	} else {
@@ -1376,6 +1434,32 @@ $.widget(
 	    this.$container.remove()
 	}
 	
+    }
+)
+
+$.widget(
+    'raiwidgets.postandhide',
+    $.raiwidgets.ajaxify,
+    {
+	_collectData : function(){
+	    return { data : {
+		'notification' : this.element.data('notification-id'),
+		'page' : this.element.data('page-pk'),
+	    }}
+	},
+	_create : function(){
+	    this._super();
+	    var self = this;
+	    this.options.successCallback = function(data){self._hideAndRemove();}
+	},
+	_hideAndRemove : function(){
+	    var self = this;
+	    this.$container.hide(
+		function(){
+		    self.$container.remove()
+		}
+	    )
+	}
     }
 )
 
@@ -2095,15 +2179,34 @@ $.widget(
 		    self._toggleExplorer()
 		}
 	    )
+	    this.$list.find('dt').each(
+		function(){
+		    var $sublist = $(this).next('dd').find('dl')
+		    $(this).append(' <a class="ml-2 btn btn-outline-secondary btn-sm close-indicator"><i class="far fa-folder-open"></i>Aufklappen</a><a class="ml-2 btn btn-outline-secondary btn-sm open-indicator"><i class="far fa-folder"></i>Einklappen</a>')
+		    if ($sublist.find('[data-select-value]').length > 0){
+			$(this).append(
+			    $('<a class="ml-2  btn btn-outline-secondary btn-sm"><i class="fas fa-check-double"></i>alle übernehmen</a>')
+				.click(
+				    function(evt){
+					evt.originalEvent.selectAll = true
+				    }
+
+				)
+			)
+		    }
+		}
+	    )
 	    this.$list.find('dt').addClass('closed').click(
 		function(evt){
-		    if(evt.originalEvent.ctrlKey){
+		    console.log(evt)
+		    if(evt.originalEvent.ctrlKey || evt.originalEvent.selectAll){
 			var $next = $(this).next('dd'), data = []
 			
 			$next.find('[data-select-value]').each(function(){
 			    data.push($(this).data('select-value'))
 			})
-			var $elem = $(this)
+			var $elem = $(this).clone()
+			$elem.find('a').remove()
 			$(this).unmark({
 			    done : function(){
 				self._addAll($elem.html(), data)
@@ -2369,6 +2472,7 @@ $.widget(
 	    // shows the group in a modal
 	    var $genericModal = $('#genericModal'),
 		$modalSaveBtn = $('#btnSavegenericModal').text('Übernehmen'),
+		$modalApplyBtn = $('#btnApplygenericModal').hide(),
 		$modalBody = $genericModal.find('.modal-body').first().html(''),
 		$modalTitle = $('#genericModalTitle'),
 		$list = $('<ul class="list-group group-selection-modal" />'),
@@ -2513,411 +2617,6 @@ $.widget(
 	}
     }
 )
-$.widget(
-    /* implements a single panel of the panel grind on the home-page
-     * of RUBIONtail
-     */ 
-    'raiwidgets.panelgridpanel',
-    {
-	_create : function(parent){
-	    this.parent = parent
-	    // set options from data
-	    if (this.element.data('grid-position') !== undefined)
-		this.options['position'] = this.element.data('grid-position')
-	    if (this.element.data('grid-max-width') !== undefined)
-		this.options['maxCols'] = this.element.data('grid-max-width')
-	    if (this.element.data('grid-min-width') !== undefined)
-		this.options['minCols'] = this.element.data('grid-min-width')
-	    if (this.element.data('grid-max-height') !== undefined)
-		this.options['maxRows'] = this.element.data('grid-max-height')
-	    if (this.element.data('grid-min-width') !== undefined)
-		this.options['minRows'] = this.element.data('grid-min-height')
-	    if (this.element.data('grid-width') !== undefined)
-		this.options['colSpan'] = this.element.data('grid-width')
-	    if (this.element.data('grid-height') !== undefined)
-		this.options['rowSpan'] = this.element.data('grid-height')
-
-	    this.$parentRow = this.element.parents('.row').first()
-	    if(this.$parentRow.data('grid-columns') !== undefined){
-		this.options['colsAvailable'] = this.$parentRow.data('grid-columns')
-	    }
-	    this.$menu = this.element.find('.panel-menu').first()
-
-	    
-	},
-	isResizable : function(){
-	    return this.options['maxRows'] != this.options['minRows'] || this.options['maxCols'] != this.options['minCols']
-	},
-	isDraggable : function(){
-	    return self.options['position'] != -1
-	},
-	setDataPosition : function(row, col){
-	    this.element.data('grid-col', col)
-	    this.element.data('grid-row', row)
-	    this._addMenu()
-	},
-	_changeSize : function(rs, cs){
-	    console.log('in _changeSize', rs, cs)
-	    this.element.data('grid-width', cs)
-	    this.element.data('grid-height', rs)
-	    this.options['colSpan'] = cs
-	    this.options['rowSpan'] = rs
-	    this._trigger('sizeChanged')
-	},
-	_addMenu : function(){
-	    var self = this
-	    if (this.isResizable()){
-		// since this is called every time the layout is rendered
-		// clear menu first
-
-		this.$menu.find('*').remove()
-
-		// Built container
-		var $dropdown = $('<div />')
-		    .addClass('dropdown-menu')
-		    .attr('aria-labelled-by', 'btn_dd_'+this.uuid)
-
-		// size sub-menu-header
-		var $szHeader = $('<h6">Größe ändern</h6>')
-		    .addClass('dropdown-header')
-		    .appendTo($dropdown)
-		
-		
-		for (var rs = this.options['minRows']; rs <= this.options['maxRows']; rs++){
-		    for (var cs = this.options['minCols']; cs <= this.options['maxCols']; cs++){
-			$btn = $('<button>'+rs+'×'+cs+'</button>')
-			    .appendTo($dropdown)
-			    .attr('type','button')
-			    .data('grid-rs', rs)
-			    .data('grid-cs', cs)
-			    .addClass('dropdown-item')
-			if (
-			    this.options['colSpan'] == cs
-				&& this.options['rowSpan'] == rs
-			){
-			    $btn.addClass('disabled')
-				.attr('aria-disabled', true)
-				.attr('tabindex',-1)
-			} else {
-			    $btn.click(function(evt){
-				evt.preventDefault()
-				self._changeSize($(this).data('grid-rs'), $(this).data('grid-cs'))
-			    })
-			}
-		    }
-		}
-
-		// make menu button
-		var $menuBtn = $('<button type="button" />')
-		    .attr('id', 'btn_dd_'+this.uuid)
-		    .attr('data-toggle', 'dropdown')
-		    .attr('aria-haspopup','true')
-		    .attr('aria-expanded','false')
-		    .addClass('btn btn-xs')
-		var $iconContainer = $('<span />')
-		    .appendTo($menuBtn)
-		var $menuIcon = $('<i />')
-		    .addClass(this.options['menuIconFont'])
-		    .addClass(this.options['menuIcon'])
-		    .appendTo($iconContainer)
-	   
-	
-		this.$menu.append($menuBtn)
-		this.$menu.append($dropdown)
-
-		
-	    }
-	}
-    }
-)
-$.raiwidgets.panelgridpanel.prototype.options = {
-    rowSpan : 1,
-    colSpan : 1,
-    position : 0,
-    maxRows: 1,
-    minRows : 1,
-    maxCols : 1,
-    minCols : 1,
-    colsAvailable : 3,
-    menuIconFont:'fas',
-    menuIcon : 'fa-ellipsis-h'
-}
-
-
-$.widget(
-    /* implements the additional functionality of the "add-panel" panel
-     */
-    'raiwidgets.addpanelpanel',
-    {
-	_create : function(parent){
-	    this.parent = parent;
-	    // find checkboxes
-	    var self = this
-	    this.element.find('input[type=checkbox]').change(
-		function (evt){
-		    self._trigger('panelAdded', evt, {
-			panelKey : $(this).attr('name')
-		    })
-		}
-	    )
-	}
-    }
-)
-$.widget(
-    /* This implements the panels on the home-page of RUBIONtail
-     * 
-     * Data for sizing is included as data attributes on the single panels (aka cards)
-     */
-    'raiwidgets.panelgrid',
-    {
-	_addChild : function(child){
-	    var self = this
-	    if (child.data('raiwidgets-panelgridpanel') === undefined){
-		child.panelgridpanel({
-		    'sizeChanged' : function(){
-			self._layout()
-		    }
-		})
-	    } 
-	    var instance = child.panelgridpanel('instance')
-
-	    if (instance.options.position < 0){
-		this.appendedChildren.push(instance)
-	    } else {
-		this.children.push(instance)
-	    }
-	},
-	_sortChildren : function(){
-	    this.children.sort(
-		function(a,b) {
-		    return a.option('position') - b.option('position')
-		}
-	    )
-	},
-	_layout : function(){
-	    // clear the current grid
-	    this.element.children().remove()
-	    this._sortChildren()
-	    var row, col, r, c, grid = [],
-		childCounter = 0,
-		children = this.children.concat(this.appendedChildren),
-		rowSpans = [ 1 ],
-		area = 0
-
-	    for (var cnt = 0; cnt < children.length; cnt ++){
-		area += children[cnt].options['rowSpan'] * children[cnt].options['colSpan']
-	    }
-	    for (cnt = 0; cnt < Math.ceil(area/3); cnt ++){
-		grid.push([null, null, null])
-	    }
-	    console.log(grid, children)
-	    for (row = 0; row < grid.length && childCounter < children.length; row++){
-		for (col = 0;
-		     col < grid[row].length && childCounter < children.length;
-		     col ++){
-		    console.log('row', row, 'col', col, 'grid[row][col]', grid[row][col])
-		    if (grid[row][col] === null){
-			rowSpans[row] = Math.max(rowSpans[row], children[childCounter].options['rowSpan'])
-			for (r = 0; r < children[childCounter].options['rowSpan']; r++){
-			    // expand grid if necessary
-			    if ( r + row > grid.length - 1){
-				grid.push([null, null, null])
-				rowSpans.push(1)
-			    }
-			    // We don't check for cols that do not match...
-			    // maybe we should...
-			    for (c = 0; c < children[childCounter].options['colSpan']; c++) {
-				grid[row + r][col + c] = childCounter
-			    }
-			}
-			childCounter ++
-		    }
-		}
-	    }
-
-
-	    // inline-functions are not very nice, but anyway...
-	    
-	    var getRowSpan = function(rowIdx, colIdx, colSpan){
-//		console.log('getRowSpan with rowIdx', rowIdx, 'colIdx', colIdx, 'colSpan', colSpan, 'grid (global)', grid)
-		var span = 1
-		if (rowIdx + 1 < grid.length){
-		    var ext = true
-		    var rowCnt = rowIdx + 1
-		    
-		    while (rowCnt < grid.length && ext){
-			ext = false
-			
-			for (var colCnt = colIdx; colCnt < colIdx + colSpan; colCnt ++){
-			    if (grid[rowCnt][colCnt] == grid[rowCnt-1][colCnt]){
-				console.log('grid', rowCnt, colCnt, 'equals', rowCnt, colCnt-1)
-				console.log(grid[rowCnt][colCnt],grid[rowCnt][colCnt-1])
-				ext = true
-				span++
-				break
-			    }
-			}
-			
-			rowCnt++
-			
-		    }
-		    
-		}
-//		console.log('getRowSpan returns', span)
-		return span
-	    }
-
-	    var getColSpan = function(rowIdx, colIdx, rowSpan){
-//		console.log('getColSpan with rowIdx', rowIdx, 'colIdx', colIdx, 'rowSpan', rowSpan, 'grid (global)', grid)
-		var span = 1
-		if (colIdx < 2){
-		    var ext = true
-		    var colCnt = colIdx + 1
-		    while (colCnt < 3 && ext){
-			ext = false
-			for (var rowCnt = rowIdx; rowCnt < rowIdx + rowSpan; rowCnt++){
-			    if (grid[rowCnt][colCnt] == grid[rowCnt][colCnt-1]){
-				ext = true
-				span++
-				break
-			    }
-			}
-			colCnt ++
-			
-		    }
-		}
-//		console.log('getColSpan returns', span)
-		return span
-	    }
-
-	    function renderRow(row, col, colSpan, inner){
-
-		if (inner === undefined)
-		    inner = false
-//		console.log('renderRow with row', row, 'col', col,'colSpan', colSpan,'inner', inner)
-		var rowSpan = getRowSpan(row, col, colSpan),
-
-		    $row = $('<div />')
-		    .addClass('row panel-grid-row')
-		    .attr('data-grid-rowspan', rowSpan)
-		    .attr('data-grid-colspan', colSpan),
-		    
-		    colCnt = 0,
-		    
-		    $col
-		
-		while (colCnt < colSpan){
-		    $col = renderCol(row, col+colCnt, rowSpan, colSpan, inner)
-		    $row.append($col)
-		    colCnt += parseInt($col.data('grid-colspan'))
-		}
-		return $row
-	    }
-
-	    function renderCol(row, col, rowSpan, outerColSpan, inner){
-		// for renderCol, inner is set
-		// outerColSpan is required for the column width only
-
-//		console.log('renderCol with row', row, 'col', col,'rowSpan', rowSpan, 'outerColSpan', outerColSpan, 'inner', inner)
-		
-		var colSpan = getColSpan(row, col, rowSpan),
-
-		    $col = $('<div />')
-		    .addClass('panel-grid-col')
-		    .attr('data-grid-rowspan', rowSpan)
-		    .attr('data-grid-colspan', colSpan)
-		    .addClass('col-md-'+12/outerColSpan  * colSpan),
-		
-		    rowCnt = 0,
-
-		    $row
-		if (inner){
-		    // 
-		    
-		    // console.log('Adding panel at position',row, col)
-		    // console.log('panel number is', grid[row][col])
-		    var panel = children[grid[row][col]]
-//		    console.log('panel is ', panel)
-		    if (panel !== undefined){
-			$col.append(panel.element)
-			panel.setDataPosition(row, col)
-		    }
-		    
-		} else {
-		    while (rowCnt < rowSpan){
-			// call renderRow with inner = true
-			$row = renderRow(row+rowCnt, col, colSpan, true)
-			$col.append($row)
-			rowCnt += parseInt($row.data('grid-rowspan'))
-		    }
-		}
-		return $col
-	    }
-
-	    // loop through the grid
-	    var rowCounter = 0, $outerRow
-	    while (rowCounter < grid.length){
-		$outerRow = renderRow(rowCounter, 0, 3)
-		this.element.append($outerRow)
-		rowCounter += parseInt($outerRow.data('grid-rowspan'))
-	    }
-	},
-	_addPanel : function(evt, data){
-	    var self = this
-	    $R.post(
-		this.options['addPanelURL'],
-		{
-		    data : { panelId : data['panelKey'] }
-		}
-	    ).done(function(data){
-		var panel = $(data['html']).panelgridpanel({
-		    position : self.children.length,
-		    sizeChanged : function(){
-			self._layout()
-			self._initAddPanel()
-		    }
-		})
-		self._addChild(panel)
-		self._layout()
-		self._initAddPanel()
-	    })
-	},
-	_initAddPanel : function(){
-	    var self = this
-	    this.$addPanel = this.element.find(
-		self.options['addPanelSelector'])
-		.first()
-		.addpanelpanel({
-		    'panelAdded' : function(evt, data){ self._addPanel(evt, data) }
-		})
-	    console.log('Add panel is', this.$addPanel)
-	},
-
-	_create : function(){
-	    var self = this
-	    
-	    this.$children = this.element.find(this.options['childrenSelector'])
-	    this.children = []
-	    this.appendedChildren = []
-	    this.$children.each(
-		function(){ self._addChild($(this)) }
-	    )
-
-	    this._layout()
-	    this._initAddPanel()
-	    
-	    this.options['addPanelURL'] = this.element.data('add-panel-url')
-
-	},
-
-    }
-)
-$.raiwidgets.panelgrid.prototype.options = {
-    
-    childrenSelector : '.grid-panel',
-    addPanelSelector : '.add-panel-panel',
-    addPanelURL : ''
-}
 
 $.widget(
     'raiwidgets.checkall',
@@ -3691,6 +3390,249 @@ $.widget(
 		    }
 		)
 	}
+    }
+)
+
+$.widget(
+    'raiwidgets.pagechooser',
+    {
+	_create : function(){
+	    // is called on an input. visually hide that first.
+	    this.$hiddenContainer = $('<div class="visually-hidden-container" />')
+		.insertAfter(this.element).append(this.element)
+	    if (this.element.data('page-browser-url') !== undefined){
+		this.options.pageBrowserUrl = this.element.data('page-browser-url')
+	    }
+	    // create a container that will hold the browser
+	    this.$browserContainer = $('<div class="rai-browser" />').insertBefore(this.$hiddenContainer)
+	    this.value = this.element.val()
+	    this.title = this.element.data('selected-page-title');
+	    this.parentPage = this.element.data('selected-page-parent');
+	    
+	    var self = this;
+	    
+	    this._toggleBC()
+	    this._browse();
+	    this.$valueIndicator = $('<div class="input-group"/>')
+		.insertBefore(this.$browserContainer);
+	    this.$valueIndicatorInner = $('<input type="text"  />')
+		.addClass('form-control')
+		.appendTo(this.$valueIndicator)
+		.focus(function(){self._toggleBC()});
+	    this.$openBtn = $('<div class="input-group-append">'+
+			      '<button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="explorer" aria-haspopup="true" aria-expanded="false"></button>'+
+			      '</div>')
+		.appendTo(this.$valueIndicator);
+	    this._updValue();
+	    var self = this;
+	    this.$openBtn.find('[data-toggle="explorer"]').click(
+		function(){self._toggleBC()}
+	    )
+	},
+	_updValue : function(){
+	    if (this.value === undefined || this.value == null || this.value == ''){ 
+		this.$valueIndicatorInner.val('Nichts ausgewählt')
+	    } else {
+		this.$valueIndicatorInner.val(this.title)
+	    }
+	},
+	_browse : function($elem){
+	    var url = null, self = this, direction = 'rtl';
+	    if ($elem === undefined){
+		url = this.options.pageBrowserUrl;
+		if (this.parentPage!== undefined && this.parentPage !== null && this.parentPage !== ''){
+		    url += this.parentPage + '/';
+		} else {
+		    if (this.value !== undefined && this.value !== null && this.value !== ''){
+			url += this.value + '/';
+		    }
+		}
+		
+	    } else {
+		url = $elem.attr('href')
+		if($elem.data('slide-direction') !== undefined){
+		    direction = $elem.data('slide-direction')
+		}
+	    }
+	    $R.post(
+		url,
+		{ data: {} }
+	    ).done(
+		function(data){
+		    self._updateBrowser(data.html, direction)
+		}
+	    )
+	},
+	_updateBrowser : function(html, direction){
+	    var $bc = this.$browserContainer;
+	    var $newdiv  = $('<div />').append(this._prepareHTML(html));
+	    if ($bc.html() == ''){
+		$bc.html($newdiv);
+		return
+	    }
+
+	    if (direction === undefined){
+		direction = 'rtl'
+	    }
+
+
+
+	    var $outdiv = $bc.find('div').first();
+	    
+	    var height = $bc.height() + 2; // 1px border on both sides
+	    var width = $bc.width() + 2;
+
+	    var oldCss = $bc.css(['position', 'overflow-y', 'overflow-x']);	    
+	    var $moving = $('<div />').
+		css({
+		    'position'  : 'absolute',
+		    'left' : '0px',
+		    'width' : (2 * width + 1) + 'px',
+		    'display' : 'flex',
+		    'alignItems' : 'flex-start'
+
+		}).appendTo($bc)
+	    if (direction == 'rtl'){
+		$moving.append($outdiv).append($newdiv)
+		var target = -1*width;
+	    } else {
+		
+		$moving.append($newdiv).append($outdiv)
+		$moving.css('left', (-1*width)+'px')
+		var target = 0
+	    }
+	    $newdiv.css({
+		'width': width+'px',
+	    	'display' : 'inline-block',
+		'position': 'relative',
+		'top': '0px'
+	    });
+	    var newHeight = $newdiv.height()+'px' 
+	    $outdiv.css({
+		'width': width+'px',
+	    	'display' : 'inline-block',
+		'position': 'relative',
+		'top': '0px'
+
+	    });
+	    $bc.css({
+		'position' : 'relative',
+		'width' : width+'px',
+		'height' : height+'px',
+		'overflow' : 'hidden',
+	    })
+	    $moving.animate({'left':target+'px'}, { 'complete' : function(){
+		$moving.css({'left' : '0px'})
+		$outdiv.remove()
+	    }})
+	    console.log(newHeight)
+	    $bc.animate(
+		{
+		    'height' : newHeight
+		},
+		{
+		    'complete' : function(){
+			$bc.prepend($newdiv);
+			$moving.remove();
+			$bc.css(oldCss);
+			$bc.css({'height' : 'auto', 'width' : 'auto'});
+			$newdiv.css({
+			    'display':'block',
+			    'width' : 'auto',
+			    'height' : 'auto',
+			    'position' : 'relative',
+			});
+		    }
+		}
+	    )
+	},
+	_prepareHTML : function(html){
+	    var $html = $(html);
+	    var $results = $html.find('.page-results');
+	    var self = this;
+	    // update Home-Breadcrumb-li with icon
+	    $results.find('.breadcrumb li.home a').html('<i class="fas fa-home"></i>');
+	    // Enable browsing
+	    $results.find('.children a, .breadcrumb a[href]').each(
+		function(){
+		    let $this = $(this);
+		    $this.click(function(evt){
+			evt.preventDefault();
+			self._browse($this);
+		    })
+		}
+	    )
+	    $results.find('.breadcrumb a[href]').data('slide-direction', 'ltr')
+		
+	    
+	    // remove "last updated" and "type" column
+	    $results.find('colgroup col[width="12%"]').first().remove();
+	    $results.find('colgroup col[width="12%"]').attr('width', '10rem');
+	    $results.find('colgroup col').last().attr('width', '2rem');
+	    $results.find('.pagination').hide();
+	    $results.find('.table-headers').remove()
+	    $results.find('th.updated, td.updated').remove();
+	    $results.find('th.type').html('')
+	    var current = $results.find('thead td.title h2').text().trim()
+	    if (current.toLowerCase() != 'root'){
+		$results.find('ul.breadcrumb').append($('<li>'+current+'</li>'))
+	    } else {
+		$results.find('ul.breadcrumb').append($('<li class="home"><i class="fas fa-home"></i></li>'))
+	    }
+	    $results.find('td.title a.choose-page').each(
+		function(){
+		    var $td = $(this).parents('td').first();
+		    $chooseBtn = $('<a class="btn btn-sm btn-outline-secondary"><i class="fas fa-check"></i> Auswählen</a>');
+		    $td.next().html($chooseBtn);
+		    $chooseBtn
+			.attr('data-id', $(this).data('id'))
+			.attr('data-title', $(this).data('title'))
+		    	.attr('data-parent-id', $(this).data('parent-id'))
+			.attr('data-url', $(this).data('url'))
+		    	.attr('href', $(this).attr('href'))
+			.click(function(evt){self._pageSelected(evt)})
+		    if($chooseBtn.data('id') == self.value){
+			$chooseBtn.addClass('btn-success').removeClass('btn-outline-secondary')
+		    }
+		    $(this).click(function(evt){self._pageSelected(evt)})
+		    
+		}
+	    )
+	    $results.find('td.status a').addClass('btn btn-outline-secondary btn-sm').html('<i class="fas fa-eye"></i> Ansehen');
+	    $results.find('td.children a').addClass('btn btn-secondary btn-sm').html('<i class="fas fa-angle-right"></i>');
+	    return $results
+	    
+	},
+	_pageSelected : function(evt){
+	    $elem = $(evt.target);
+	    var title = $elem.data('title')
+	    var val = $elem.data('id');
+	    var $tr = $elem.parents('tr').first()
+	    $tr.parents('table').first().find('a.btn[data-id]').removeClass('btn-success').addClass('btn-outline-secondary')
+	    if (this.value == val){
+		this.value = null;
+		this.element.val('');
+	    } else {
+		$tr.find('.btn[href="'+$elem.attr('href')+'"]').addClass('btn-success').removeClass('btn-outline-secondary')
+		this.value = val;
+		this.element.val(val);
+		this.title = title;
+	    }
+	    
+	    this._updValue()	    
+	    this._toggleBC();
+	},
+	_toggleBC : function(){
+	    var self = this;
+	    this.$browserContainer.slideToggle({
+		complete : function(){
+		    var vis = self.$browserContainer.is(':visible') 
+		    self.$valueIndicatorInner.prop('disabled', vis)
+		    self.$openBtn.attr('aria-expanded', vis)
+		}
+	    });
+	}
+	
     }
 )
 $(document).on('rubiontail.baseloaded', function(){
