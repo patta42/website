@@ -64,6 +64,7 @@ class MoveToWorkgroupAction(SpecificAction):
     def show(self, request):
         return user_has_permission(request, self.get_rai_id(), MovePermission)
 
+
 class UserinputInactivateAction(InactivateAction):
     def show(self, request):
         return user_has_permission(request, self.get_rai_id(), InactivatePermission)
@@ -81,7 +82,14 @@ class UserinputActivateAction(ActivateAction):
         return (
             super().show_for_instance(instance, request)
             and not (_awaits_approval(instance))
+
         )
+class ProjectInactivateAction(UserinputInactivateAction):
+    def show_for_instance(self, instance, request = None):
+        return super().show_for_instance(instance, request) and not instance.locked 
+class ProjectActivateAction(UserinputActivateAction):
+    def show_for_instance(self, instance, request = None):
+        return super().show_for_instance(instance, request) and instance.locked and instance.get_workgroup().is_active
     
 def _is_rubion_user_active(instance):
     return (
@@ -274,7 +282,7 @@ class RAIUserDataListAction(ListAction):
         return instructions
         
 
-class RUBIONUserDataEditAction(RUBIONUserOnlyWhenActiveMixin, EditAction):
+class RUBIONUserDataEditAction(EditAction):
     edit_handler = rubionuser_edit_handler
     text_style = 'secondary'
 
@@ -511,6 +519,7 @@ class AbstractScientificOutputListAction(ListAction):
             type = obj.__class__.__name__
         )
     
+
 class RAIFundingListAction(AbstractScientificOutputListAction):
     RelationModel = Project2FundingRelation
     related_name = 'related_fundings'
@@ -589,6 +598,7 @@ class RAIThesisListAction(AbstractScientificOutputListAction):
         })
     ])
 
+
 class RAIPublicationListAction(AbstractScientificOutputListAction):
     RelationModel = Project2PublicationRelation
     related_name = 'related_publications'
@@ -619,6 +629,7 @@ class RAISafetyInstructionAddAction(RAIAction):
             raiadmin = self.raiadmin,
             active_action = self
         )
+
 
 class RAISafetyInstructionListAction(ListAction):
     list_item_template = 'userinput/safety_instructions/rai/item-in-list.html'
@@ -655,6 +666,7 @@ class WorkgroupDecisionAction(InactivateAction):
     def show_for_instance(self, instance, request = None):
         return _awaits_approval(instance)
     
+
 class ProjectDecisionAction(WorkgroupDecisionAction):
     pass
 
@@ -666,6 +678,7 @@ class SafetyInstructionsSendMailToUserAction(SendMailAction):
             user = obj.rubion_staff
         return super().get_params(user, request)
     
+
 class SafetyInstructionsEditUserAction(EditAction):
     label = 'Bearbeiten'
     def show_for_instance(self, instance, request = None):
@@ -704,3 +717,6 @@ class SafetyInstructionsEditUserAction(EditAction):
     def get_view(self):
         pass
     
+
+class NuclideListAction(ListAction):
+    list_item_template = 'userinput/nuclides/rai/item-in-list.html'
