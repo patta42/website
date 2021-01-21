@@ -169,7 +169,8 @@ class NotificationTemplateMixin:
         if use_rai_noties:
             use_rai_noties = use_rai_noties()
             
-        for mailinfo in self.mails_to_send:
+        mails_to_send = getattr(self, 'mails_to_send', [])
+        for mailinfo in mails_to_send:
             mail = EmailMessage(
                 mailinfo['subject'],
                 mailinfo['text'],
@@ -192,13 +193,14 @@ class RAINotification(NotificationTemplateMixin):
         for key, val in kwargs.items():
             setattr(self, key, val)
         self.kwargs_list = kwargs.keys()
+        
     @classmethod
     def register(Kls, Event = None):
     #    super().register()
         Kls.register_template()
         Kls.register_with_wagtail()
         if Event:
-            Event.add_callback(Kls.on_event)
+            Event.add_callback(Kls.on_event, uid = Kls.identifier)
         
     @classmethod
     def register_with_wagtail(Kls):
@@ -209,9 +211,6 @@ class RAINotification(NotificationTemplateMixin):
     @classmethod
     def on_event(Kls, **kwargs):
         # initiate object
-        print('\n\nEvent happend.\n\n')
-        print('kwargs are')
-        print(kwargs)
         instance = Kls(**kwargs)
         instance.prepare(**kwargs)
         instance.process()
@@ -298,6 +297,7 @@ class RAIEvent:
         # example by a cron job or similar. The kwargs usually provide additional information
         # and are processed by `get_emit_kwargs` to generate the kwargs send by the Event
         event_kwargs = self.get_emit_kwargs(**kwargs)
+              
         for cb in self.__class__._callbacks.get(self.identifier, []):
             cb['func'](**{ **cb['kwargs'], **event_kwargs})
         
