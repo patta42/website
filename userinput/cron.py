@@ -16,9 +16,9 @@ from userinput.notifications import ProjectExpiredMailNotification
 from userinput.rai.events import (
     ProjectExpiresSoonEvent, ProjectIsExpiredEvent,
     SafetyInstructionExpiresThisYearEvent, SafetyInstructionExpiresSoonEvent,
-    SafetyInstructionIsExpiredEvent, SafetyInstructionNeverGiven
+    SafetyInstructionIsExpiredEvent, SafetyInstructionNeverGivenEvent
 )
-
+import userinput.wagtail_hooks
 from website.models import EMailText
 
 logger = logging.getLogger('warn_projects')
@@ -153,6 +153,7 @@ class RAIWarnSafetyInstructions(CronJobBase):
     RUN_EVERY_MINS = 24 * 60 # once a day
     schedule = Schedule(run_every_mins = RUN_EVERY_MINS)
     code = 'userinput.warn_safety_instructions'
+    ALLOW_PARALLEL_RUNS = True
     # SOME NOTES ON THE QUERYSETS
     # get the last safety instruction dates from a single rubionuser `ru`:
     # ru.rubion_user_si.filter(instruction__in = ru.safety_instructions.filter(as_required = False).values_list('instruction', flat = True)).values('instruction').annotate(last = Max('date'))
@@ -162,8 +163,11 @@ class RAIWarnSafetyInstructions(CronJobBase):
         active_users = RUBIONUser.objects.annotate(
             staffcount = Count('linked_user__staffuser')
         ).filter(staffcount = 0, locked = False)
+        logger = logging.getLogger('warn_safety_instructions')
 
+        count = 0
         for user in active_users.prefetch_related('safety_instructions'):
+            count += 1
             # get last safety instructions
             inner_q = user.safety_instructions.filter(
                 as_required = False
@@ -175,6 +179,7 @@ class RAIWarnSafetyInstructions(CronJobBase):
             last_instructions_q = user.rubion_user_si.filter(
                 instruction__in = inner_q
             ).values('instruction', 'instruction__is_valid_for').annotate(last = Max('date'))
+            
             for li in last_instructions_q:
                 last_instructions[li['instruction']] = li['last']
                 validities[li['instruction']] = li['instruction__is_valid_for']
@@ -213,17 +218,26 @@ class RAIWarnSafetyInstructions(CronJobBase):
                 last_date += relativedelta(years = validities[rel.instruction.pk])
                 
                 if last_date < today:
-                    expired.append(rel.instruction)
+                    expired.append({
+                        'instruction' : rel.instruction,
+                        'valid_until' : last_date
+                    })
                     continue
                 if last_date < two_months:
-                    soon.append(rel.instruction)
+                    soon.append({
+                        'instruction' : rel.instruction,
+                        'valid_until' : last_date
+                    })
+
                     continue
                 if last_date < next_year and validities[rel.instruction.pk] > 1:
-                    thisyear.append(rel.instruction)
-                    
+                    thisyear.append({
+                        'instruction' : rel.instruction,
+                        'valid_until' : last_date
+                    })
             # emit the events:
             if never:
-                event = SafetyInstructionNeverGiven()
+                event = SafetyInstructionNeverGivenEvent()
                 event.emit(user = user, instructions = never)
                 
             if expired:
