@@ -2,13 +2,18 @@ from .triggers import InactivatedTrigger, ActivatedTrigger
 
 from django.db.models import Q
 
-from rai.notifications.base import RAINotification
+import datetime, dateutils
+import logging
 
-from userdata.models import StaffUser 
+from rai.notifications.base import RAINotification
+from random import randint
+
+from userdata.models import StaffUser, SafetyInstructionsSnippet 
 from userinput.models import RUBIONUser, WorkGroup
 import userinput.templatetags.rubionuser_notification_tags as ru_tags
 import userinput.templatetags.workgroup_notification_tags as wg_tags
 import userdata.templatetags.staff_notification_tags as staff_tags
+import userdata.templatetags.si_notification_tags as si_tags
 
 
 def get_preview_users():
@@ -49,6 +54,7 @@ class RUBIONUserNotification(RAINotification):
             text = self.render_template(self.get_template(lang = language), **self.get_mail_kwargs()),
             subject = self.get_subject(lang = language)
         )
+        super().prepare(**kwargs)
 
 class RUBIONUserReceivedKeyNotification(RUBIONUserNotification):
     title = 'Nutzer: Dem Nutzer wurde ein Schlüssel zugewiesen.'
@@ -229,3 +235,138 @@ class RUBIONUserChangedWorkGroupNotification2Leader(RUBIONUserNotification):
         }
     def trigger_check(self):
         return super().trigger_check() and self.old_workgroup != self.new_workgroup
+    
+    
+class RUBIONUserSafetyInstructionNeverGivenNotification(RAINotification):
+    identifier = 'rubionuser.si.never_given'
+    description = 'Wird an einen Nutzer versendet, wenn eine Sicherheitsunterweisung erforderlich ist, der Nutzer diese aber noch nie erhalten hat. Frequenz: Alle zwei Wochen.'
+    title = 'Nutzer: Sicherheitsunterweisung noch nie erhalten.'
+    template_name = 'userinput/rubionuser/rai/notifications/rubionuser-changed.html'    
+    context_definition = {
+        'si' : {
+            'tags' : si_tags,
+            'label' : 'Unterweisungen',
+            'prefix' : 'si',
+            'preview_model': SafetyInstructionsSnippet
+        
+        },
+        ** RUBIONUserNotification.context_definition
+    }
+
+
+    def prepare(self, **kwargs):
+        self.add_mail(
+            receivers = [self.user],
+            text = self.render_template(
+                self.get_template(lang = language),
+                user = kwargs['user'],
+                si = kwargs['instructions']
+            ),
+            subject = self.get_subject(lang = language)
+        )
+
+    
+def _get_si(valid):
+    # this is a not-so-nice (but funny!) workaround to allow a list (instead of a querset) 
+    # as options for the preview. This list needs a get method (as for queryset.get(pk = ...))
+    # let's make such a list:
+    class ListWithGet(list):
+        def get(self, **kwargs):
+            pk = kwargs.get('pk', None)
+            if not pk:
+                # should through an error
+                pass
+            else:
+                for o in self:
+                    if o.pk == int(pk):
+                        return o
+    
+    # the single items of the above list need a pk property and a __str__ method
+    # and are lists themselves:
+
+    class ListForPreview(list):
+        def __init__(self, pk, title, lst = []):
+            super().__init__(lst)
+            self.pk = pk
+            self.title = title
+        def __str__(self):
+            return self.title
+
+
+    # just to have a nicer name in the preview option selector
+    nums = ['Eine', 'Zwei', 'Drei']
+    plural = ['', 'en', 'en']
+    q = SafetyInstructionsSnippet.objects.all()
+
+    # generate lists with one, two and three items
+    max_obj = q.count() - 1
+    opts = ListWithGet()
+    for k in range(3):
+        opts.append(
+            ListForPreview(
+                k, '{} zufällige Sicherheitsunterweisung{}'.format(nums[k], plural[k]),
+                lst = [ {
+                    'instruction' :  q[randint(0, max_obj)],
+                    'valid_until' : valid
+                } for i in range(k+1) ]
+            ) 
+        )
+        
+    return opts
+
+def si_soon():
+    return _get_si(datetime.datetime.now() + dateutils.relativedelta(weeks=+2))
+
+def si_expired():
+    return _get_si(datetime.datetime.now() + dateutils.relativedelta(weeks=-2))
+
+def si_thisyear():
+    return _get_si(datetime.datetime.now() + dateutils.relativedelta(months=+11))
+
+
+
+class RUBIONUserSafetyInstructionExpiresSoonNotification(RUBIONUserSafetyInstructionNeverGivenNotification):
+    identifier = 'rubionuser.si.expires_soon'
+    description = 'Wird an einen Nutzer versendet, wenn eine Sicherheitsunterweisung bald (innerhalb der nächsten zwei Monate) abläuft. Frequenz: Alle zwei Wochen.'
+    title = 'Nutzer: Sicherheitsunterweisung läuft bald ab.'
+    context_definition = {
+        ** RUBIONUserNotification.context_definition,
+        'si' : {
+            'tags' : si_tags,
+            'label' : 'Liste der ablaufenden Unterweisungen',
+            'prefix' : 'si',
+            'preview_options_callback': si_soon
+        }
+    }
+
+class RUBIONUserSafetyInstructionExpiredNotification(RUBIONUserSafetyInstructionNeverGivenNotification):
+    identifier = 'rubionuser.si.expired'
+    description = 'Wird an einen Nutzer versendet, wenn eine Sicherheitsunterweisung abgelaufen ist. Frequenz: Alle zwei Wochen, maximal drei.'
+    title = 'Nutzer: Sicherheitsunterweisung abgelaufen.'
+    context_definition = {
+        ** RUBIONUserNotification.context_definition,
+        'si' : {
+            'tags' : si_tags,
+            'label' : 'Liste der abgelaufenen Unterweisungen',
+            'prefix' : 'si',
+            'preview_options_callback': si_expired
+        }
+    }
+
+
+class RUBIONUserSafetyInstructionExpiresThisYearNotification(RUBIONUserSafetyInstructionNeverGivenNotification):
+    identifier = 'rubionuser.si.expires_thisyear'
+    description = 'Wird an einen Nutzer versendet, wenn eine Sicherheitsunterweisung mit einer Gültigkeit von mehr als einem Jahr im kommenden Jahr abläuft. Frequenz: Alle drei Monate, maximal drei.'
+    title = 'Nutzer: Sicherheitsunterweisung läuft dieses Jahr ab.'
+
+    context_definition = {
+        ** RUBIONUserNotification.context_definition,
+        'si' : {
+            'tags' : si_tags,
+            'label' : 'Liste der ablaufenden Unterweisungen',
+            'prefix' : 'si',
+            'preview_options_callback': si_thisyear
+        }
+    }
+
+    
