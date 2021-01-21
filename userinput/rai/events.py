@@ -1,4 +1,4 @@
-from rai.notifications.base import PageContentChangedEvent
+from rai.notifications.base import PageContentChangedEvent, RAIEvent
 from userdata.models import StaffUser
 from userinput.models import RUBIONUser, Project, WorkGroup
 
@@ -69,6 +69,7 @@ class NewKey(FieldChangedMixin, RUBIONUserChangedEvent):
         
     
 class RUBIONUserActivated(ActivatedMixin, RUBIONUserChangedEvent):
+    identifier = 'rubionuser.activated'
     pass
 
 
@@ -90,8 +91,8 @@ class RUBIONUserInactivatedByColleague(RUBIONUserInactivated):
                 # below
                 return False
             return ruser.get_workgroup() == emit_kwargs['new_instance'].get_workgroup()
-        else:
-            return False
+        
+        return False
 
     
 class RUBIONUserInactivatedByRUBION(RUBIONUserInactivated):
@@ -104,7 +105,42 @@ class RUBIONUserInactivatedByRUBION(RUBIONUserInactivated):
                 return False
             return True
 
+# As for manually triggered events, the question is
+# where the check should occur if the event it triggered.
+# For example, for expiring SafetyInstructions, should the cron job
+# check the expire_date and call Event.emit() or should Event.signal_received
+# should be called and then check tests the event occurs.
+# I guess the first solution might be better since it may allow to reduce
+# the number of checks by, for example, selecting only the RUBIONUsers from the DB
+# that have an expired SI. this makes the definition of the event quite easy.
 
+class SafetyInstructionExpiresThisYearEvent(RAIEvent):
+    model = RUBIONUser
+    identifier = 'safetyinstruction.expire.this_year'
+
+class SafetyInstructionExpiresSoonEvent(RAIEvent):
+    identifier = 'safetyinstruction.expire.soon'
+    model = RUBIONUser
+
+class SafetyInstructionIsExpiredEvent(RAIEvent):
+    identifier = 'safetyinstruction.expire.is_expired'    
+    model = RUBIONUser
+
+class SafetyInstructionNeverGivenEvent(RAIEvent):
+    identifier = 'safetyinstruction.expire.never_given'
+    model = RUBIONUser
+
+class ProjectExpiresSoonEvent(RAIEvent):
+    model = Project
+    identifier = 'project.expire.soon'
+
+    
+
+class ProjectIsExpiredEvent(RAIEvent):
+    identifier = 'project.expire.is_expired'
+    model = Project
+
+    
 NewOfficialDosemeter.register()
 NoMoreOfficialDosemeter.register()
 NewKey.register()
@@ -112,3 +148,6 @@ RUBIONUserInactivated.register()
 RUBIONUserActivated.register()
 RUBIONUserInactivatedByColleague.register()
 RUBIONUserInactivatedByRUBION.register()
+ProjectExpiresSoonEvent.register()
+ProjectIsExpiredEvent.register()
+SafetyInstructionNeverGivenEvent.register()
