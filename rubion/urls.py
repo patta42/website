@@ -22,8 +22,8 @@ from rubauth.views import logout
 from rai import urls as rai_urls 
 urlpatterns = [
     url(r'^django-admin/', admin.site.urls),
-    url(r'^rubiontail/', include(rai_urls)),
     url(r'^admin/', include(wagtailadmin_urls)),
+    url(r'^rubiontail/', include(rai_urls)),
     url(r'^rubionadmin/', include(rubionadmin_urls)),
     url(r'^coursesadmin/', include(courses_urls, namespace='coursesadmin')),
     url(r'^manage-courses/', include(courses_user_urls, namespace='manage-courses')),
