@@ -1,0 +1,139 @@
+body{
+    background-color: var(--rubgray);
+    font-family:"Open Sans";
+    position:relative;
+}
+
+#loginwrapper{
+    margin-left:auto;
+    margin-right:auto;
+    margin-top:10rem;
+    min-width:1000px;
+    width:90%;
+    background-color:#fff;
+    display:flex;
+}
+#loginicon{
+    width:300px;
+    height:300px;
+    font-size:150px;
+    background-color:var(--rubgreen);
+    color:#fff;
+    text-align:center;
+    vertical-align:middle;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+.login-form{
+    width:40vw;
+    min-width:500px;
+}
+h1, h2{
+    position:absolute;
+    top:0;
+    transform:translateY(-100%);
+    font-size:1.5rem;
+    padding:1.5rem;
+}
+
+h1{
+    width:40vw;
+    min-width:500px;
+    background-color:rgb(23, 54, 92);
+    color:#fff;
+    display:flex;
+    align-items:baseline;
+}
+h2{
+    color:rgb(60,60,60);
+}
+.login-form label{
+    padding-left:0;
+    margin-left: 0;
+}
+
+.login-form .form-group{
+    padding: .25rem 1.25rem 0rem;
+    margin: 1rem .25rem;
+}
+
+.login-form .form-group + .from-group{
+    margin: 0rem .25rem;
+}
+
+.login-form .btn{
+    background-color:rgb(23, 54, 92);
+    color:#fff;
+    
+}
+
+.login-form .btn, .login-form input, .login-form .input-group > .input-group-prepend > .input-group-text{
+    border-radius:0;
+}
+
+.custom-control{
+    margin-top:1rem;
+}
+
+.custom-control + .custom-control{
+    margin-top:.75rem;
+}
+.custom-control-input:checked ~ .custom-control-label::before{
+    border-color: rgb(23, 54, 92);
+    background-color: rgb(23, 54, 92);
+}
+.login-form .form-control:focus{
+    border-color:rgb(23, 54, 92);
+    box-shadow: 0 0 0 .2rem rgba(23,54,92,.5);
+
+}
+
+select.custom-select:focus{
+    border-color:rgba(255,255,255,.5);
+    box-shadow: 0 0 0 .2rem rgba(255,255,255,.5);
+}
+
+.next-selector{
+    flex-grow:1;
+    margin-left:1rem;
+}
+select.custom-select{
+    color:#fff;
+    background:#fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='8' height='10' viewBox='0 0 4 5'%3e%3cpath fill='%23ffffff' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") no-repeat right .75rem center/8px 10px;
+    background-color: rgb(23, 54, 92);
+    border-radius:0;
+    border-width:thin;
+    border-color:rgba(255,255,255,.2)
+}
+
+select.custom-select option{
+    color:#fff;
+    background-color: rgb(23, 54, 92);
+}
+.messages{
+    flex-grow:1;
+    padding-right:1.25rem;
+}
+.messages ul{
+    list-style-type:none;
+    margin-top:1.5rem;
+}
+
+.messages ul li{
+    padding:.75rem;
+    border:thin solid var(--gray50);
+    background: var(--gray10);
+    
+}
+
+.messages ul li.error{
+    background:var(--danger-background-color);
+    border-color:var(--danger-border-color);
+    color:var(--danger-color);
+}
+.messages ul li.success{
+    background:var(--rubgreen25-solid);
+    border-color:var(--rubgreen);
+    color:rgb(71,87,8);
+}
