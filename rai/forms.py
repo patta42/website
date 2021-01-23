@@ -22,6 +22,7 @@ from django.template.loader import render_to_string
 
 from modelcluster.forms import ClusterForm, ClusterFormMetaclass
 
+from wagtail.admin.forms.auth import LoginForm as WALoginForm
 from wagtail.core.models import Page
 
 FORM_FIELD_OVERRIDES = {
@@ -247,3 +248,10 @@ class RAIForm(Form):
             }
         )
 
+class LoginForm(WALoginForm):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].widget = widgets.RUBLoginIdInput(attrs={'required' : True})
+        self.fields['username'].label = 'RUB-ID'
+        self.fields['password'].widget = widgets.RAINicePasswordInput(attrs={'required' : True})
