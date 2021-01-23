@@ -235,35 +235,6 @@ class RUBIONUserChangedWorkGroupNotification2Leader(RUBIONUserNotification):
         }
     def trigger_check(self):
         return super().trigger_check() and self.old_workgroup != self.new_workgroup
-    
-    
-class RUBIONUserSafetyInstructionNeverGivenNotification(RAINotification):
-    identifier = 'rubionuser.si.never_given'
-    description = 'Wird an einen Nutzer versendet, wenn eine Sicherheitsunterweisung erforderlich ist, der Nutzer diese aber noch nie erhalten hat. Frequenz: Alle zwei Wochen.'
-    title = 'Nutzer: Sicherheitsunterweisung noch nie erhalten.'
-    template_name = 'userinput/rubionuser/rai/notifications/rubionuser-changed.html'    
-    context_definition = {
-        'si' : {
-            'tags' : si_tags,
-            'label' : 'Unterweisungen',
-            'prefix' : 'si',
-            'preview_model': SafetyInstructionsSnippet
-        
-        },
-        ** RUBIONUserNotification.context_definition
-    }
-
-
-    def prepare(self, **kwargs):
-        self.add_mail(
-            receivers = [self.user],
-            text = self.render_template(
-                self.get_template(lang = language),
-                user = kwargs['user'],
-                si = kwargs['instructions']
-            ),
-            subject = self.get_subject(lang = language)
-        )
 
     
 def _get_si(valid):
@@ -322,6 +293,41 @@ def si_expired():
 
 def si_thisyear():
     return _get_si(datetime.datetime.now() + dateutils.relativedelta(months=+11))
+
+def si_never():
+    return _get_si(None)
+
+    
+    
+class RUBIONUserSafetyInstructionNeverGivenNotification(RAINotification):
+    identifier = 'rubionuser.si.never_given'
+    description = 'Wird an einen Nutzer versendet, wenn eine Sicherheitsunterweisung erforderlich ist, der Nutzer diese aber noch nie erhalten hat. Frequenz: Alle zwei Wochen.'
+    title = 'Nutzer: Sicherheitsunterweisung noch nie erhalten.'
+    template_name = 'userinput/rubionuser/rai/notifications/rubionuser-changed.html'    
+    context_definition = {
+        'si' : {
+            'tags' : si_tags,
+            'label' : 'Unterweisungen',
+            'prefix' : 'si',
+            'preview_options_callback': si_never
+            
+        
+        },
+        ** RUBIONUserNotification.context_definition
+    }
+
+
+    def prepare(self, **kwargs):
+        self.add_mail(
+            receivers = [self.user],
+            text = self.render_template(
+                self.get_template(lang = language),
+                user = kwargs['user'],
+                si = kwargs['instructions']
+            ),
+            subject = self.get_subject(lang = language)
+        )
+
 
 
 
