@@ -1,4 +1,10 @@
 from django.db import models
+from django.contrib.auth import get_user_model
+
+from rai.settings.fields import JsonField
+from rai.settings.models import ModelWithJsonField
+
+User = get_user_model()
 
 class NotificationTemplate(models.Model):
     notification_id = models.CharField(
@@ -30,3 +36,19 @@ class NotificationTemplate(models.Model):
             return noti.title
         else:
             return "unbekannt"
+
+class NotificationSentHelper(ModelWithJsonField):
+    notification_id = models.CharField(
+        help_text = 'Identifikationsstring der Benachrichtigung',
+        max_length = 128,
+    )
+    user = models.ForeignKey(
+        User,
+        related_name = 'sent_notifications'
+    )
+    date = models.DateField(
+        auto_now = True
+    )
+    info = JsonField( blank = True)
+    
+        
