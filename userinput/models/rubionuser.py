@@ -821,6 +821,9 @@ class RUBIONUser (_RUBIONUserModelDefinition, ActiveInactiveMixin ):
             website_user.is_active = True
             website_user.save()
             
+    @staticmethod
+    def active_filter():
+        return (Q(expire_at__isnull = True) | Q(expire_at__gte = datetime.datetime.now())) & Q(has_agreed = True)
 
 
     def save(self, update_staff_user = True, **kwargs):
