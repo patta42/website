@@ -242,7 +242,7 @@ class RAIUserDataListAction(ListAction):
             return 'Noch keine Änderung vorhanden'
 
     def is_staff(self, obj):
-        if StaffUser.objects.filter(user = obj.linked_user).exists():
+        if StaffUser.objects.filter(user = obj.linked_user).exists() and obj.linked_user is not None:
             return "RUBION-Mitarbeiter"
         return False
 
