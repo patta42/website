@@ -313,13 +313,13 @@ class RAIUserDataListAction(ListAction):
             if not prdata['locked'] and last_pr:
                 if last_pr.user:
                     return 'Inaktiviert am {} durch {} {}'.format(
-                        last_pr.created_at.strftime('%d. %b %Y'),
+                        last_pr.created_at.strftime('%d. %B %Y'),
                         last_pr.user.first_name,
                         last_pr.user.last_name
                     )
                 else:
                     return 'Inaktiviert am {} durch unbekannt'.format(
-                        last_pr.created_at.strftime('%d. %b %Y')
+                        last_pr.created_at.strftime('%d. %B %Y')
                     )
             if not prdata['locked'] and not last_pr:
                 return 'Nutzer ist aktiv. Hier liegt ein Fehler vor...'
