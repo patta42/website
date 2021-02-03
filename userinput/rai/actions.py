@@ -5,6 +5,7 @@ from collections import OrderedDict
 from django.template.loader import render_to_string
 from django.utils.html import mark_safe, format_html
 import datetime
+import json
 import locale
 
 from rai.actions import (
@@ -166,6 +167,14 @@ class RAIUserDataListAction(ListAction):
             'group': 'badges',
             'help_url' : 'userinput:rubionuser:not_validated'
         }),
+        ('is_inactive', {
+            'label' : 'Ist der Nutzer inaktiviert?',
+            'desc' : 'Hinweis, wenn der Nutzer inaktiviert wurde.',
+            'type' : ['badge', 'badge-danger'],
+            'callback': 'is_inactive',
+            'group': 'badges',
+            'help_url' : 'userinput:rubionuser:is_inactive'
+        }),
         ('group_leader', {
             'label' : 'Gruppenleiter',
             'desc' : 'Hinweis, wenn der Nutzer der Leiter der Arbeitsgruppe ist',
@@ -221,6 +230,12 @@ class RAIUserDataListAction(ListAction):
             'desc': 'Wann und durch wen die letzte Änderung an den Daten durchgeführt wurde.',
             'callback' : 'get_last_revision',
             'type' : ['text-muted']
+        }),
+        ('inactivated_by', {
+            'label': 'Inaktiviert seit ... durch ...',
+            'desc': 'Wenn der Nutzer inaktiviert ist, wann und durch wen die wurde die Inaktivierung veranlasst.',
+            'callback' : 'get_inactivation_details',
+            'type' : ['text-muted']
         })
         
     ])
@@ -246,6 +261,9 @@ class RAIUserDataListAction(ListAction):
             return "RUBION-Mitarbeiter"
         return False
 
+    def is_inactive(self, obj):
+        return 'Inaktiv' if obj.locked else ''
+    
     def staff_group(self, obj):
         if not obj.linked_user:
             return False
@@ -281,7 +299,29 @@ class RAIUserDataListAction(ListAction):
             instructions.append(inst.instruction)
         return instructions
         
-
+    def get_inactivation_details(self, obj):
+        if not obj.locked:
+            return None
+        last_pr = None
+        for pr in PageRevision.objects.filter(page=obj).order_by('-created_at'):
+            prdata = json.loads(pr.content_json)
+            if prdata['locked']:
+                last_pr = pr
+                continue
+            
+            if not prdata['locked'] and last_pr:
+                if last_pr.user:
+                    return 'Inaktiviert am {} durch {} {}'.format(
+                        last_pr.created_at.strftime('%d. %b %Y'),
+                        last_pr.user.first_name,
+                        last_pr.user.last_name
+                    )
+                else:
+                    return 'Inaktiviert am {} durch unbekannt'.format(
+                        last_pr.created_at.strftime('%d. %b %Y')
+                    )
+            if not prdata['locked'] and not last_pr:
+                return 'Nutzer ist aktiv. Hier liegt ein Fehler vor...'
 class RUBIONUserDataEditAction(EditAction):
     edit_handler = rubionuser_edit_handler
     text_style = 'secondary'
