@@ -235,7 +235,8 @@ class RAIUserDataListAction(ListAction):
             'label': 'Inaktiviert seit ... durch ...',
             'desc': 'Wenn der Nutzer inaktiviert ist, wann und durch wen die wurde die Inaktivierung veranlasst.',
             'callback' : 'get_inactivation_details',
-            'type' : ['text-muted']
+            'type' : ['text-muted'],
+            'render_if_empty' : False
         })
         
     ])
