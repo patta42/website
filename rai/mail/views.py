@@ -1,6 +1,7 @@
 from .forms import RAIEMailForm
 from .collections import RAIMailFileCollection
 
+
 from django.conf import settings
 from django.core.mail import EmailMessage, get_connection
 from django.forms.models import modelform_factory
@@ -32,7 +33,14 @@ class EMailView(RAIView, PageMenuMixin):
         return context
 
     def send_mails(self, receivers):
-        connection = get_connection()
+        from_ = self.request.POST['from_']
+        if settings.DEBUG or from_ == 'auto':
+            connection = get_connection()
+        else:
+            connection = get_connection(
+                username = self.request.user.username,
+                password = self.request.POST['pwd'],
+            )
         messages = []
         from_ = self.request.POST['from_']
         reply_to = '"{} {}" <{}>'.format(
@@ -55,6 +63,7 @@ class EMailView(RAIView, PageMenuMixin):
                 connection = connection
             )
             for att in self.attachements:
+                att.file.seek(0);
                 msg.attach(att.title, att.file.read())
             msg.send()
             copy = SentMail.from_email_message(msg)
