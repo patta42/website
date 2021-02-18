@@ -61,6 +61,10 @@ class _RUBIONUserModelDefinition(MoveMixin, UserGeneratedPage2):
         ELECTRONIC_DOSEMETER: _('electronic'),
         EXTERNAL_DOSEMETER:_('external'),
     }
+
+    FIELDS_TO_SYNC_WITH_STAFF = [
+        'key_number', 'dosemeter'
+    ]
     # --- Fields
 
     # This is a bit annoying, since it repeats the definitions of the 
