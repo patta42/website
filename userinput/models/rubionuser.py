@@ -840,7 +840,11 @@ class RUBIONUser (_RUBIONUserModelDefinition, ActiveInactiveMixin ):
         staff = None
         for si_rel in self.safety_instructions.all():
             staff = si_rel.save_for_staff(staff = staff)
-            
+        if staff:
+            for field in RUBIONUser.FIELDS_TO_SYNC_WITH_STAFF:
+                setattr(staff, field, getattr(self, field))
+            staff.save_revision_and_publish()
+
 
 
 class UserMayBookInstrumentRelation( AbstractRelatedInstrument ):
