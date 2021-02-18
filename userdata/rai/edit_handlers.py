@@ -73,11 +73,11 @@ create_staff_edit_handler = RAIMultiFormEditHandler([
         eh.RAICollectionPanel(
             [
                 eh.RAIFieldRowPanel([
-                    eh.RAIFieldPanel(
-                        'hired_by_rubion',
-                        classname="",
-                        label = 'Ist der neue Mitarbeiter/die neue Mitarbeiterin durch das RUBION angestellt?',
-                    ),
+                    # eh.RAIFieldPanel(
+                    #     'hired_by_rubion',
+                    #     classname="",
+                    #     label = 'Ist der neue Mitarbeiter/die neue Mitarbeiterin durch das RUBION angestellt?',
+                    # ),
 
                     eh.RAIFieldPanel(
                         'expire_at',
@@ -129,7 +129,7 @@ edit_staff_user_handler = eh.RAIPillsPanel([
             eh.RAIFieldPanel( 'key_number' )
         ], heading = "Schlüssel"),
         eh.RAICollapsablePanel([
-            eh.RAIFieldPanel('hired_by_rubion'),
+#             eh.RAIFieldPanel('hired_by_rubion'),
             eh.RAIFieldPanel(
                 'expire_at',
                 label = 'Vertrag bis',
