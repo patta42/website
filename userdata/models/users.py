@@ -260,6 +260,7 @@ class StaffUser ( TranslatedPage ):
         default = '',
         verbose_name = _('Gate Key number')
     )
+    
     needs_safety_instructions =  ParentalManyToManyField(
         'userdata.SafetyInstructionsSnippet',
         verbose_name = _('user needs safety instruction'),
@@ -267,6 +268,13 @@ class StaffUser ( TranslatedPage ):
         blank = True
     )
 
+    dosemeter = models.CharField(
+        max_length = 1,
+        choices = RUBIONUser.DOSEMETER_CHOICES,
+        default = RUBIONUser.NOT_YET_DECIDED,
+        verbose_name = _('Type of dosemeter')
+    )
+        
 
     comment = RichTextField(
         blank = True,
@@ -453,13 +461,21 @@ class StaffUser ( TranslatedPage ):
             ruser = None
             for si_rel in self.safety_instructions.all():
                 ruser = si_rel.save_for_ruser(ruser = ruser)
-
+            # change fields that should by synced between ruser and staff
+            if ruser:
+                for field in RUBIONUser.FIELDS_TO_SYNC_WITH_STAFF:
+                    setattr(ruser, field, getattr(self, field))
+                ruser.save_revision_and_publish()
+                
     @staticmethod
     def get_from_user(user):
         if not user:
             return None
-        return StaffUser.objects.get(user = user)
-    
+        try:
+            return user.staffuser_set.get()
+        except StaffUser.DoesNotExist:
+            return None
+
     class Meta:
         verbose_name = _('staff member')
         verbose_name_plural = _('staff members')
