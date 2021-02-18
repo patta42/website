@@ -3,6 +3,8 @@ from .permissions import (
     DeletePermission, CreatePermission, EditPermission, ViewPermission,
     NonePermission
 )
+
+from django.db.models import Max
 from userdata.models import StaffUser
 
 _permission_cache = {}
@@ -19,15 +21,11 @@ def _get_cached_permission(rid, user, rai_id):
         return None
     return cached_user_perms.get(rai_id, None)
 
-def _cache_permission(rid, user, rai_id, value):
-    perm = {rai_id : value}
-    cached_user_perms = _permission_cache.get(user, None)
-    if not cached_user_perms:
-        _permission_cache.update({user: perm})
-    else:
-        cached_perm = cached_user_perms.get(rai_id, None)
-        if not cached_perm:
-            _permission_cache[user].update(perm)
+def _cache_permission(rid, user, permissions):
+    perms = {}
+    for p in permissions:
+        perms[p['rai_id']] = p['value']
+    _permission_cache.update({user: perms})        
     _permission_cache_requests.update({user:rid})
     
 def user_has_permission(request, rai_id, permission):
@@ -47,13 +45,15 @@ def user_has_permission(request, rai_id, permission):
     if not perm and not staff:
         staff = StaffUser.objects.get(user = request.user)
     if not perm:
-
-        perm = (RAIPermission.objects
-                .filter(rai_id = rai_id, group__in = staff.rai_group.all())
-                .order_by('-value').first())
+        permissions = RAIPermission.objects.filter(
+            group__in = staff.rai_group.all()
+        ).order_by().values('rai_id').annotate(value = Max('value'))
+        _cache_permission(id(request), staff.user.id, permissions)
+        perm = _get_cached_permission(id(request), request.user.id, rai_id)
+        
         if not perm:
             perm = NonePermission
-        _cache_permission(id(request), staff.user.id, rai_id, perm.value)
+        
 
     try:
         value = perm.value
