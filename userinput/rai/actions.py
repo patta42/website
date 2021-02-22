@@ -71,8 +71,8 @@ class UserinputInactivateAction(InactivateAction):
         return user_has_permission(request, self.get_rai_id(), InactivatePermission)
     def show_for_instance(self, instance, request = None):
         return (
-            super().show_for_instance(instance, request) and not (_awaits_approval(instance)
-            )
+            super().show_for_instance(instance, request) and not (_awaits_approval(instance))
+            and not instance.locked
         )
 
 
@@ -83,7 +83,7 @@ class UserinputActivateAction(ActivateAction):
         return (
             super().show_for_instance(instance, request)
             and not (_awaits_approval(instance))
-
+            and instance.locked
         )
 class ProjectInactivateAction(UserinputInactivateAction):
     def show_for_instance(self, instance, request = None):
@@ -94,9 +94,11 @@ class ProjectActivateAction(UserinputActivateAction):
     
 def _is_rubion_user_active(instance):
     return (
-        instance.linked_user is None or
-        instance.expire_at is None or
-        instance.expire_at >= datetime.datetime.now()
+        (
+            instance.linked_user is None or
+            instance.expire_at is None or
+            instance.expire_at >= datetime.datetime.now()
+        ) and not instance.locked
     )
 
 class RUBIONUserOnlyWhenActiveMixin:
