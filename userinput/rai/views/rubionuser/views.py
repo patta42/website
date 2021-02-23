@@ -2,35 +2,44 @@ from pprint import pprint
 
 from .forms import (
     UserAndStaffInactivationForm, WorkgroupInactivationForm,
-    ActivateUserWorkgroupChoiceForm
+    ActivateUserWorkgroupChoiceForm, AddInstructionsForm
 )
 
 import datetime
 
 from django.core.files.base import ContentFile
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Q, Max
 from django.forms import formset_factory
 from django.http import HttpResponse, JsonResponse
+from django.template.loader import render_to_string
+from django.template.response import TemplateResponse
 from django.shortcuts import redirect
 from django.utils.functional import cached_property
 from django.utils.text import slugify
+from django.views.generic.edit import FormView
 from django.views.generic.detail import BaseDetailView
 
 from rai.comments.models import RAIComment
-from rai.default_views import EditView, InactivateView, HistoryView, ActivateView
+from rai.default_views import EditView, InactivateView, HistoryView, ActivateView, ListView
+from rai.default_views.generic import RAIAdminView, PageMenuMixin, FilterSettingsView
 from rai.default_views.multiform_create import  MultiFormCreateView
 from rai.files.models import RAIDocument
 
 from rubauth.auth import fetch_user_info
 
-from userdata.models import StaffUser, SafetyInstructionsSnippet
+from userdata.models import (
+    StaffUser, SafetyInstructionsSnippet, SafetyInstructionUserRelation,
+    SafetyInstruction2StaffRelation, SafetyInstruction2UserRelation
+)
 from userinput.models import (
     RUBIONUser, WorkGroup, Project, RUBIONUserCommentDecoration,
     RUBIONUserOnDemandDocumentRelation, MemberContainer
 )
 
 from userinput.pdfhandling import RUBIONBadge
+
+from wagtail.admin.compare import M2MFieldComparison, ChildRelationComparison
 from wagtail.core.models import Page
 
 class RUBIONUserEditView(EditView):
@@ -366,9 +375,15 @@ class RUBIONUserActivateView(ActivateView):
 
     
 class RUBIONUserHistoryView(HistoryView):
-    pass
-
-
+    additional_comparisons = HistoryView.additional_comparisons + [
+        'may_create_projects',
+        'may_add_members',
+        'is_leader', #'rubion_user_si'
+    ]
+    comparators = {
+        'rubion_user_si' : ChildRelationComparison
+    }
+    
 class RUBIONUserCreateBadgeView( BaseDetailView ):
 
     def dispatch(self, request, pk):
@@ -447,3 +462,161 @@ class RUBIONUserCreateBadgeView( BaseDetailView ):
         # return badge.get_in_responseresponse)
 
 
+class AddInstructionsDatesView(RAIAdminView, PageMenuMixin):
+    template_name = 'userinput/rubionuser/rai/views/add-instructions.html'
+    form = None
+    save_button = True
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'form' : self.form,
+            'page_menu' : self.get_page_menu()
+        })
+
+        return context
+    
+    def get(self, request, *args, **kwargs):
+        if not self.form:
+            self.form = AddInstructionsForm()
+
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        self.form = AddInstructionsForm(request.POST)
+        if self.form.is_valid():
+            self.form.save()
+            self.success_message('Die Daten wurden gespeichert.')
+            self.form = None
+            
+        return self.get(request)
+
+
+class SafetyInstructionView(ListView):
+    template_name = 'userinput/safety_instructions/rai/list.html'
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.raiadmin.model = SafetyInstructionUserRelation
+
+    def get_queryset(self):
+        # I have asked a question at SO for this:
+        # https://stackoverflow.com/questions/65198595/filter-distinct-queryset-by-fields-of-a-foreignkey
+        # but until now (same day as the question), the answer does not help.
+        # Below are some approaches to get what I want. Since we do also have to find
+        # something for "has never been instructed" this is the best way I can imagine.
+        # However, it's annoyingly slow.
+
+        # qs = (
+        #     SafetyInstructionUserRelation.objects
+        #     .filter(rubion_user__isnull = False)
+        #     .distinct('instruction', 'rubion_user')
+        #     .order_by('rubion_user', 'instruction', '-date')
+        # )
+        # su_qs = (
+        #     SafetyInstructionUserRelation.objects
+        #     .filter(rubion_staff__isnull = False)
+        #     .distinct('instruction', 'rubion_staff')
+        #     .order_by('rubion_staff', 'instruction', '-date')
+        # )
+
+        # rval = [
+        #     data for data in qs.union(su_qs).order_by('date') \
+        #     if (data.rubion_user and data.rubion_user.safety_instructions.filter(instruction = data.instruction, as_required=False).exists()) or (data.rubion_staff and data.rubion_staff.safety_instructions.filter(instruction = data.instruction, as_required=False).exists()) 
+        # ]
+
+        # Show only:
+        #   -- users which are active
+        user_list = RUBIONUser.objects.active()
+        ruser_filter = Q(user__in = user_list)
+        staff_list = StaffUser.objects.active()
+        # we only want the staff that is not also a RUBIONUser.
+        staff_list = staff_list.exclude(
+            Q(user__pk__in = user_list.values('linked_user'))
+        )
+        staff_filter = Q(staff__in = staff_list)
+        
+        #   -- instructions which are required (as_required set to False)
+        ruser_filter &= Q(as_required = False)
+        staff_filter &= Q(as_required = False)
+
+        #   -- only the selected instructions (filter user_safety_instructions)
+        si_filter = self.filter_spec.get('user_safety_instructions', {})
+        if si_filter and si_filter.get('value', []):
+            ruser_filter &= Q(instruction__pk__in = si_filter['value'])
+            staff_filter &= Q(instruction__pk__in = si_filter['value'])
+        qs_rubion_user = SafetyInstruction2UserRelation.objects.filter(ruser_filter)
+        qs_staff_user = SafetyInstruction2StaffRelation.objects.filter(staff_filter)
+        result = []
+        pks = []
+        virtual_pks = []
+        # if one wants to use a quick'n'dirty approach to get the number of database hits
+        # for this, use the following
+        
+        # from django.db import connection
+        # old = len(connection.queries)
+        for obj in qs_rubion_user:
+            try:
+                result.append(
+                    SafetyInstructionUserRelation.objects.filter(rubion_user = obj.user, instruction = obj.instruction).latest('date')
+                )
+                pks.append(result[-1].pk)
+            except SafetyInstructionUserRelation.DoesNotExist:
+                staff = None
+                if obj.user.linked_user:
+                    try:
+                        staff = StaffUser.objects.get(user = obj.user.linked_user)
+                    except StaffUser.DoesNotExist:
+                        pass
+                result.append(SafetyInstructionUserRelation(
+                    rubion_user = obj.user,
+                    rubion_staff = staff,
+                    instruction = obj.instruction,
+                    date = None,
+                ))
+                if obj.user.linked_user:
+                    virtual_pks.append('{}__{}'.format(obj.user.linked_user.username, obj.instruction))
+                
+        for obj in qs_staff_user:
+            try:
+                tmp = SafetyInstructionUserRelation.objects.filter(rubion_staff = obj.staff, instruction = obj.instruction).latest('date')
+                if tmp.pk not in pks:
+                    result.append(tmp)
+            except SafetyInstructionUserRelation.DoesNotExist:
+                if obj.staff.user:
+                    vpk = '{}__{}'.format(obj.staff.user.username, obj.instruction)
+                else:
+                    vpk = ''
+                #if vpk not in virtual_pks:
+                result.append(SafetyInstructionUserRelation(
+                    rubion_staff = obj.staff,
+                    instruction = obj.instruction,
+                    date = None,
+                ))
+
+
+        # now, select (on python level) only those whose validity period is 
+        # nearly (80%) over
+        # maybe this could be done on the database level with F-expressions
+        # https://docs.djangoproject.com/en/2.1/ref/models/expressions/#django.db.models.F
+        today = datetime.date.today()
+
+        result2 = []
+        for res in result:
+
+            if not res.date:
+                result2.append(res)
+            else:
+                # validity in days without caring about leap years
+                validity = 365 * res.instruction.is_valid_for * .2
+                cutoff_date = today - datetime.timedelta(days = validity)
+                if res.date < cutoff_date:
+                    result2.append(res)
+            
+        # again for getting the database hits
+        # new = len(connection.queries)
+        # print('Queries: {}'.format(new-old))
+
+        # return the results sorted by date (None first, then oldest)
+        return sorted(result2, key = lambda item: (item.date is not None, item.date))
+                    
