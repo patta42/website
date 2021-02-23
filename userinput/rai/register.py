@@ -8,7 +8,7 @@ from django.utils.translation import ugettext_lazy as _l
 
 from rai.actions import ListAction, CreateAction, EditAction, DetailAction, HistoryAction, DeleteAction
 from rai.base import RAIModelAdmin, RAIAdminGroup, RAIAdmin
-from rai.default_views import HistoryView
+from rai.default_views import HistoryView, ListView
 
 from rai.files.base import (
     register_collection, RAIDocumentCollection,
@@ -42,6 +42,7 @@ from userinput.rai.permissions import MovePermission, InactivatePermission
 
 from wagtail.core import hooks
 
+from website.utils import query_debugger
 
 @hooks.register('register_rai_permissions')
 def permissions_fur_rubionuser():
@@ -115,7 +116,8 @@ class RAIProjects(RAIModelAdmin):
         actions.ProjectDecisionAction,
         actions.RAIProjectEditAction,
         DetailAction,
-        actions.UserinputInactivateAction,
+        actions.ProjectInactivateAction,
+        actions.ProjectActivateAction,
         actions.MoveToWorkgroupAction,
         HistoryAction
     ]
@@ -217,7 +219,11 @@ class RAINuclides(RAIModelAdmin):
     menu_label = 'Nuklide'
     menu_icon = 'radiation-alt'
     menu_icon_font = 'fas'
-    
+    group_actions = [
+        actions.NuclideListAction
+    ]
+    item_actions = []
+    default_action = actions.NuclideListAction
 class RAIRadiationSafetyGroup(RAIAdminGroup):
     components = [
         RAISafetyInstructions,
