@@ -1,9 +1,8 @@
-from .actions import CoursesListAction, CoursesDetailAction, CourseCreateAction
+from .actions import CoursesListAction, CoursesDetailAction, CourseCreateAction, CoursesEditScriptAction
 from .views import (
     CourseAttendeeView, DeleteAttendees, edit_attendee, import_results,
     CourseCreateView, AttendeeMoveView, pdf_nameplate, pdf_certificate,
-    send_results_view, send_2nd_results_view
-
+    send_results_view, send_2nd_results_view, CreditPointsView,
 )
 from courses.models import CourseInformationPage, Course
 
@@ -32,7 +31,7 @@ class RAICourseDates(RAIModelAdmin):
     ]
     default_action = CoursesListAction
     item_actions = [
-        CoursesDetailAction
+        CoursesDetailAction#, CoursesEditScriptAction
     ]
 
     
@@ -54,7 +53,8 @@ def rai_courses_urls():
         path('courses/attendees/pdf/nameplate/', pdf_nameplate, name = 'rai_courses_attendees_pdf_nameplate'),
         path('courses/attendees/pdf/certificate/', pdf_certificate, name = 'rai_courses_attendees_pdf_certificate'),
         path('courses/attendees/ajax_send_results_mail/', send_results_view, name = 'rai_courses_ajax_send_results'),
-        path('courses/attendees/ajax_send_2nd_results_mail/', send_2nd_results_view, name = 'rai_courses_ajax_send_2nd_results')
+        path('courses/attendees/ajax_send_2nd_results_mail/', send_2nd_results_view, name = 'rai_courses_ajax_send_2nd_results'),
+        path('courses/attendees/ajax_pdf_credit_points/', CreditPointsView.as_view(), name = 'rai_courses_credit_points_view')
     ]
     
 
