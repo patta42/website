@@ -5,28 +5,40 @@ from .actions import (
     Beirat2StaffRelationEditAction, Beirat2StaffRelationCreateAction,
     Beirat2StaffRelationReplaceAction
 )
+from .notifications import CRSNewDosemeter, CRSNoDosemeter, CRSUserInactivated
+from .events import RUBIONUserWithDosemeterInactivated
+from .views import StaffUserCreateView, BeiratView, BeiratPositionReplaceView
+
+
     
 from django.utils.translation import ugettext as _
 
 from rai.actions import (
-    ListAction, CreateAction, EditAction, DetailAction, InactivateAction, DeleteAction
+    ListAction, CreateAction, EditAction, DetailAction, InactivateAction, DeleteAction,
+    HistoryAction
 )
 from rai.base import RAIModelAdmin, RAIAdminGroup
+from rai.default_views import HistoryView
 from rai.mail.base import register_mail_collection, RAIModelAddressCollection
+from rai.notifications.base import register_notification
 
-from .views import StaffUserCreateView, BeiratView, BeiratPositionReplaceView
 
 from userdata.models import StaffUser, StaffRoles, BeiratGroups, Beirat2StaffRelation
+
+from userinput.rai.events import NewOfficialDosemeter, NoMoreOfficialDosemeter
 
 class RAIStaffUser(RAIModelAdmin):
     model = StaffUser
     menu_label = _('Staff')
     menu_icon_font = 'fas'
     menu_icon = 'users-cog'
-    createview = StaffUserCreateView 
+    createview = StaffUserCreateView
+    historyview = HistoryView
     default_action = RAIStaffUserListAction
     group_actions = [RAIStaffUserListAction, StaffUserCreateAction]
-    item_actions = [StaffUserEditAction, DetailAction, InactivateAction, DeleteAction]
+    item_actions = [
+        StaffUserEditAction, DetailAction, InactivateAction, DeleteAction, HistoryAction
+    ]
 
 class RAIBeiratGroups(RAIModelAdmin):
     model = BeiratGroups
@@ -105,6 +117,15 @@ class RAIBeiratMailCollection(RAIModelAddressCollection):
 
         return addresses
 
+class RAIStaffMailCollection(RAIModelAddressCollection):
+    model = StaffUser
+    label = 'Mitarbeiter'
+    def get_for_instance(self, instance):
+        return self.format_as_mail_string(instance)
+
     
-    
+register_mail_collection(RAIStaffMailCollection)
 register_mail_collection(RAIBeiratMailCollection)
+register_notification(CRSNewDosemeter, event = NewOfficialDosemeter)
+register_notification(CRSNoDosemeter, event = NoMoreOfficialDosemeter)
+register_notification(CRSUserInactivated, event = RUBIONUserWithDosemeterInactivated)
