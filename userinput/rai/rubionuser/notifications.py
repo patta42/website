@@ -4,6 +4,7 @@ from django.db.models import Q
 
 import datetime, dateutils
 import logging
+import json
 
 from rai.notifications.base import RAINotification
 from random import randint
@@ -15,6 +16,7 @@ import userinput.templatetags.workgroup_notification_tags as wg_tags
 import userdata.templatetags.staff_notification_tags as staff_tags
 import userdata.templatetags.si_notification_tags as si_tags
 
+from rai.notifications.models import NotificationSentHelper
 
 def get_preview_users():
     return RUBIONUser.objects.active()
@@ -54,7 +56,7 @@ class RUBIONUserNotification(RAINotification):
             text = self.render_template(self.get_template(lang = language), **self.get_mail_kwargs()),
             subject = self.get_subject(lang = language)
         )
-        super().prepare(**kwargs)
+#        super().prepare(**kwargs)
 
 class RUBIONUserReceivedKeyNotification(RUBIONUserNotification):
     title = 'Nutzer: Dem Nutzer wurde ein Schlüssel zugewiesen.'
@@ -318,15 +320,57 @@ class RUBIONUserSafetyInstructionNeverGivenNotification(RAINotification):
 
 
     def prepare(self, **kwargs):
-        self.add_mail(
-            receivers = [self.user],
-            text = self.render_template(
-                self.get_template(lang = language),
-                user = kwargs['user'],
-                si = kwargs['instructions']
-            ),
-            subject = self.get_subject(lang = language)
-        )
+        user = getattr(kwargs['user'], 'linked_user', None)
+        if not user:
+            user = getattr(kwargs['user'], 'user', None)
+
+        # RUBIONusers or Staff without a connected website user
+        # are not supported.
+        if not user:
+            return
+            
+        try:
+            self.helper = NotificationSentHelper.objects.get(
+                notification_id = self.identifier,
+                user = user
+            )
+            self.helper.info = json.loads(self.helper.info)
+            
+        except NotificationSentHelper.DoesNotExist:
+            self.helper = NotificationSentHelper(
+                notification_id = self.identifier,
+                user = user,
+                info = {'instructions' : []}
+            )
+
+        send = False
+
+        if self.helper.date:
+            if self.helper.date < datetime.date.today() + dateutils.relativedelta(weeks = -2):
+                send = True
+        instruction_pks = [i['instruction'].pk for i in kwargs['instructions']]
+        if not send:
+            for instruction in instruction_pks:
+                if instruction not in self.helper.info['instructions']:
+                    send = True
+                    break
+        if send:
+            self.helper.info['instructions'] = instruction_pks
+            self.helper.save()
+            language = kwargs['user'].preferred_language or 'de'
+            print('Sending mail to:')
+            print(kwargs['user'])
+            print(kwargs['instructions'])
+            self.add_mail(
+                receivers = [kwargs['user'].email],
+                text = self.render_template(
+                    self.get_template(lang = language),
+                    user = kwargs['user'],
+                    si = kwargs['instructions']
+                ),
+                subject = self.get_subject(lang = language)
+            )
+            
 
 
 
