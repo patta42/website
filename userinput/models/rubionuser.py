@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import models
+from django.db.models import Q
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.utils import translation
@@ -832,18 +833,22 @@ class RUBIONUser (_RUBIONUserModelDefinition, ActiveInactiveMixin ):
 
     def save(self, update_staff_user = True, **kwargs):
         super().save(**kwargs)
-        try:
-            Kls = self.safety_instructions.all()[0]
-            Kls.clear_for_staff(self)
-        except IndexError:
-            pass
-        staff = None
-        for si_rel in self.safety_instructions.all():
-            staff = si_rel.save_for_staff(staff = staff)
-        if staff:
-            for field in RUBIONUser.FIELDS_TO_SYNC_WITH_STAFF:
-                setattr(staff, field, getattr(self, field))
-            staff.save_revision_and_publish()
+        if update_staff_user:
+            try:
+                Kls = self.safety_instructions.all()[0]
+                Kls.clear_for_staff(self)
+            except IndexError:
+                pass
+
+            staff = None
+            for si_rel in self.safety_instructions.all():
+                staff = si_rel.save_for_staff(staff = staff)
+                
+            if self.linked_user and self.linked_user.staffuser_set.count() == 1:
+                staff = self.linked_user.staffuser_set.get()
+                for field in RUBIONUser.FIELDS_TO_SYNC_WITH_STAFF:
+                    setattr(staff, field, getattr(self, field))
+                staff.save(update_rubionuser = False)
 
 
 
