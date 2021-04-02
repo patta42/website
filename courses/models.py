@@ -152,7 +152,7 @@ class CourseInformationPage( TranslatedPage, MandatoryIntroductionMixin, BodyMix
     ])
 
     def get_upcoming_courses( self ):
-        children = Course.objects.live().child_of(self).filter( start__gt = datetime.date.today() )
+        children = Course.objects.live().child_of(self).filter( start__gt = datetime.date.today() ).order_by('start')
         return children
    
         
@@ -202,9 +202,9 @@ class Course( RoutablePageMixin, TranslatedPage, BodyMixin  ):
 
     script = StreamField(
         [
-            ('chapter', blocks.CharBlock(classname="full title",required=True)),
-            ('section', blocks.CharBlock(required=True)),
-            ('file', DocumentChooserBlock()),
+            ('chapter', blocks.CharBlock(classname="full title",required=True,label='Kapitel')),
+            ('section', blocks.CharBlock(required=True,label='Unterkapitel')),
+            ('file', DocumentChooserBlock(label="Datei mit Folien")),
         ],
         verbose_name = _('Script for the course'),
         help_text = _('This allows to combine several PDFs to a single one'),
@@ -375,6 +375,8 @@ class Course( RoutablePageMixin, TranslatedPage, BodyMixin  ):
         return attendees
 
     def get_free_slots( self, Attendee ):
+
+        print ('Attendee is: {}'.format(Attendee))
         stats = self.registered_attendees_stats
 
         # we need idx to be a unique index. 
@@ -448,9 +450,13 @@ class Course( RoutablePageMixin, TranslatedPage, BodyMixin  ):
         
         for k,v in self.registered_attendees_stats.items():
             n_attendees = n_attendees + v
-            
+
+        # is there any attendee_type with a waitlist?
+        
+        waitlist = self.get_attendee_types().all().filter(waitlist = True).count() > 0
+        
         if self.get_max_attendees():
-            if self.get_max_attendees() <= n_attendees:
+            if not waitlist and self.get_max_attendees() <= n_attendees:
                 context['fully_booked'] = True
             else:
                 context['fully_booked'] = False
@@ -938,6 +944,12 @@ class CourseAttendee ( models.Model ):
         blank = True,
         help_text = _('Result of the exam (either as a grade or in percent)'),
         verbose_name = _('result'),
+        max_length = 6
+    )
+    result_2nd = models.CharField(
+        blank = True,
+        help_text = _('Result of the 2nd exam (either as a grade or in percent)'),
+        verbose_name = _('result 2nd exam'),
         max_length = 6
     )
     passed = models.BooleanField(
