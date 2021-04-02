@@ -19,7 +19,11 @@
 {% with parent=page.get_parent.specific %}
 
   <h2>{{ parent.title_trans }}</h2>
-<h3>{% trans "Course from" %} {{page.title_trans}}</h3>
+  <h3>{% trans "Course from" %} {{page.title_trans}}
+  {% if page.last_published_at %}
+    <p style="font-size:75%; color:#6b6b6b">{% trans "Published at" %} {{page.last_published_at}}</p>
+    {% endif %}
+  </h3>
 <div class="introduction">{{ parent.introduction }}</div>
 {% if request.is_preview %}
 <div class="editable" data-editable-field="body">
