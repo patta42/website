@@ -9,7 +9,7 @@ from rai.edit_handlers.extended import RAIStreamFieldPanel
 from rai.edit_handlers.multiform import (
     RAIMultiFormEditHandler, RAISubFormEditHandler, RAIModelMultiFormEditHandler
 )
-from rai.widgets import RAISwitchInput
+from rai.widgets import RAISwitchInput, RAISelect
 
 class CourseSettingsPanel(eh.RAIFieldPanel):
     field_template = "courses/rai/edit_handlers/course-settings-panel_as-field.html"
@@ -62,6 +62,7 @@ course_create_handler = RAIMultiFormEditHandler([
                     eh.RAIFieldPanel('start', classname =" col-md-6", label="Beginn (Datum)"),
                     eh.RAIFieldPanel('end', classname =" col-md-6", label="Ende (Datum)", help_text="Bei eintägigen Veranstaltungen bitte leer lassen")
                 ], heading="Start- und Enddatum der Veranstaltung"),
+                eh.RAIFieldPanel('go_live_at', classname="col-md-6", label="Veröffentlichungszeitpunkt auf der Homepage", help_text=" Die Veröffentlichung erfolgt nicht exakt zum angegebenen Zeitpunkt, sondern zur jeweiligen vollen Stunde, die nach dem angegebenen Zeitpunkt liegt. Für sofortige Veröffentlichung bitte leer lassen.")
             ])
         ],
         heading = 'Von wann bis wann findet die Veranstaltung statt?'
@@ -108,5 +109,18 @@ course_create_handler = RAIMultiFormEditHandler([
         ], heading = 'Einstellungen'
     )
     # @TODO StreamField...
+])
+
+
+course_edit_script_handler = eh.RAIPillsPanel([
+    eh.RAIObjectList([
+        eh.RAIFieldPanel('script_title', label='Titel des Skripts'),
+        eh.RAIFieldPanel('script_subtitle1', label='Untertitel des Skripts (Zeile 1)'),
+        eh.RAIFieldPanel('script_subtitle2', label='Untertitel des Skripts (Zeile 2)'),
+        eh.RAIFieldPanel('script_date', label = 'Sprache des Datums des Skripts (oder kein Datum)', widget=RAISelect),
+    ], heading = 'Titelseite'),
+    eh.RAIObjectList([
+        RAIStreamFieldPanel('script')         
+    ], heading = "Kapitel und Folien")
 ])
 
