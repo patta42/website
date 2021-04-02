@@ -1,21 +1,61 @@
 from pprint import pprint
 
+
+
 from .generic import RAIAdminView, SingleObjectMixin, PageMenuMixin
+
+import functools
+import json
+
 
 from rai.actions import EditAction
 
 from wagtail.core.models import PageRevision 
+from wagtail.admin.compare import FieldComparison, TextFieldComparison
+
+_DEFAULT_COMPARATORS = {
+    'CharField' : TextFieldComparison,
+    'BooleanField' : FieldComparison,
+    
+}
 
 class HistoryView(SingleObjectMixin, PageMenuMixin, RAIAdminView):
     template_name = 'rai/views/default/history.html'
     edit_handler = None
+    additional_comparisons = ['path', 'locked']
+    update_from_json = ['path', 'locked']
+    alternative_labels = {}
+    comparators = {}
     
     def get_comparison(self, revision_a, revision_b):
         page_a = revision_a.as_page_object().specific
         page_b = revision_b.as_page_object().specific
+
+        a_dict = json.loads(revision_a.content_json)
+        b_dict = json.loads(revision_b.content_json)
+
         comparison = self.edit_handler.get_comparison()
+        # undo the changes introduced by as_page_object on the fields `path` and `locked`
+        for f in self.additional_comparisons:
+            if f in self.update_from_json:
+                setattr(page_a, f, a_dict.get(f))
+                setattr(page_b, f, b_dict.get(f))
+            field = page_a._meta.get_field(f)
+            comparator_class = self.comparators.get(
+                f,
+                _DEFAULT_COMPARATORS.get(
+                    field.__class__.__name__,
+                    FieldComparison
+                )
+            )
+            comparison.append(
+                functools.partial(comparator_class, field)
+            )
+
         comparisons = [comp(page_a, page_b) for comp in comparison]
         changes = [comp for comp in comparisons if comp.has_changed()]
+
+        
         return changes
 
 
@@ -59,5 +99,6 @@ class HistoryView(SingleObjectMixin, PageMenuMixin, RAIAdminView):
         context['title'] = self.obj.title_trans
         context['revisions'] = self.get_revisions()
         context['page_menu'] = self.get_page_menu()
+        context['alternative_lables'] = self.alternative_labels
         return context
 
