@@ -50,8 +50,8 @@ class ActiveInactiveMixin:
         if save:
             self.save_revision_and_publish(user = user)
             
-    @classmethod
-    def active_filter(self):
+    @staticmethod
+    def active_filter():
         return Q(expire_at__isnull = True) | Q(expire_at__gte = datetime.datetime.now())
     
 
