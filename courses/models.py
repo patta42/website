@@ -154,11 +154,11 @@ class CourseInformationPage( TranslatedPage, MandatoryIntroductionMixin, BodyMix
     def get_upcoming_courses( self ):
         children = Course.objects.live().child_of(self).filter( start__gt = datetime.date.today() ).order_by('start')
         return children
-   
-        
 
     def get_admin_display_title( self ):
         return self.title_trans
+
+
 class CourseContactPerson( AbstractContactPerson ):
     page = ParentalKey( CourseInformationPage, related_name ='contact_persons')
 
