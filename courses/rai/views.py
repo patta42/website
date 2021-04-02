@@ -7,6 +7,7 @@ from .forms import (
 from courses.models import CourseAttendee, CourseInformationPage, Course, Course2AttendeeRelation
 from courses.pdfhandling import CourseNamePlate, CourseCertificate, CourseCPCertificate
 
+from dateutil.parser import parse as dt_parse
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.db.models import Q
@@ -23,6 +24,8 @@ import pandas as pd
 from rai.default_views.generic import RAIView, RAIAdminView,  SingleObjectMixin, PageMenuMixin
 from rai.default_views.multiform_create import MultiFormCreateView
 from rai.notifications.models import NotificationTemplate
+
+from wagtail.core.models import Page
 
 from website.models import SentMail
 
@@ -71,6 +74,10 @@ class CourseAttendeeView(RAIAdminView, PageMenuMixin, SingleObjectMixin):
         context['page_menu'] = render_to_string('courses/rai/attendee-view-actions.html', {})
         return context
 
+class EditScriptView(RAIView, PageMenuMixin, SingleObjectMixin):
+    template_name = 'courses/rai/delete-attendees.html'
+    
+    
 class DeleteAttendees(RAIView, PageMenuMixin):
     template_name = 'courses/rai/delete-attendees.html'
     def dispatch(self, request, *args, **kwargs):
@@ -122,10 +129,13 @@ class CourseCreateView(MultiFormCreateView):
         if prefix == 'dates':
             start = data.get('start', None)
             end = data.get('end', None)
+            go_live_at = data.get('go_live_at', None)
             if start:
                 data.update({'start': start.isoformat()})
             if end:
                 data.update({'end': end.isoformat()})
+            if go_live_at:
+                data.update({'go_live_at': go_live_at.isoformat()})
         return data
 
 
@@ -144,19 +154,37 @@ class CourseCreateView(MultiFormCreateView):
         if dates.get('end', None):
             title += '--'+dates.get('end')
         settings = self.session_store['settings']['form']
+
+        # find a unique slug, just in case...
+        suffix = 1
+        candidate = title
+        
+        while not Page._slug_is_available(candidate, parent):
+            suffix += 1
+            candidate = "%s-%d" % (title, suffix)
         instance = Course(
             start = self.session_store['dates']['form']['start'],
             end = self.session_store['dates']['form']['end'],
             title = title,
             title_de = title,
-            slug = slugify(title),
+            slug = candidate,
             overrule_parent = True,
             register_via_website = settings.get('register_via_website', False),
             share_data_via_website = settings.get('share_data_via_website', False),
             max_attendees = settings.get('max_attendees', None),
             
         )
+        schedule_publishing = dates.get('go_live_at', None) is not None
+
+        if schedule_publishing:
+            instance.go_live_at = dt_parse(dates.get('go_live_at', None))
+            instance.live = False
+            
         instance = parent.add_child(instance = instance)
+
+        # update slug to be unique
+
+        
         fs = self.session_store['settings']['formsets']
         attendee_types = fs.get('attendee_types', [])
         for at in attendee_types:
@@ -169,8 +197,14 @@ class CourseCreateView(MultiFormCreateView):
                     course = instance
                 )
                 rel.save()
-        
-        self.success_message('Veranstaltung vom {} angelegt.'.format(title))
+
+        if schedule_publishing:
+            dt = dt_parse(dates.get('go_live_at', None))
+            rev = instance.save_revision(user = request.user, approved_go_live_at = dt)
+
+            self.success_message('Veranstaltung vom {} angelegt und für Publikation am {} vorgesehen.'.format(title, dt.strftime('%d. %m. %Y')))
+        else:
+            self.success_message('Veranstaltung vom {} angelegt.'.format(title))
         return redirect('rai_courses_course_list')
     
 def edit_attendee(request, pk = None, field = None):
