@@ -106,7 +106,7 @@ class ExtendedRUBIONUserInformationMixin:
     def staff_group(self):
         if not self.is_staff:
             return ''
-        return self._staff_qs.first().get_parent().specific.title_trans
+        return self._staff_qs.first().get_parent().specific().title_trans
 
     _staff_inactivated = False
     def inactivate_staff(self):
@@ -123,7 +123,7 @@ class ExtendedRUBIONUserInformationMixin:
     
     @cached_property
     def workgroup(self):
-        return self._obj_qs.get_parent().get_parent()
+        return self._obj_qs.get_parent().get_parent().specific()
 
     @cached_property
     def workgroup_members(self):
@@ -131,8 +131,10 @@ class ExtendedRUBIONUserInformationMixin:
             return None
         else:
             qs = (
-                self._obj_qs.get_siblings().
-                exclude(pk = self.obj.pk).filter(content_type = self.obj.content_type).
+                self.raiadmin.model.objects.filter(
+                    pk__in = self._obj_qs.get_siblings().
+                    exclude(pk = self.obj.pk).filter(content_type = self.obj.content_type)
+                ).
                 filter(RUBIONUser.active_filter())
             )
             return qs
