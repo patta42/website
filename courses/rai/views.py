@@ -16,6 +16,7 @@ from django.http import HttpResponseNotFound, JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.template.response import TemplateResponse
+from django.utils import translation
 from django.utils.text import slugify
 from django.utils.safestring import mark_safe
 from django.views import View
