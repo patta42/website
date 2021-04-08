@@ -462,10 +462,12 @@ class StaffUser ( TranslatedPage ):
             for si_rel in self.safety_instructions.all():
                 ruser = si_rel.save_for_ruser(ruser = ruser)
             # change fields that should by synced between ruser and staff
-            if ruser:
+        if self.user:
+            if self.user.rubionuser_set.count() == 1:
+                ruser = self.user.rubionuser_set.get()
                 for field in RUBIONUser.FIELDS_TO_SYNC_WITH_STAFF:
                     setattr(ruser, field, getattr(self, field))
-                ruser.save_revision_and_publish()
+                ruser.save(update_staff_user = False)
                 
     @staticmethod
     def get_from_user(user):
