@@ -484,10 +484,11 @@ class RUBIONUserModelForm ( StyledModelForm ):
         rubid = self.cleaned_data.get('rub_id', None)
         if rubid:        
             info = fetch_user_info(self.cleaned_data.get('rub_id'))
-            instance.name_db = info['last_name']
-            instance.first_name_db = info['first_name']
-            instance.email_db = info['email']
-            instance.is_rub = True
+            if info:
+                instance.name_db = info['last_name']
+                instance.first_name_db = info['first_name']
+                instance.email_db = info['email']
+                instance.is_rub = True
         else:
             instance.name_db = self.cleaned_data['name_db']
             instance.first_name_db = self.cleaned_data['first_name_db']
