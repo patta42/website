@@ -11,6 +11,7 @@ from django.http import Http404
 from django.shortcuts import redirect, get_object_or_404
 from django.template.loader import render_to_string
 from django.template.response import TemplateResponse
+from django.utils.text import slugify
 from django.utils.translation import ugettext_lazy as _
 
 from instruments.mixins import AbstractRelatedMethods
