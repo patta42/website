@@ -81,6 +81,10 @@ Teilnehmer verwalten {{ object }}
 	      <span class="mr-1"><i class="fas fa-graduation-cap fa-fw"></i></span>
 	      Bescheinigungen erzeugen
 	    </button>
+	    <button class="btn dropdown-item" type="button" data-form-url="{% url "rai_courses_credit_points_view" %}" data-action="post_form" data-field-values="['pk']" data-form-field-names="['attendee_pks']" data-post-method="ajax-show-modal">
+	      <span class="mr-1"><i class="fas fa-graduation-cap fa-fw"></i></span>
+	      Credit-Point-Bescheinigungen
+	    </button>
 	  </div>
 	</div>
       </th>
@@ -156,7 +160,7 @@ Teilnehmer verwalten {{ object }}
     {{ a.waitlist|janein }}
   </td>
   <td class="pl-1">
-    <a href="" class="btn btn-outline-secondary">
+    <a href="{% url "rai_courses_attendee_edit" a.data.pk %} " class="btn btn-outline-secondary">
       <span class="mr-1"><i class="fas fa-pen"></i></span>
       Details bearbeiten
     </a>
