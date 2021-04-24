@@ -6,6 +6,7 @@ from .forms import (
 
 from courses.models import CourseAttendee, CourseInformationPage, Course, Course2AttendeeRelation
 from courses.pdfhandling import CourseNamePlate, CourseCertificate, CourseCPCertificate
+from courses.rai.edit_handlers import attendee_edit_handler
 
 from dateutil.parser import parse as dt_parse
 from django.conf import settings
@@ -22,6 +23,8 @@ from django.utils.safestring import mark_safe
 from django.views import View
 
 import pandas as pd
+
+from rai.actions import RAIAction
 from rai.default_views.generic import RAIView, RAIAdminView,  SingleObjectMixin, PageMenuMixin
 from rai.default_views.multiform_create import MultiFormCreateView
 from rai.notifications.models import NotificationTemplate
@@ -240,6 +243,90 @@ def edit_attendee(request, pk = None, field = None):
             'has_errors' : has_errors,
             'errors' : form.errors
         })
+
+
+class EditAttendee(RAIView, SingleObjectMixin, PageMenuMixin):
+    # We don't use rai's EditView here since we don't have an
+    # according action and/or raiadmin
+    
+    template_name = 'rai/views/default/edit.html'
+    formclass = None
+    model = CourseAttendee
+    edit_handler = attendee_edit_handler
+    save_button = True
+    
+    def get_object(self):
+        qs = self.model._default_manager.get_queryset()
+        try:
+            return qs.get(pk = self.kwargs['pk'])
+        except TypeError:
+            return qs.get(id = self.kwargs['pk'])
+
+    def dispatch(self, request, *args, **kwargs):
+        self.obj = self.get_object().specific
+        self.edit_handler = self.edit_handler.bind_to(model=self.obj.specific.__class__)
+        if not self.formclass:
+            self.formclass = self.edit_handler.get_form_class()
+            self.formset_classes = self.edit_handler.get_additional_formset_classes()
+        else:
+            self.formset_classes = {}
+        self.formsets = {}
+        for key,formset_class in self.formset_classes.items():
+            self.formsets.update({key : formset_class(prefix = key)})
+
+        self.request = request
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_actions(self):
+        return self.get_group_actions() + self.get_item_actions()
+
+    def get_actions(self):
+        return []
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        form = self.formclass(instance = self.obj)
+        
+        edit_handler = self.edit_handler.bind_to(
+            instance = self.obj,
+            form = form,
+            request = self.request
+        )
+        context['form'] = form
+        context['edit_handler'] = edit_handler
+        context['object'] = self.obj
+        context['page_menu'] = self.get_page_menu()
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        form = self.formclass(request.POST, request.FILES,
+                              instance = self.obj, user = self.request.user)
+        if not form.is_valid():
+            context = self.get_context_data()
+            context.update({
+                'edit_handler' : edit_handler,
+                'form': form,
+                'object' : self.obj
+            })
+            self.warning_message('The data could not be save due to errors')
+            return self.render_to_response(context)
+        else:
+            if form.has_changed():
+                form.save()
+                self.success_message('The data was updated.');
+            else:
+                self.info_message('The data contained no changes and therefore was not updated')
+
+        # redirect to course admin
+        if self.obj.related_course:
+            course_pk = self.obj.related_course.pk
+        else:
+            course_pk = self.obj.waitlist_course.pk
+        # @IMPROVE: Would be better to avoid hard coding the name
+        return redirect('rai_courses_course_detail', course_pk) 
+
+
 
 class AttendeeMoveView(RAIView):
     def nxt(self):
